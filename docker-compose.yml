@@ -1,0 +1,20 @@
+# Realx8-Ui on its own, pointed at a Realx8-Core that is already running.
+#
+#   API_TARGET=http://host.docker.internal:3000 docker compose up -d --build
+#   open http://localhost:8080
+#
+# The API is reverse-proxied by this container, so the app stays same-origin and
+# no CORS configuration is needed on the backend.
+
+services:
+  ui:
+    build:
+      context: .
+      args:
+        # Relative base: /api is proxied by this container's nginx.
+        VITE_API_BASE_URL: /api
+    restart: unless-stopped
+    environment:
+      API_TARGET: ${API_TARGET:-http://host.docker.internal:3000}
+    ports:
+      - "8080:80"

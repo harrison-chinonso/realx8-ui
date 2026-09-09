@@ -1,0 +1,49 @@
+# Serves the built app and forwards the API to Realx8-Core.
+#
+# ${API_TARGET} is substituted from the environment when the container starts
+# (nginx:alpine runs envsubst over /etc/nginx/templates). Only the variables
+# named in the container's env are replaced, so nginx's own $host / $uri are
+# safe here.
+
+server {
+  listen 80;
+  server_name _;
+  root /usr/share/nginx/html;
+  index index.html;
+
+  # Realx8-Core answers every route under /api, so the prefix is passed through
+  # unchanged rather than stripped.
+  location /api/ {
+    proxy_pass ${API_TARGET}/api/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    # The assistant streams its reply token by token; buffering would hold the
+    # whole answer back until it finished.
+    proxy_buffering off;
+    proxy_read_timeout 180s;
+  }
+
+  # Property images and documents, served by user-service.
+  location /uploads/ {
+    proxy_pass ${API_TARGET}/uploads/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  # Hashed assets are immutable; index.html must never be cached or a deploy
+  # leaves browsers holding stale asset references.
+  location /assets/ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+  }
+
+  # Client-side routing: every unknown path is a React route, not a 404.
+  location / {
+    try_files $uri $uri/ /index.html;
+    add_header Cache-Control "no-store";
+  }
+}

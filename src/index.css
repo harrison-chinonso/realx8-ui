@@ -1,0 +1,445 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Tenant colours — rewritten at runtime per company by AppearanceContext. */
+  --primary: #1e3a8a;
+  --primary-rgb: 30, 58, 138;
+  --secondary: #0f172a;
+  --secondary-rgb: 15, 23, 42;
+  --font-heading: 'Tomato Grotesk', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --font-ui:      'Inter', sans-serif;
+
+  /*
+   * Neutral scale and semantic surfaces.
+   *
+   * Fixed on purpose: only --primary follows the company's brand. Text,
+   * borders and surfaces stay on one calibrated neutral ramp so contrast is
+   * predictable whatever brand colour a tenant picks — the same reason the
+   * reference app keeps its greys separate from its accent.
+   */
+  --content:         #101828;   /* headings and primary text */
+  --content-muted:   #667085;   /* secondary text, labels */
+  --content-subtle:  #a4a7ae;   /* placeholders, disabled text */
+  --surface:         #ffffff;   /* cards, menus, inputs */
+  --surface-muted:   #f9fafb;   /* page background, table headers */
+  --surface-sunken:  #f2f4f7;   /* wells, hovered rows */
+  --line:            #e4e7ec;   /* default border */
+  --line-strong:     #d5d7da;   /* emphasised border, disabled fill */
+
+  --danger:          #d92d20;
+  --danger-surface:  #fff0f4;
+  --success:         #039855;
+  --success-surface: #ecfdf3;
+  --warning:         #dc6803;
+  --warning-surface: #fffaeb;
+
+  --radius: 0.5rem;
+}
+
+body {
+  background-color: var(--surface-muted);
+  color: var(--content);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+button, input, select, textarea, label,
+nav, [role="navigation"],
+.badge, .tab, .chip {
+  font-family: var(--font-ui);
+}
+
+#root {
+  @apply min-h-screen;
+}
+
+/* ── Mobile touch improvements ──────────────────────────────────────────── */
+
+/* Ensure tap targets are at least 44px (Apple HIG / WCAG) */
+button, a, [role="button"] {
+  min-height: 36px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Remove iOS input zoom (font-size < 16px triggers zoom) */
+input, textarea {
+  font-size: 16px !important;
+}
+@media (min-width: 640px) {
+  input, textarea {
+    font-size: 0.875rem !important; /* restore sm:text-sm on desktop */
+  }
+}
+/* Select font handled separately in the global select rule below */
+
+/* Smooth sidebar transitions */
+aside {
+  will-change: transform;
+}
+
+/* ── Page-level responsive helpers ──────────────────────────────────────── */
+
+/* Stack flex rows vertically on mobile for common page header patterns */
+.page-header {
+  @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
+}
+
+/* Responsive action button group */
+.action-bar {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+/* ── Dynamic primary colour overrides (ALL blue-* shades → primary) ─────── */
+/* Backgrounds */
+.bg-blue-50  { background-color: rgba(var(--primary-rgb), 0.06) !important; }
+.bg-blue-100 { background-color: rgba(var(--primary-rgb), 0.12) !important; }
+.bg-blue-200 { background-color: rgba(var(--primary-rgb), 0.20) !important; }
+.bg-blue-300 { background-color: rgba(var(--primary-rgb), 0.35) !important; }
+.bg-blue-400 { background-color: rgba(var(--primary-rgb), 0.55) !important; }
+.bg-blue-500 { background-color: rgb(var(--primary-rgb)) !important; }
+.bg-blue-600 { background-color: rgb(var(--primary-rgb)) !important; }
+.bg-blue-700 { background-color: color-mix(in srgb, rgb(var(--primary-rgb)) 85%, #000) !important; }
+.bg-blue-800 { background-color: color-mix(in srgb, rgb(var(--primary-rgb)) 70%, #000) !important; }
+.bg-blue-900 { background-color: color-mix(in srgb, rgb(var(--primary-rgb)) 55%, #000) !important; }
+/* Hover backgrounds */
+.hover\:bg-blue-50:hover  { background-color: rgba(var(--primary-rgb), 0.06) !important; }
+.hover\:bg-blue-100:hover { background-color: rgba(var(--primary-rgb), 0.12) !important; }
+.hover\:bg-blue-500:hover { background-color: rgb(var(--primary-rgb)) !important; }
+.hover\:bg-blue-600:hover { background-color: rgb(var(--primary-rgb)) !important; }
+.hover\:bg-blue-700:hover { background-color: color-mix(in srgb, rgb(var(--primary-rgb)) 85%, #000) !important; }
+.hover\:bg-blue-800:hover { background-color: color-mix(in srgb, rgb(var(--primary-rgb)) 70%, #000) !important; }
+/* Text */
+.text-blue-400 { color: rgba(var(--primary-rgb), 0.65) !important; }
+.text-blue-500 { color: rgb(var(--primary-rgb)) !important; }
+.text-blue-600 { color: rgb(var(--primary-rgb)) !important; }
+.text-blue-700 { color: color-mix(in srgb, rgb(var(--primary-rgb)) 85%, #000) !important; }
+.text-blue-800 { color: color-mix(in srgb, rgb(var(--primary-rgb)) 70%, #000) !important; }
+/* Borders */
+.border-blue-300 { border-color: rgba(var(--primary-rgb), 0.35) !important; }
+.border-blue-400 { border-color: rgba(var(--primary-rgb), 0.55) !important; }
+.border-blue-500 { border-color: rgb(var(--primary-rgb)) !important; }
+.border-blue-600 { border-color: rgb(var(--primary-rgb)) !important; }
+/* Focus */
+.focus\:border-blue-500:focus { border-color: rgb(var(--primary-rgb)) !important; }
+.focus\:border-blue-600:focus { border-color: rgb(var(--primary-rgb)) !important; }
+/* Rings */
+.ring-blue-500  { --tw-ring-color: rgb(var(--primary-rgb)) !important; }
+.ring-blue-200  { --tw-ring-color: rgba(var(--primary-rgb), 0.20) !important; }
+.focus\:ring-blue-200:focus { --tw-ring-color: rgba(var(--primary-rgb), 0.20) !important; }
+.focus\:ring-blue-400:focus { --tw-ring-color: rgba(var(--primary-rgb), 0.55) !important; }
+.focus\:ring-blue-500:focus { --tw-ring-color: rgb(var(--primary-rgb)) !important; }
+
+/* ── Dynamic secondary colour overrides (ALL slate-800+ → secondary) ─────── */
+.bg-secondary   { background-color: var(--secondary) !important; }
+.text-secondary { color: var(--secondary) !important; }
+
+/* ── @layer component button classes using CSS vars ─────────────────────── */
+.btn-var:hover:not(:disabled) {
+  background-color: var(--hover-bg) !important;
+}
+.btn-var:active:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+/* ── Scrollbar polish ───────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--content-subtle); }
+
+/* ── Global select / dropdown style (Zoho-style clean input) ────────────── */
+/* Target ALL <select> elements — override browser chrome completely */
+select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-color: var(--surface) !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23a4a7ae'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.085l3.71-3.855a.75.75 0 111.08 1.04l-4.25 4.417a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.6rem center !important;
+  background-size: 1rem !important;
+  border: 1px solid var(--line-strong) !important;
+  border-radius: var(--radius) !important;
+  padding: 0.45rem 2.25rem 0.45rem 0.75rem !important;
+  color: var(--content) !important;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-shadow: none !important;
+  outline: none;
+}
+select:hover {
+  border-color: var(--content-subtle) !important;
+}
+select:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.18) !important;
+  outline: none !important;
+}
+select:disabled {
+  background-color: var(--surface-muted) !important;
+  color: var(--content-subtle) !important;
+  cursor: not-allowed;
+}
+/* Fix font-size override conflict for selects */
+select { font-size: 0.875rem !important; }
+
+
+/* ── Neutral ramp ────────────────────────────────────────────────────────────
+   The app was written against Tailwind's slate scale; the design system uses a
+   warmer, higher-contrast grey ramp. Remapping the scale here retunes every
+   screen at once instead of rewriting ~2,000 utility classes across 150 files,
+   and keeps future `slate-*` usage automatically on-palette.
+
+   Scoped to :not(.dark) so the dark-mode block below still owns dark, and free
+   of !important so a page can still override locally.
+   ------------------------------------------------------------------------- */
+html:not(.dark) .bg-slate-100 { background-color: #f2f4f7; }
+html:not(.dark) .bg-slate-200 { background-color: #e4e7ec; }
+html:not(.dark) .bg-slate-300 { background-color: #d5d7da; }
+html:not(.dark) .bg-slate-50 { background-color: #f9fafb; }
+html:not(.dark) .bg-slate-700 { background-color: #344054; }
+html:not(.dark) .bg-slate-800 { background-color: #182230; }
+html:not(.dark) .bg-slate-900 { background-color: #101828; }
+html:not(.dark) .bg-slate-950 { background-color: #0c111d; }
+html:not(.dark) .border-slate-100 { border-color: #f2f4f7; }
+html:not(.dark) .border-slate-200 { border-color: #e4e7ec; }
+html:not(.dark) .border-slate-300 { border-color: #d5d7da; }
+html:not(.dark) .border-slate-400 { border-color: #a4a7ae; }
+html:not(.dark) .border-slate-600 { border-color: #475467; }
+html:not(.dark) .border-slate-700 { border-color: #344054; }
+html:not(.dark) .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #f2f4f7; }
+html:not(.dark) .divide-slate-200 > :not([hidden]) ~ :not([hidden]) { border-color: #e4e7ec; }
+html:not(.dark) .divide-slate-50 > :not([hidden]) ~ :not([hidden]) { border-color: #f9fafb; }
+html:not(.dark) .hover\:bg-slate-100:hover { background-color: #f2f4f7; }
+html:not(.dark) .hover\:bg-slate-200:hover { background-color: #e4e7ec; }
+html:not(.dark) .hover\:bg-slate-50:hover { background-color: #f9fafb; }
+html:not(.dark) .hover\:bg-slate-800:hover { background-color: #182230; }
+html:not(.dark) .hover\:border-slate-300:hover { border-color: #d5d7da; }
+html:not(.dark) .hover\:border-slate-400:hover { border-color: #a4a7ae; }
+html:not(.dark) .hover\:ring-slate-300:hover { --tw-ring-color: #d5d7da; }
+html:not(.dark) .hover\:text-slate-300:hover { color: #d5d7da; }
+html:not(.dark) .hover\:text-slate-600:hover { color: #475467; }
+html:not(.dark) .hover\:text-slate-700:hover { color: #344054; }
+html:not(.dark) .hover\:text-slate-800:hover { color: #182230; }
+html:not(.dark) .hover\:text-slate-900:hover { color: #101828; }
+html:not(.dark) .placeholder-slate-400::placeholder { color: #a4a7ae; }
+html:not(.dark) .placeholder\:text-slate-300::placeholder { color: #d5d7da; }
+html:not(.dark) .ring-slate-200 { --tw-ring-color: #e4e7ec; }
+html:not(.dark) .ring-slate-300 { --tw-ring-color: #d5d7da; }
+html:not(.dark) .ring-slate-700 { --tw-ring-color: #344054; }
+html:not(.dark) .text-slate-200 { color: #e4e7ec; }
+html:not(.dark) .text-slate-300 { color: #d5d7da; }
+html:not(.dark) .text-slate-400 { color: #a4a7ae; }
+html:not(.dark) .text-slate-500 { color: #667085; }
+html:not(.dark) .text-slate-600 { color: #475467; }
+html:not(.dark) .text-slate-700 { color: #344054; }
+html:not(.dark) .text-slate-800 { color: #182230; }
+html:not(.dark) .text-slate-900 { color: #101828; }
+
+
+/* ── Semantic ramp ───────────────────────────────────────────────────────────
+   Screens reach for red/rose, green/emerald and amber/yellow interchangeably —
+   72 files, three different reds. Folding each family onto one semantic scale
+   makes every error, success and warning surface agree, and ties the key stops
+   back to --danger / --success / --warning.
+   ------------------------------------------------------------------------- */
+html:not(.dark) .bg-amber-100 { background-color: #fef0c7; }
+html:not(.dark) .bg-amber-400 { background-color: #fdb022; }
+html:not(.dark) .bg-amber-50 { background-color: var(--warning-surface); }
+html:not(.dark) .bg-amber-500 { background-color: #f79009; }
+html:not(.dark) .bg-emerald-100 { background-color: #dcfae6; }
+html:not(.dark) .bg-emerald-50 { background-color: var(--success-surface); }
+html:not(.dark) .bg-emerald-500 { background-color: #17b26a; }
+html:not(.dark) .bg-green-100 { background-color: #dcfae6; }
+html:not(.dark) .bg-green-50 { background-color: var(--success-surface); }
+html:not(.dark) .bg-green-500 { background-color: #17b26a; }
+html:not(.dark) .bg-green-600 { background-color: var(--success); }
+html:not(.dark) .bg-red-100 { background-color: #fee4e2; }
+html:not(.dark) .bg-red-50 { background-color: var(--danger-surface); }
+html:not(.dark) .bg-red-500 { background-color: #f04438; }
+html:not(.dark) .bg-red-600 { background-color: var(--danger); }
+html:not(.dark) .bg-rose-100 { background-color: #fee4e2; }
+html:not(.dark) .bg-rose-50 { background-color: var(--danger-surface); }
+html:not(.dark) .bg-rose-500 { background-color: #f04438; }
+html:not(.dark) .bg-rose-600 { background-color: var(--danger); }
+html:not(.dark) .border-amber-200 { border-color: #fedf89; }
+html:not(.dark) .border-amber-300 { border-color: #fec84b; }
+html:not(.dark) .border-amber-500 { border-color: #f79009; }
+html:not(.dark) .border-emerald-200 { border-color: #abefc6; }
+html:not(.dark) .border-emerald-400 { border-color: #47cd89; }
+html:not(.dark) .border-red-200 { border-color: #fecdca; }
+html:not(.dark) .border-rose-200 { border-color: #fecdca; }
+html:not(.dark) .border-rose-400 { border-color: #f97066; }
+html:not(.dark) .border-rose-500 { border-color: #f04438; }
+html:not(.dark) .divide-red-100 > :not([hidden]) ~ :not([hidden]) { border-color: #fee4e2; }
+html:not(.dark) .focus\:ring-emerald-400:focus { --tw-ring-color: #47cd89; }
+html:not(.dark) .focus\:ring-rose-400:focus { --tw-ring-color: #f97066; }
+html:not(.dark) .hover\:bg-rose-50:hover { background-color: var(--danger-surface); }
+html:not(.dark) .hover\:bg-rose-700:hover { background-color: #b42318; }
+html:not(.dark) .hover\:border-amber-400:hover { border-color: #fdb022; }
+html:not(.dark) .hover\:text-red-500:hover { color: #f04438; }
+html:not(.dark) .hover\:text-rose-500:hover { color: #f04438; }
+html:not(.dark) .hover\:text-rose-600:hover { color: var(--danger); }
+html:not(.dark) .ring-amber-200 { --tw-ring-color: #fedf89; }
+html:not(.dark) .ring-amber-400 { --tw-ring-color: #fdb022; }
+html:not(.dark) .ring-emerald-200 { --tw-ring-color: #abefc6; }
+html:not(.dark) .ring-red-200 { --tw-ring-color: #fecdca; }
+html:not(.dark) .ring-rose-200 { --tw-ring-color: #fecdca; }
+html:not(.dark) .text-amber-200 { color: #fedf89; }
+html:not(.dark) .text-amber-400 { color: #fdb022; }
+html:not(.dark) .text-amber-500 { color: #f79009; }
+html:not(.dark) .text-amber-600 { color: var(--warning); }
+html:not(.dark) .text-amber-700 { color: #b54708; }
+html:not(.dark) .text-amber-800 { color: #93370d; }
+html:not(.dark) .text-amber-900 { color: #7a2e0e; }
+html:not(.dark) .text-emerald-500 { color: #17b26a; }
+html:not(.dark) .text-emerald-600 { color: var(--success); }
+html:not(.dark) .text-emerald-700 { color: #027a48; }
+html:not(.dark) .text-emerald-800 { color: #05603a; }
+html:not(.dark) .text-emerald-900 { color: #054f31; }
+html:not(.dark) .text-green-600 { color: var(--success); }
+html:not(.dark) .text-green-700 { color: #027a48; }
+html:not(.dark) .text-green-800 { color: #05603a; }
+html:not(.dark) .text-red-500 { color: #f04438; }
+html:not(.dark) .text-red-600 { color: var(--danger); }
+html:not(.dark) .text-red-700 { color: #b42318; }
+html:not(.dark) .text-red-800 { color: #912018; }
+html:not(.dark) .text-rose-400 { color: #f97066; }
+html:not(.dark) .text-rose-500 { color: #f04438; }
+html:not(.dark) .text-rose-600 { color: var(--danger); }
+html:not(.dark) .text-rose-700 { color: #b42318; }
+html:not(.dark) .text-rose-800 { color: #912018; }
+html:not(.dark) .text-rose-900 { color: #7a271a; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK MODE  —  .dark class on <html>, toggled by AppearanceContext
+   Depth hierarchy:
+     Page bg    #0f172a  (slate-900)   — darkest
+     Surface    #1e293b  (slate-800)   — cards, sidebars, headers
+     Elevated   #293548                — hover, nested surfaces
+     Border     #334155  (slate-700)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Base */
+.dark body {
+  background-color: #0f172a !important;
+  color: #e2e8f0;
+}
+
+/* ── Background utilities ─────────────────────────────────────── */
+.dark .bg-white      { background-color: #1e293b !important; }
+.dark .bg-slate-50   { background-color: #0f172a !important; }
+.dark .bg-slate-100  { background-color: #1e293b !important; }
+.dark .bg-slate-200  { background-color: #293548 !important; }
+.dark .bg-slate-300  { background-color: #334155 !important; }
+
+/* Hover backgrounds */
+.dark .hover\:bg-white:hover      { background-color: #293548 !important; }
+.dark .hover\:bg-slate-50:hover   { background-color: #1e293b !important; }
+.dark .hover\:bg-slate-100:hover  { background-color: #293548 !important; }
+.dark .hover\:bg-slate-200:hover  { background-color: #334155 !important; }
+
+/* Active nav state in dark (blue-50 becomes more visible) */
+.dark .bg-blue-50 { background-color: rgba(var(--primary-rgb), 0.20) !important; }
+.dark .hover\:bg-blue-50:hover { background-color: rgba(var(--primary-rgb), 0.25) !important; }
+
+/* ── Text utilities ───────────────────────────────────────────── */
+.dark .text-slate-900 { color: #f1f5f9 !important; }
+.dark .text-slate-800 { color: #e2e8f0 !important; }
+.dark .text-slate-700 { color: #cbd5e1 !important; }
+.dark .text-slate-600 { color: #94a3b8 !important; }
+.dark .text-slate-500 { color: #64748b !important; }
+.dark .text-slate-400 { color: #475569 !important; }
+
+.dark .hover\:text-slate-900:hover { color: #f1f5f9 !important; }
+.dark .hover\:text-slate-800:hover { color: #e2e8f0 !important; }
+.dark .hover\:text-slate-700:hover { color: #cbd5e1 !important; }
+
+/* ── Border utilities ─────────────────────────────────────────── */
+.dark .border-slate-100 { border-color: #1e3a5f !important; }
+.dark .border-slate-200 { border-color: #334155 !important; }
+.dark .border-slate-300 { border-color: #475569 !important; }
+.dark .border-t.border-slate-200,
+.dark .border-b.border-slate-200,
+.dark .border-r.border-slate-200,
+.dark .border-l.border-slate-200 { border-color: #334155 !important; }
+
+/* Divide utility */
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155 !important;
+}
+
+/* ── Shadow utilities (darken in dark mode) ───────────────────── */
+.dark .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.5) !important; }
+.dark .shadow    { box-shadow: 0 1px 3px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.4) !important; }
+.dark .shadow-md { box-shadow: 0 4px 6px rgba(0,0,0,0.55) !important; }
+.dark .shadow-lg { box-shadow: 0 10px 15px rgba(0,0,0,0.65) !important; }
+.dark .shadow-xl { box-shadow: 0 20px 25px rgba(0,0,0,0.75) !important; }
+.dark .shadow-2xl { box-shadow: 0 25px 50px rgba(0,0,0,0.85) !important; }
+
+/* ── Form elements ────────────────────────────────────────────── */
+.dark input:not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]) {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+.dark input::placeholder { color: #475569 !important; }
+.dark textarea {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+}
+.dark textarea::placeholder { color: #475569 !important; }
+.dark select {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #e2e8f0 !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748b'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.085l3.71-3.855a.75.75 0 111.08 1.04l-4.25 4.417a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E") !important;
+}
+.dark select:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.25) !important;
+}
+.dark input:focus, .dark textarea:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.25) !important;
+}
+
+/* ── Table utilities ──────────────────────────────────────────── */
+.dark table { color: #e2e8f0; }
+.dark thead th { background-color: #293548 !important; color: #94a3b8 !important; border-color: #334155 !important; }
+.dark tbody tr { border-color: #334155 !important; }
+.dark tbody tr:hover { background-color: #1e293b !important; }
+.dark td, .dark th { border-color: #334155 !important; }
+
+/* ── Scrollbar in dark mode ───────────────────────────────────── */
+.dark ::-webkit-scrollbar-track { background: transparent; }
+.dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* ── Common UI patterns ───────────────────────────────────────── */
+/* Dropdown menus / popovers */
+.dark [role="menu"],
+.dark [role="listbox"],
+.dark [role="dialog"] {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+/* Ring focus in dark */
+.dark .focus\:ring-blue-200:focus { --tw-ring-color: rgba(var(--primary-rgb), 0.30) !important; }
+
+/* Disabled state */
+.dark input:disabled, .dark select:disabled, .dark textarea:disabled {
+  background-color: #0f172a !important;
+  color: #475569 !important;
+}
