@@ -1,0 +1,38 @@
+# Cloudflare deployment for Realx8-Ui.
+#
+#   npm run build && npx wrangler deploy
+#
+# Replaces the dead `realto/wrangler.toml` that was left in realto-repros. That
+# file declared `main = "src/index.js"` for a worker that was never written and
+# bound a D1 (SQLite) database that nothing read — the backend's nine services
+# all share one MySQL database, and Sequelize/mysql2 cannot run on Workers at
+# all. Cloudflare's actual role in this stack is serving THIS app, which is what
+# the trycloudflare/pages.dev allowances in Realx8-Core's shared/src/appOrigin.js
+# already anticipate.
+#
+# The worker serves the built assets and forwards /api and /uploads to
+# Realx8-Core, so the browser stays same-origin and no CORS setup is needed —
+# the same job nginx does in the Docker image.
+
+name = "realx8-ui"
+main = "worker/index.js"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+# Unknown paths are React routes, not 404s.
+not_found_handling = "single-page-application"
+
+[vars]
+# Where Realx8-Core is. Override per environment below, or with
+#   npx wrangler deploy --var API_TARGET:https://...
+API_TARGET = "http://localhost:3000"
+
+[env.production.vars]
+API_TARGET = "https://realx8-core.example.com"
+
+[env.production.assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"

@@ -61,6 +61,8 @@ services are peeled onto separate deployments later.
 | `npm run build` | production bundle into `dist/` |
 | `npm run preview` | serve the built bundle |
 | `npm run docker:up` | build + serve behind nginx on 8080 |
+| `npm run cf:deploy` | build + deploy to Cloudflare Workers |
+| `npm run cf:dev` | run the Cloudflare worker locally |
 
 ## Layout
 
@@ -97,9 +99,25 @@ docker run -p 8080:80 -e API_TARGET=http://realx8-core:3000 realx8-ui
 `API_TARGET` is read at container start, so the same image points at any
 backend.
 
-## Known gap
+## Cloudflare
 
-`stripeCreateIntent`, `flutterwaveVerify` and `paystackVerify` in
-`src/api/financeApi.js` call `/payments/*`, which no backend service implements.
-They 404 today and did before this repo was split out. Either implement those
-routes in `finance-service` or drop the three functions.
+`wrangler.toml` deploys the built app to Cloudflare Workers with static assets.
+The worker in `worker/index.js` serves the bundle and forwards `/api` and
+`/uploads` to Realx8-Core — the same split nginx does in the Docker image — so
+the browser stays same-origin and there is nothing to add to the backend's
+`CORS_ORIGIN`.
+
+```bash
+npm run cf:deploy          # top-level env, API_TARGET from [vars]
+npm run cf:deploy:prod     # [env.production.vars]
+```
+
+Set `API_TARGET` per environment in `wrangler.toml`. Unknown paths fall through
+to `index.html` (`not_found_handling = "single-page-application"`), so React
+routing works without extra rules.
+
+This replaces the `realto/wrangler.toml` that was left in realto-repros. That
+one declared `main = "src/index.js"` for a worker that was never written and
+bound a D1 (SQLite) database nothing read; it could not have deployed the
+backend either, since Sequelize/mysql2 needs a TCP MySQL connection Workers do
+not provide.

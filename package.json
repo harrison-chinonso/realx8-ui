@@ -12,7 +12,10 @@
     "build": "vite build",
     "preview": "vite preview --host",
     "docker:up": "docker compose up -d --build",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "cf:dev": "npm run build && wrangler dev --env=\"\"",
+    "cf:deploy": "npm run build && wrangler deploy --env=\"\"",
+    "cf:deploy:prod": "npm run build && wrangler deploy --env production"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
@@ -30,6 +33,7 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
-    "vite": "^5.4.19"
+    "vite": "^5.4.19",
+    "wrangler": "^4.86.0"
   }
 }

@@ -11,3 +11,4 @@ build
 .idea
 .vscode
 docker-compose*.yml
+.wrangler
