@@ -9,8 +9,11 @@ npm install
 npm run dev            # http://localhost:5173
 ```
 
-Needs Realx8-Core running (`npm start` in that repo, port 3000). The dev server
-forwards `/api` and `/uploads` to it, so the browser stays same-origin.
+Needs Realx8-Core running (port 3000). The dev server forwards `/api` and
+`/uploads` to it, so the browser stays same-origin.
+
+To start **both** with one command, run `npm run dev:all` in Realx8-Core — see
+`RUNNING.md` there.
 
 ## How it talks to the backend
 
