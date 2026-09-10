@@ -30,6 +30,8 @@ import PropertyUnitFields, { emptyUnitConfig, describeUnitConfig } from '../../c
 import { useCurrency } from '../../context/useAppearance';
 import useAuthStore from '../../store/authStore';
 import Select from '../../components/ui/Select';
+import PropertyInstallmentPlansPanel from '../../components/properties/PropertyInstallmentPlansPanel';
+import { usePermission } from '../../hooks/usePermission';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const emptyAmenityForm = { name: '', description: '' };
@@ -74,6 +76,12 @@ export default function PropertyDetailPage() {
   const [mediaImages, setMediaImages] = useState([]);
   const [savingMedia, setSavingMedia] = useState(false);
   const [unitForm, setUnitForm] = useState(emptyUnitConfig);
+  /**
+   * Editing units sets prices and available quantities, so it is its own
+   * permission. Hiding the controls is presentation only — the routes behind
+   * them enforce the same permission, which until now they did not.
+   */
+  const canManageUnits = usePermission('properties.units.manage');
   const [savingUnit, setSavingUnit] = useState(false);
   const [showAmenityModal, setShowAmenityModal] = useState(false);
   const [amenityForm, setAmenityForm] = useState(emptyAmenityForm);
@@ -499,7 +507,7 @@ export default function PropertyDetailPage() {
 
       <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <div className="mb-4 flex gap-3 flex-wrap">
-          {['units', 'plots', 'amenities', 'media', 'documents', 'requests'].map((item) => (
+          {['units', 'payment plans', 'plots', 'amenities', 'media', 'documents', 'requests'].map((item) => (
             <Button key={item} variant={tab === item ? 'primary' : 'secondary'} size="sm" onClick={() => setTab(item)}>
               {item === 'requests'
                 ? `Purchase Requests${requests.length ? ` (${requests.length})` : ''}`
@@ -538,7 +546,11 @@ export default function PropertyDetailPage() {
                         <td className="px-4 py-3 text-right font-medium text-slate-900">{fmt(unit.price || 0)}</td>
                         <td className="px-4 py-3"><Badge value={unit.status} /></td>
                         <td className="px-4 py-3 text-right">
-                          <Button type="button" variant="danger" size="sm" onClick={() => handleDeleteUnit(unit)}>Delete</Button>
+                          {canManageUnits ? (
+                            <Button type="button" variant="danger" size="sm" onClick={() => handleDeleteUnit(unit)}>Delete</Button>
+                          ) : (
+                            <span className="text-xs text-slate-400">—</span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -554,22 +566,32 @@ export default function PropertyDetailPage() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-slate-200 p-4">
-              <div className="mb-3">
-                <h2 className="text-sm font-semibold text-slate-900">Add Unit Configuration</h2>
-                <p className="text-xs text-slate-500">
-                  A property can have several configurations. The property&apos;s listed price is the
-                  lowest price across them.
-                </p>
-              </div>
-              <form onSubmit={handleAddUnit} className="space-y-3">
-                <PropertyUnitFields value={unitForm} onChange={setUnitForm} />
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={savingUnit}>{savingUnit ? 'Saving...' : 'Add Configuration'}</Button>
+            {canManageUnits ? (
+              <div className="rounded-lg border border-slate-200 p-4">
+                <div className="mb-3">
+                  <h2 className="text-sm font-semibold text-slate-900">Add Unit Configuration</h2>
+                  <p className="text-xs text-slate-500">
+                    A property can have several configurations. The property&apos;s listed price is the
+                    lowest price across them.
+                  </p>
                 </div>
-              </form>
-            </div>
+                <form onSubmit={handleAddUnit} className="space-y-3">
+                  <PropertyUnitFields value={unitForm} onChange={setUnitForm} />
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={savingUnit}>{savingUnit ? 'Saving...' : 'Add Configuration'}</Button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              <p className="rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-500">
+                You have read-only access to unit configurations. Editing them requires the
+                &ldquo;Edit Property Units&rdquo; permission.
+              </p>
+            )}
           </div>
+        )}
+        {tab === 'payment plans' && (
+          <PropertyInstallmentPlansPanel propertyId={id} />
         )}
         {tab === 'requests' && (
           <div className="overflow-hidden rounded-lg ring-1 ring-slate-200">

@@ -134,3 +134,11 @@ export const listPurchaseRequests = (propertyId) =>
 /** Validates availability, prices server-side, creates the request + invoice. */
 export const checkoutProperty = (propertyId, payload) =>
   client.post(`/properties/${propertyId}/checkout`, payload).then(r => r.data);
+
+/**
+ * Which installment plans each of a property's units may be sold on, plus the
+ * plans available to assign — one call for the whole property, so the
+ * configuration screen can render units against plans as a matrix.
+ */
+export const getPropertyInstallmentPlans = (propertyId) =>
+  client.get(`/properties/${propertyId}/installment-plans`).then(r => r.data);

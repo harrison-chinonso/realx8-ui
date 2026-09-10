@@ -121,15 +121,15 @@ export const NAV = [
           // Lives with the payment settings it configures: these are the accounts
           // buyers are shown for a bank deposit.
           { to: '/finance/bank-accounts', label: 'Bank Accounts',     icon: Landmark,   permission: 'finance.bank-accounts.manage' },
+          { to: '/finance/payment-plans', label: 'Payment Plans',     icon: CalendarDays, permission: 'finance.invoices.view' },
         ],
       },
       { to: '/finance/credit-notes',      label: 'Credit Note',       icon: FileMinus,    permission: 'finance.credit-notes.manage' },
       { to: '/finance/debit-notes',       label: 'Debit Note',        icon: FilePlus,     permission: 'finance.debit-notes.manage' },
       { to: '/finance/payment-reminders', label: 'Payment Reminder',  icon: Bell,         permission: 'finance.payment-reminders.manage' },
       { to: '/finance/taxes',             label: 'Taxes',             icon: Tag,          permission: 'finance.taxes.manage' },
-      { to: '/finance/installment-plans', label: 'Installment Plans', icon: CalendarDays, permission: 'finance.invoices.view' },
-      { to: '/finance/purchase-notifications', label: 'Purchase Notifications', icon: Bell, permission: 'finance.invoices.view' },
-      { to: '/finance/payment-plans',     label: 'Payment Plans',     icon: CalendarDays, permission: 'finance.invoices.view' },
+      { to: '/finance/installment-plans', label: 'Installment Plans', icon: CalendarDays, permission: 'finance.installment-plans.view' },
+      { to: '/finance/purchase-notifications', label: 'Purchase Notifications', icon: Bell, permission: 'finance.purchase-notifications.manage' },
       { to: '/finance/reports',           label: 'Report',            icon: FolderOpen,   permission: 'finance.reports.view' },
     ],
   },
