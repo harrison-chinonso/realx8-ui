@@ -1,6 +1,7 @@
 import client from './client';
 import useAuthStore from '../store/authStore';
 import { API_BASE } from './apiBase';
+import { signRequest, HEADER_NAME } from './frontendSignature';
 
 export const getAssistantStatus = () => client.get('/assistant/status').then((r) => r.data);
 
@@ -24,9 +25,27 @@ export const streamAssistant = ({ message, conversationId, onEvent }) => {
   const token = useAuthStore.getState().accessToken;
 
   const done = (async () => {
+    /**
+     * Signed by hand.
+     *
+     * This uses fetch rather than the axios client because it reads a streamed
+     * response body, which axios cannot do — so it misses the request
+     * interceptor and the frontend signature has to be attached here, or the
+     * assistant is refused with 403.
+     */
+    const signature = await signRequest({
+      method: 'POST',
+      url: '/assistant/chat',
+      baseURL: base,
+    }).catch(() => null);
+
     const response = await fetch(`${base}/assistant/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        ...(signature ? { [HEADER_NAME]: signature } : {}),
+      },
       body: JSON.stringify({ message, conversation_id: conversationId ?? undefined }),
       signal: controller.signal,
     });

@@ -5,7 +5,7 @@ import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import useAuthStore from '../../store/authStore';
-import { useCurrency } from '../../context/useAppearance';
+import { useCurrency, useOnPrimary } from '../../context/useAppearance';
 
 const getItems = (response) => response?.data ?? response ?? [];
 
@@ -17,6 +17,7 @@ const getItems = (response) => response?.data ?? response ?? [];
 export default function InvoicesPage({ status = null }) {
   const isBuyer = ['client', 'realtor'].includes(useAuthStore((state) => state.effectiveType()));
   const fmt = useCurrency();
+  const onPrimary = useOnPrimary();
   const [invoices, setInvoices] = useState([]);
 
   useEffect(() => {
@@ -37,17 +38,33 @@ export default function InvoicesPage({ status = null }) {
       </div>
       <Table
         columns={[
-          { key: 'invoice_id', label: 'Invoice #', render: (row) => <Link className="text-blue-600 hover:underline" to={`/finance/invoices/${row.id}`}>{row.invoice_id}</Link> },
-          { key: 'client_id', label: 'Client' },
+          { key: 'invoice_id', label: 'Invoice #', render: (row) => <Link className="font-medium hover:underline" style={{ color: 'var(--primary)' }} to={`/finance/invoices/${row.id}`}>{row.invoice_id}</Link> },
+          {
+            key: 'client_id',
+            label: 'Client',
+            // The API resolves the id to a name; the id remains as a fallback.
+            render: (row) => row.client_name || `#${row.client_id ?? '—'}`,
+          },
           { key: 'amount', label: 'Amount', render: (row) => fmt(row.amount || 0) },
           { key: 'due_date', label: 'Due date', render: (row) => (row.due_date ? new Date(row.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—') },
           { key: 'status', label: 'Status', render: (row) => <Badge value={row.status} /> },
         ]}
         rows={invoices}
+        /**
+         * Brand-coloured rather than a hardcoded blue.
+         *
+         * This was `bg-blue-600 … hover:bg-blue-700`, which ignored the
+         * tenant's configured primary colour — so on any company that is not
+         * blue it was the one control on the page off-palette. The colour is a
+         * runtime CSS variable, which is why it goes inline rather than through
+         * a Tailwind class, and it matches the Button component's own primary
+         * styling.
+         */
         renderActions={(row) => (
           <Link
             to={`/finance/invoices/${row.id}`}
-            className="inline-flex rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-700"
+            className="inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium transition hover:brightness-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+            style={{ backgroundColor: 'var(--primary)', color: onPrimary }}
           >
             View
           </Link>

@@ -40,7 +40,7 @@ import ReportsPage from './pages/finance/ReportsPage';
 import TransactionsPage from './pages/finance/TransactionsPage';
 import PaymentPlansPage from './pages/finance/PaymentPlansPage';
 import InstallmentPlansPage from './pages/finance/InstallmentPlansPage';
-import PurchaseNotificationsPage from './pages/finance/PurchaseNotificationsPage';
+import NotificationSettingsPage from './pages/settings/NotificationSettingsPage';
 import ReceiptsPage from './pages/finance/ReceiptsPage';
 import SupportPage from './pages/support/SupportPage';
 import UsersPage from './pages/users/UsersPage';
@@ -49,6 +49,7 @@ import ClientsPage from './pages/users/ClientsPage';
 import RealtorsPage from './pages/users/RealtorsPage';
 import RolesPage from './pages/roles/RolesPage';
 import CommissionsPage from './pages/commissions/CommissionsPage';
+import MyCommissionsPage from './pages/realtor/MyCommissionsPage';
 import ReferralPage from './pages/referral/ReferralPage';
 import NotificationsPage from './pages/notifications/NotificationsPage';
 import ProfilePage from './pages/profile/ProfilePage';
@@ -257,7 +258,7 @@ export default function App() {
           {/* The property purchase journey's plan templates — distinct from
               /finance/payment-plans, which is the subscription price list. */}
           <Route path="/finance/installment-plans" element={<InstallmentPlansPage />} />
-          <Route path="/finance/purchase-notifications" element={<PurchaseNotificationsPage />} />
+          <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
           <Route path="/finance/taxes" element={<TaxesPage />} />
           <Route path="/finance/bank-accounts" element={<BankAccountsPage />} />
           <Route path="/finance/credit-notes" element={<CreditNotesPage />} />
@@ -286,6 +287,9 @@ export default function App() {
 
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/commissions" element={<CommissionsPage />} />
+          {/* The earner's own view. A realtor has no access to the
+              company-wide commissions page. */}
+          <Route path="/commissions/mine" element={<MyCommissionsPage />} />
           <Route path="/receipts" element={<ReceiptsPage />} />
           <Route path="/referral" element={<ReferralPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />

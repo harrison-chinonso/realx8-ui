@@ -24,3 +24,6 @@ export const saveNotificationConfig = (events, params) =>
   client.put('/notification-configs', { events, ...(params || {}) }).then(r => r.data);
 export const resetNotificationConfig = (params) =>
   client.delete('/notification-configs', { params }).then(r => r.data);
+// Who the currently-selected permissions actually resolve to.
+export const previewNotificationRecipients = (eventKey, params) =>
+  client.get(`/notification-configs/${eventKey}/recipients`, { params }).then(r => r.data);

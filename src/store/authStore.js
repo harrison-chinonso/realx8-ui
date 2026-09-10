@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { switchRoleApi, enableProfileApi } from '../api/authApi';
+import { setSessionKey, clearSessionKey } from '../api/payloadCrypto';
 
 const useAuthStore = create(
   persist(
@@ -20,6 +21,21 @@ const useAuthStore = create(
           : { accessToken: payloadOrAccessToken, refreshToken, user };
         const perms = payload.user?.permissions ?? [];
         const u = payload.user ?? null;
+
+        /**
+         * The payload key goes to the crypto module, NOT into this store.
+         *
+         * This store is persisted to localStorage, and a key written there
+         * would outlive the tab and be readable by anything with DOM access —
+         * which would give away the one advantage a per-session key has over a
+         * key shipped in the bundle. It is held in memory and re-fetched after
+         * a reload.
+         *
+         * Only set when the response actually carried one: switchRole and
+         * enableProfile both mint a new session and do send it, but a caller
+         * that passes a partial payload must not silently wipe the key.
+         */
+        if (payload.payloadKey !== undefined) setSessionKey(payload.payloadKey);
         set({
           user: u,
           accessToken: payload.accessToken ?? null,
@@ -32,7 +48,9 @@ const useAuthStore = create(
         });
       },
 
-      logout: () => set({
+      logout: () => {
+        clearSessionKey();
+        return set({
         user: null,
         accessToken: null,
         refreshToken: null,
@@ -41,7 +59,8 @@ const useAuthStore = create(
         isSuperiorAdmin: false,
         roles: [],
         activeRole: null,
-      }),
+        });
+      },
 
       switchRole: async (roleId) => {
         const res = await switchRoleApi(roleId);

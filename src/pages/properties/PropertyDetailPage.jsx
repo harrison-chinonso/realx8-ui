@@ -32,6 +32,7 @@ import useAuthStore from '../../store/authStore';
 import Select from '../../components/ui/Select';
 import PropertyInstallmentPlansPanel from '../../components/properties/PropertyInstallmentPlansPanel';
 import { usePermission } from '../../hooks/usePermission';
+import { enumLabel } from '../../utils/enumLabel';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const emptyAmenityForm = { name: '', description: '' };
@@ -467,8 +468,8 @@ export default function PropertyDetailPage() {
         )}
         <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
           {property.type && <div className="rounded-lg bg-slate-50 p-3"><div className="mb-1 text-xs text-slate-500">Type</div><div className="font-medium text-slate-900">{property.type}</div></div>}
-          {property.status && <div className="rounded-lg bg-slate-50 p-3"><div className="mb-1 text-xs text-slate-500">Status</div><div className="font-medium capitalize text-slate-900">{property.status}</div></div>}
-          <div className="rounded-lg bg-slate-50 p-3"><div className="mb-1 text-xs text-slate-500">Approval</div><div className="font-medium capitalize text-slate-900">{property.approval_status || 'draft'}</div></div>
+          {property.status && <div className="rounded-lg bg-slate-50 p-3"><div className="mb-1 text-xs text-slate-500">Status</div><div className="font-medium text-slate-900">{enumLabel(property.status)}</div></div>}
+          <div className="rounded-lg bg-slate-50 p-3"><div className="mb-1 text-xs text-slate-500">Approval</div><div className="font-medium text-slate-900">{enumLabel(property.approval_status || 'draft')}</div></div>
           {property.country && <div className="rounded-lg bg-slate-50 p-3"><div className="mb-1 text-xs text-slate-500">Country</div><div className="font-medium text-slate-900">{property.country}</div></div>}
         </div>
       </div>

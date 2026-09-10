@@ -121,9 +121,14 @@ export default function CommissionsPage() {
 
   const handleMarkPaid = async (id) => {
     try {
-      await payCommission(id);
+      // Paid in full — the endpoint takes no amount, because a commission is a
+      // single obligation and a part payout would leave an untracked remainder.
+      const result = await payCommission(id);
       await loadCommissions();
-      setFeedback('success', 'Commission marked as paid.');
+      const amount = result?.transaction?.amount;
+      setFeedback('success', amount
+        ? `Commission paid in full — ${fmt(amount)} recorded as a debit.`
+        : 'Commission paid in full.');
     } catch (error) {
       console.error(error);
       setFeedback('error', getErrorMessage(error, 'Failed to mark commission as paid.'));
@@ -244,11 +249,25 @@ export default function CommissionsPage() {
             rows={items}
             renderActions={(row) => (
               <div className="flex flex-wrap justify-end gap-2">
-                {row.status === 'pending' && (
-                  <Button onClick={() => handleApprove(row.id)} variant="warning" size="sm">Approve</Button>
+                {/*
+                  * The payout sequence, one actor per step. `pending` is the old
+                  * name for `created` and is still matched so a row migrated
+                  * from it behaves the same. `payment_requested` is the earner
+                  * asking — the state that most wants an admin's attention, so
+                  * it is called out rather than sharing a label with created.
+                  */}
+                {['created', 'pending'].includes(row.status) && (
+                  <Button onClick={() => handleApprove(row.id)} variant="secondary" size="sm">Approve</Button>
+                )}
+                {row.status === 'payment_requested' && (
+                  <Button onClick={() => handleApprove(row.id)} variant="warning" size="sm">
+                    Approve request
+                  </Button>
                 )}
                 {row.status === 'approved' && (
-                  <Button onClick={() => handleMarkPaid(row.id)} variant="success" size="sm">Mark Paid</Button>
+                  <Button onClick={() => handleMarkPaid(row.id)} variant="success" size="sm">
+                    Pay in full
+                  </Button>
                 )}
                 <ActionsMenu
                   items={[

@@ -10,6 +10,14 @@ import InvoiceSettlementPanel from '../../components/finance/InvoiceSettlementPa
 import PaymentSchedulePanel from '../../components/finance/PaymentSchedulePanel';
 import Table from '../../components/common/Table';
 import Select from '../../components/ui/Select';
+/**
+ * MoneyInput was used in the Edit and Record Payment modals without ever being
+ * imported. A bare identifier is valid syntax, so the build succeeded and it
+ * threw ReferenceError only when a modal rendered — which unmounts the React
+ * tree and leaves a blank white page. That is what both buttons did.
+ */
+import MoneyInput from '../../components/ui/MoneyInput';
+import { enumLabel } from '../../utils/enumLabel';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const TEXTAREA_CLASS = `${INPUT_CLASS} resize-none`;
@@ -137,7 +145,7 @@ export default function InvoiceDetailPage() {
     try {
       await updateInvoice(id, {
         invoice_id: editForm.invoice_id.trim(),
-        client_id: Number(editForm.client_id),
+
         amount: Number(editForm.amount),
         due_date: editForm.due_date || null,
         // Never allow downgrading from 'paid' — preserve current status if locked
@@ -178,6 +186,13 @@ export default function InvoiceDetailPage() {
   if (loading) return <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">Loading invoice...</div>;
   if (!invoice) return <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">Invoice not found.</div>;
 
+  /**
+   * Settled, cancelled or expired: nothing further can be recorded against it.
+   * Read from the invoice's own status so this agrees with what the server will
+   * accept — the buttons are hidden for the same reason the endpoints refuse.
+   */
+  const isSettled = ['paid', 'cancelled', 'expired'].includes(invoice.status);
+
   return (
     <div className="space-y-6">
       <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 space-y-6">
@@ -193,9 +208,28 @@ export default function InvoiceDetailPage() {
               )
             ) : (
               <>
-                <Button onClick={handleSendInvoice} disabled={sending}>{sending ? 'Sending...' : 'Mark as Sent'}</Button>
-                <Button variant="secondary" onClick={() => setShowPaymentModal(true)}>Record Payment</Button>
-                <Button variant="secondary" onClick={openEditModal}>Edit Invoice</Button>
+                {/*
+                  * Mark as Sent issues a DRAFT. Offering it on an invoice that
+                  * has already been issued invited re-notifying a client about
+                  * an invoice they are already paying.
+                  */}
+                {invoice.status === 'draft' && (
+                  <Button onClick={handleSendInvoice} disabled={sending}>
+                    {sending ? 'Sending...' : 'Mark as Sent'}
+                  </Button>
+                )}
+                {/*
+                  * A settled invoice takes no more money and its figures are an
+                  * accounting record. Recording a payment against it would
+                  * create an overpayment, and editing it would restate a total
+                  * that has already been paid — so neither is offered.
+                  */}
+                {!isSettled && (
+                  <>
+                    <Button variant="secondary" onClick={() => setShowPaymentModal(true)}>Record Payment</Button>
+                    <Button variant="secondary" onClick={openEditModal}>Edit Invoice</Button>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -207,8 +241,15 @@ export default function InvoiceDetailPage() {
             <div className="mt-1 text-sm text-slate-800">{formatValue(invoice.invoice_id)}</div>
           </div>
           <div>
-            <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Client ID</div>
-            <div className="mt-1 text-sm text-slate-800">{formatValue(invoice.client_id)}</div>
+            <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Client</div>
+            {/* The API resolves client_id to a name; the id is a fallback for
+                an invoice whose client no longer exists. */}
+            <div className="mt-1 text-sm text-slate-800">
+              {invoice.client_name || formatValue(invoice.client_id)}
+            </div>
+            {invoice.client_email && (
+              <div className="text-xs text-slate-500">{invoice.client_email}</div>
+            )}
           </div>
           <div>
             <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Amount</div>
@@ -291,11 +332,41 @@ export default function InvoiceDetailPage() {
         <h2 className="text-lg font-semibold">Payment History</h2>
         <Table
           columns={[
-            { key: 'payment_method', label: 'Method', render: (row) => row.payment_method || '—' },
+            { key: 'payment_method', label: 'Method', render: (row) => enumLabel(row.payment_method) },
             { key: 'amount', label: 'Amount', render: (row) => fmt(row.amount || 0) },
             { key: 'reference', label: 'Reference', render: (row) => row.reference || '—' },
             { key: 'status', label: 'Status', render: (row) => <Badge value={row.status || 'pending'} /> },
             { key: 'date', label: 'Date', render: (row) => formatDate(row.paid_at || row.createdAt || row.created_at || row.date) },
+            {
+              /**
+               * The proof this payment was approved from.
+               *
+               * Once a proof is confirmed it leaves the review queue, so the
+               * document had nowhere left to be reached from. The history is
+               * its permanent home — and the place anyone questioning a payment
+               * would look for it.
+               */
+              key: 'proof',
+              label: 'Proof',
+              render: (row) => (row.proof?.document_url ? (
+                <a
+                  href={row.proof.document_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium hover:underline"
+                  style={{ color: 'var(--primary)' }}
+                  title={row.proof.receipt_number}
+                >
+                  View proof
+                </a>
+              ) : (
+                // An admin-approved payment has none by definition, which is
+                // worth saying rather than leaving blank.
+                <span className="text-xs text-slate-400">
+                  {row.payment_method === 'admin_approved' ? 'None — admin approved' : '—'}
+                </span>
+              )),
+            },
           ]}
           rows={payments}
         />
@@ -318,16 +389,22 @@ export default function InvoiceDetailPage() {
                   required
                 />
               </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Client ID</span>
-                <input
-                  type="number"
-                  value={editForm.client_id}
-                  onChange={(event) => setEditForm((current) => ({ ...current, client_id: event.target.value }))}
-                  className={INPUT_CLASS}
-                  required
-                />
-              </label>
+              {/*
+                * The client is shown, not editable — and the API refuses a
+                * change too. An invoice is addressed to one party: repointing
+                * it would move the payments, schedules, inventory hold and any
+                * commission to somebody who never agreed to the purchase, while
+                * keeping the reference already sent to the original buyer.
+                */}
+              <div className="space-y-1">
+                <span className="text-sm font-medium text-slate-700">Client</span>
+                <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                  {invoice.client_name || `#${invoice.client_id}`}
+                </div>
+                <span className="text-xs text-slate-500">
+                  Cannot be changed. Cancel this invoice and raise a new one for a different client.
+                </span>
+              </div>
               <MoneyInput
                 label="Amount"
                 value={editForm.amount}
@@ -354,9 +431,9 @@ export default function InvoiceDetailPage() {
                     onChange={(event) => setEditForm((current) => ({ ...current, status: event.target.value }))}
                     className={INPUT_CLASS}
                   >
-                    <option value="draft">draft</option>
-                    <option value="sent">sent</option>
-                    <option value="overdue">overdue</option>
+                    <option value="draft">{enumLabel('draft')}</option>
+                    <option value="sent">{enumLabel('sent')}</option>
+                    <option value="overdue">{enumLabel('overdue')}</option>
                   </Select>
                 )}
               </label>
@@ -389,12 +466,14 @@ export default function InvoiceDetailPage() {
                   onChange={(event) => setPaymentForm((current) => ({ ...current, payment_method: event.target.value }))}
                   className={INPUT_CLASS}
                 >
-                  <option value="cash">cash</option>
-                  <option value="bank_transfer">bank_transfer</option>
-                  <option value="card">card</option>
-                  <option value="stripe">stripe</option>
-                  <option value="paystack">paystack</option>
-                  <option value="flutterwave">flutterwave</option>
+                  {/* The three the API confirms a payment as, first — see
+                      CONFIRMABLE_PAYMENT_METHODS in financeController. The
+                      gateway names follow, for a payment taken online. */}
+                  {['bank_deposit', 'transfer', 'online_payment',
+                    'cash', 'bank_transfer', 'card', 'stripe', 'paystack', 'flutterwave',
+                  ].map((method) => (
+                    <option key={method} value={method}>{enumLabel(method)}</option>
+                  ))}
                 </Select>
               </label>
               <MoneyInput

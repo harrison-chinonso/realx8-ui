@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { listDebitNotes, createDebitNote, updateDebitNote, listTaxes } from '../../api/financeApi';
-import { listClients } from '../../api/userApi';
+import PartySelect from '../../components/finance/PartySelect';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
-import EntitySearchSelect from '../../components/common/EntitySearchSelect';
 import { useCurrency } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
 
 const EMPTY_FORM = {
   debit_note_id: '',
   client_id: '',
+  party_type: 'client',
   amount: '',
   tax_id: '',
   status: 'draft',
@@ -59,6 +59,7 @@ export default function DebitNotesPage() {
     setForm({
       debit_note_id: row.debit_note_id || '',
       client_id: row.client_id ?? '',
+      party_type: row.party_type ?? 'client',
       amount: row.amount ?? '',
       tax_id: row.tax_id ?? '',
       status: row.status || 'draft',
@@ -82,6 +83,7 @@ export default function DebitNotesPage() {
       const payload = {
         debit_note_id: form.debit_note_id.trim(),
         client_id: Number(form.client_id),
+        party_type: form.party_type || 'client',
         amount: Number(form.amount),
         tax_id: form.tax_id ? Number(form.tax_id) : null,
         status: form.status,
@@ -108,7 +110,18 @@ export default function DebitNotesPage() {
 
   const columns = [
     { header: 'Debit Note #', accessor: 'debit_note_id' },
-    { header: 'Client ID', accessor: 'client_id' },
+    {
+      header: 'Raised against',
+      accessor: 'client_id',
+      render: (row) => (
+        <span>
+          {row.party_name || `#${row.client_id ?? '—'}`}
+          <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs capitalize text-slate-600">
+            {row.party_type || 'client'}
+          </span>
+        </span>
+      ),
+    },
     { header: 'Amount', render: (row) => fmt(Number(row.amount || 0)) },
     { header: 'Status', render: (row) => <Badge value={row.status} /> },
     { header: 'Tax', render: getTaxLabel },
@@ -134,13 +147,10 @@ export default function DebitNotesPage() {
       <Modal open={editing !== null} onClose={closeModal} title={`${editing?.id ? 'Edit' : 'New'} Debit Note`}>
         <form onSubmit={handleSave} className="space-y-3">
           <Input label="Debit Note #" value={form.debit_note_id} onChange={handleChange('debit_note_id')} placeholder="DN-001" required />
-          <EntitySearchSelect
-            label="Client"
-            placeholder="Search client by name…"
-            value={form.client_id}
-            onChange={(id) => setForm((f) => ({ ...f, client_id: id }))}
-            fetchItems={() => listClients({ limit: 1000 })}
-            getLabel={(c) => c.name || c.email || `Client #${c.id}`}
+          <PartySelect
+            partyType={form.party_type}
+            userId={form.client_id}
+            onChange={(next) => setForm((f) => ({ ...f, ...next }))}
             required
           />
           <MoneyInput label="Amount" value={form.amount} onChange={(amount) => setForm((current) => ({ ...current, amount }))} required />

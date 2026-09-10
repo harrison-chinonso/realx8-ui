@@ -10,6 +10,7 @@ import { useCurrency } from '../../context/useAppearance';
 import CompanySelect from '../../components/common/CompanySelect';
 import useAuthStore from '../../store/authStore';
 import Select from '../../components/ui/Select';
+import { enumLabel } from '../../utils/enumLabel';
 
 const EMPTY_FORM = { date: '', description: '', amount: '', type: 'credit', reference: '', company_id: '' };
 const getItems = (response) => response?.data ?? response ?? [];
@@ -169,8 +170,8 @@ export default function TransactionsPage({ status = null }) {
           <label className="block space-y-1">
             <span className="text-sm font-medium text-slate-700">Type</span>
             <Select value={form.type} onChange={handleChange('type')}>
-              <option value="credit">credit</option>
-              <option value="debit">debit</option>
+              <option value="credit">{enumLabel('credit')}</option>
+              <option value="debit">{enumLabel('debit')}</option>
             </Select>
           </label>
           <Input label="Reference" value={form.reference} onChange={handleChange('reference')} />

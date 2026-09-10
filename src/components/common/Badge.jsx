@@ -1,3 +1,5 @@
+import { enumLabel } from '../../utils/enumLabel';
+
 /**
  * Status pill.
  *
@@ -55,9 +57,12 @@ const colors = {
 
 export default function Badge({ value }) {
   const key = String(value || 'default').toLowerCase();
-  const label = String(value ?? '').replace(/_/g, ' ');
+  // Upper case, underscores gone: the column holds `payment_requested`, the
+  // screen shows PAYMENT REQUESTED. `capitalize` is dropped from the classes
+  // because it would fight the transform.
+  const label = enumLabel(value);
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${colors[key] || colors.default}`}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold tracking-wide ${colors[key] || colors.default}`}>
       {label}
     </span>
   );

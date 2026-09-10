@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { listCreditNotes, createCreditNote, updateCreditNote, listTaxes } from '../../api/financeApi';
-import { listClients } from '../../api/userApi';
+import PartySelect from '../../components/finance/PartySelect';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
-import EntitySearchSelect from '../../components/common/EntitySearchSelect';
 import { useCurrency } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
 
 const EMPTY_FORM = {
   credit_note_id: '',
   client_id: '',
+  party_type: 'client',
   amount: '',
   tax_id: '',
   status: 'draft',
@@ -61,6 +61,7 @@ export default function CreditNotesPage() {
     setForm({
       credit_note_id: row.credit_note_id || '',
       client_id: row.client_id ?? '',
+      party_type: row.party_type ?? 'client',
       amount: row.amount ?? '',
       tax_id: row.tax_id ?? '',
       status: normalizeCreditStatus(row.status),
@@ -84,6 +85,7 @@ export default function CreditNotesPage() {
       const payload = {
         credit_note_id: form.credit_note_id.trim(),
         client_id: Number(form.client_id),
+        party_type: form.party_type || 'client',
         amount: Number(form.amount),
         tax_id: form.tax_id ? Number(form.tax_id) : null,
         status: toApiCreditStatus(form.status),
@@ -110,7 +112,18 @@ export default function CreditNotesPage() {
 
   const columns = [
     { header: 'Credit Note #', accessor: 'credit_note_id' },
-    { header: 'Client ID', accessor: 'client_id' },
+    {
+      header: 'Raised against',
+      accessor: 'client_id',
+      render: (row) => (
+        <span>
+          {row.party_name || `#${row.client_id ?? '—'}`}
+          <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs capitalize text-slate-600">
+            {row.party_type || 'client'}
+          </span>
+        </span>
+      ),
+    },
     { header: 'Amount', render: (row) => fmt(Number(row.amount || 0)) },
     { header: 'Status', render: (row) => <Badge value={normalizeCreditStatus(row.status)} /> },
     { header: 'Tax', render: getTaxLabel },
@@ -136,13 +149,10 @@ export default function CreditNotesPage() {
       <Modal open={editing !== null} onClose={closeModal} title={`${editing?.id ? 'Edit' : 'New'} Credit Note`}>
         <form onSubmit={handleSave} className="space-y-3">
           <Input label="Credit Note #" value={form.credit_note_id} onChange={handleChange('credit_note_id')} placeholder="CN-001" required />
-          <EntitySearchSelect
-            label="Client"
-            placeholder="Search client by name…"
-            value={form.client_id}
-            onChange={(id) => setForm((f) => ({ ...f, client_id: id }))}
-            fetchItems={() => listClients({ limit: 1000 })}
-            getLabel={(c) => c.name || c.email || `Client #${c.id}`}
+          <PartySelect
+            partyType={form.party_type}
+            userId={form.client_id}
+            onChange={(next) => setForm((f) => ({ ...f, ...next }))}
             required
           />
           <MoneyInput label="Amount" value={form.amount} onChange={(amount) => setForm((current) => ({ ...current, amount }))} required />

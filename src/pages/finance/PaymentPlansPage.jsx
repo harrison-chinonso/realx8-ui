@@ -10,6 +10,7 @@ import { useCurrency } from '../../context/useAppearance';
 import CompanySelect from '../../components/common/CompanySelect';
 import useAuthStore from '../../store/authStore';
 import Select from '../../components/ui/Select';
+import { enumLabel } from '../../utils/enumLabel';
 
 const EMPTY_FORM = { name: '', total_amount: '', installments: '', frequency: 'monthly', description: '', company_id: '' };
 const getItems = (response) => response?.data ?? response ?? [];
@@ -156,9 +157,9 @@ export default function PaymentPlansPage() {
           <label className="block space-y-1">
             <span className="text-sm font-medium text-slate-700">Frequency</span>
             <Select value={form.frequency} onChange={handleChange('frequency')}>
-              <option value="monthly">monthly</option>
-              <option value="quarterly">quarterly</option>
-              <option value="annually">annually</option>
+              <option value="monthly">{enumLabel('monthly')}</option>
+              <option value="quarterly">{enumLabel('quarterly')}</option>
+              <option value="annually">{enumLabel('annually')}</option>
             </Select>
           </label>
           <label className="block space-y-1">

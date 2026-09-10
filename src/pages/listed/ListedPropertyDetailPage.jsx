@@ -4,11 +4,13 @@ import { getListedProperty } from '../../api/propertyApi';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import PurchaseModal from '../../components/common/PurchaseModal';
+import UnitPaymentOptions from '../../components/common/UnitPaymentOptions';
 import useAuthStore from '../../store/authStore';
 import PropertyMap, { toCoords } from '../../components/common/PropertyMap';
 import PropertyMediaPanel from '../../components/common/PropertyMediaPanel';
 import { parseImages } from '../../utils/parseImages';
 import { useCurrency } from '../../context/useAppearance';
+import { enumLabel } from '../../utils/enumLabel';
 
 /**
  * Read-only property detail for realtors and clients. Mirrors the information
@@ -125,6 +127,9 @@ export default function ListedPropertyDetailPage() {
                     <th className="px-4 py-2 text-right font-semibold text-slate-600">Price</th>
                     <th className="px-4 py-2 text-right font-semibold text-slate-600">Available</th>
                     <th className="px-4 py-2 text-left font-semibold text-slate-600">Status</th>
+                    {/* The ways of paying, priced. Outright always; each plan
+                        assigned to THIS unit, and no others. */}
+                    <th className="px-4 py-2 text-left font-semibold text-slate-600">How you can pay</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -136,7 +141,10 @@ export default function ListedPropertyDetailPage() {
                       <td className="px-4 py-2 text-slate-700">{unit.unit || 'sqm'}</td>
                       <td className="px-4 py-2 text-right font-medium text-slate-900">{fmt(unit.price || 0)}</td>
                       <td className="px-4 py-2 text-right text-slate-700">{unit.quantity_available ?? unit.quantity ?? '—'}</td>
-                      <td className="px-4 py-2 capitalize text-slate-500">{unit.status || 'available'}</td>
+                      <td className="px-4 py-2 text-slate-500">{enumLabel(unit.status || 'available')}</td>
+                      <td className="px-4 py-2 align-top">
+                        <UnitPaymentOptions unitId={unit.id} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

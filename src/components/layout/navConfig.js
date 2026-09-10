@@ -122,14 +122,13 @@ export const NAV = [
           // buyers are shown for a bank deposit.
           { to: '/finance/bank-accounts', label: 'Bank Accounts',     icon: Landmark,   permission: 'finance.bank-accounts.manage' },
           { to: '/finance/payment-plans', label: 'Payment Plans',     icon: CalendarDays, permission: 'finance.invoices.view' },
+          { to: '/finance/installment-plans', label: 'Installment Plans',  icon: CalendarDays, permission: 'finance.installment-plans.view' },
+          { to: '/finance/payment-reminders', label: 'Payment Reminders',  icon: Bell,         permission: 'finance.payment-reminders.manage' },
         ],
       },
       { to: '/finance/credit-notes',      label: 'Credit Note',       icon: FileMinus,    permission: 'finance.credit-notes.manage' },
       { to: '/finance/debit-notes',       label: 'Debit Note',        icon: FilePlus,     permission: 'finance.debit-notes.manage' },
-      { to: '/finance/payment-reminders', label: 'Payment Reminder',  icon: Bell,         permission: 'finance.payment-reminders.manage' },
       { to: '/finance/taxes',             label: 'Taxes',             icon: Tag,          permission: 'finance.taxes.manage' },
-      { to: '/finance/installment-plans', label: 'Installment Plans', icon: CalendarDays, permission: 'finance.installment-plans.view' },
-      { to: '/finance/purchase-notifications', label: 'Purchase Notifications', icon: Bell, permission: 'finance.purchase-notifications.manage' },
       { to: '/finance/reports',           label: 'Report',            icon: FolderOpen,   permission: 'finance.reports.view' },
     ],
   },
@@ -150,6 +149,9 @@ export const NAV = [
     section: 'Referral System',
     items: [
       { to: '/commissions',  label: 'Commissions',      icon: DollarSign, permission: 'finance.commissions.view' },
+      // The earner's own commissions, with the request-payment action.
+      // Shown to realtors, who do not hold finance.commissions.view.
+      { to: '/commissions/mine', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
       { to: '/referral',     label: 'Referral Program', icon: Share2,     permission: 'finance.commissions.manage' },
     ],
   },
@@ -207,6 +209,10 @@ export const NAV = [
     section: 'General',
     items: [
       { to: '/notifications', label: 'Notification',  icon: Bell,       permission: 'notifications.view' },
+      // System-wide, not finance-specific: it configures every notifiable
+      // event across every module, which is why it sits here rather than under
+      // Finance where the purchase-journey version of it started.
+      { to: '/settings/notifications', label: 'Notification Settings', icon: Bell, permission: 'finance.purchase-notifications.manage' },
     ],
   },
 

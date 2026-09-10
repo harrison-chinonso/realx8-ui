@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import PropertyMap, { toCoords } from '../../components/common/PropertyMap';
 import { parseImages } from '../../utils/parseImages';
 import { resolveMedia } from '../../utils/mediaUrl';
+import { enumLabel } from '../../utils/enumLabel';
 
 const imageUrl = (image) => (typeof image === 'string' ? image : image?.url);
 
@@ -249,7 +250,7 @@ export default function PublicPropertyPage() {
                       <td className="px-4 py-2 text-right text-slate-700">{unit.size ? Number(unit.size).toLocaleString() : '—'}</td>
                       <td className="px-4 py-2 text-slate-700">{unit.unit || 'sqm'}</td>
                       <td className="px-4 py-2 text-right font-medium text-slate-900">{formatPrice(unit.price) || "—"}</td>
-                      <td className="px-4 py-2 capitalize text-slate-500">{unit.status || 'available'}</td>
+                      <td className="px-4 py-2 text-slate-500">{enumLabel(unit.status || 'available')}</td>
                       <td className="px-4 py-2 text-right">
                         {!isRealtor && (
                           <Button

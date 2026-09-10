@@ -137,3 +137,12 @@ export const waiveScheduleFee = (scheduleId, reason) =>
   client.post(`/payment-schedules/${scheduleId}/waive-fee`, { reason }).then(r => r.data);
 // Overpayments held beyond every schedule, awaiting an admin decision.
 export const listCreditBalances = () => client.get('/payment-schedules/credit-balances').then(r => r.data);
+
+// ── Commission payout sequence ───────────────────────────────────────────────
+// The earner's own view and request; approval and payment are the admin's.
+export const getMyCommissions = () => client.get('/commissions/mine').then(r => r.data);
+export const requestCommissionPayout = (id) =>
+  client.post(`/commissions/${id}/request-payout`).then(r => r.data);
+// No amount: a commission is paid in full or not at all.
+export const payCommissionOut = (id, payload) =>
+  client.post(`/commissions/${id}/pay`, payload || {}).then(r => r.data);

@@ -12,6 +12,7 @@ import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
 import ActionsMenu from '../../components/common/ActionsMenu';
 import { useCurrency } from '../../context/useAppearance';
+import { enumLabel } from '../../utils/enumLabel';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const EMPTY_FORM = { amount: '', payment_method: '', invoice_id: '', notes: '' };
@@ -296,7 +297,7 @@ export default function ReceiptsPage() {
             <div className="rounded-lg bg-slate-50 p-4 text-sm ring-1 ring-slate-200">
               <div className="flex justify-between"><span className="text-slate-500">Receipt</span><span className="font-medium">{reviewing.receipt_number}</span></div>
               <div className="mt-1 flex justify-between"><span className="text-slate-500">Declared</span><span className="font-medium">{fmt(reviewing.amount || 0)}</span></div>
-              <div className="mt-1 flex justify-between"><span className="text-slate-500">Method</span><span className="font-medium capitalize">{String(reviewing.payment_method || '-').replace(/_/g, ' ')}</span></div>
+              <div className="mt-1 flex justify-between"><span className="text-slate-500">Method</span><span className="font-medium">{enumLabel(reviewing.payment_method)}</span></div>
               {reviewing.reference && (
                 <div className="mt-1 flex justify-between"><span className="text-slate-500">Reference</span><span className="font-mono text-xs">{reviewing.reference}</span></div>
               )}

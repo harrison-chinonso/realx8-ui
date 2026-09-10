@@ -15,6 +15,7 @@ import LocationFields from '../../components/common/LocationFields';
 import PropertyMediaPanel from '../../components/common/PropertyMediaPanel';
 import { parseImages } from '../../utils/parseImages';
 import Select from '../../components/ui/Select';
+import { enumLabel } from '../../utils/enumLabel';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const TEXTAREA_CLASS = `${INPUT_CLASS} resize-none`;
@@ -275,9 +276,9 @@ export default function PropertiesPage() {
               <label className="block space-y-1">
                 <span className="text-sm font-medium text-slate-700">Status</span>
                 <Select value={editForm.status} onChange={(e) => setEditForm((current) => ({ ...current, status: e.target.value }))} className={INPUT_CLASS}>
-                  <option value="available">available</option>
-                  <option value="sold">sold</option>
-                  <option value="rented">rented</option>
+                  <option value="available">{enumLabel('available')}</option>
+                  <option value="sold">{enumLabel('sold')}</option>
+                  <option value="rented">{enumLabel('rented')}</option>
                 </Select>
               </label>
               <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
