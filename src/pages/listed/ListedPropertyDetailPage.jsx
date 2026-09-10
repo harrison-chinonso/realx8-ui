@@ -87,9 +87,25 @@ export default function ListedPropertyDetailPage() {
         open={showPurchase && canPurchase}
         property={property}
         onClose={() => setShowPurchase(false)}
-        onInvoice={(result) => {
+        /**
+         * Both branches have already created the same invoice; `intent` only
+         * decides where the buyer goes next.
+         *
+         * "Proceed to Payment" goes straight to the invoice's payment page —
+         * bank details, online payment where configured, and receipt upload are
+         * all on it, so there is no trip back through a list to find the
+         * invoice that was just raised. `payment_url` comes from the server so
+         * the two repos cannot disagree about where that page lives.
+         */
+        onInvoice={(result, intent) => {
           setShowPurchase(false);
-          navigate(`/finance/invoices/${result.invoice_id}`);
+          if (intent === 'pay') {
+            navigate(`/${result.payment_url || `finance/invoices/${result.invoice_id}`}`);
+          } else {
+            navigate('/finance/my-payments', {
+              state: { notice: `Invoice ${result.invoice_ref} created. You can pay it whenever you are ready.` },
+            });
+          }
         }}
       />
 

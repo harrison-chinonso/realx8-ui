@@ -98,3 +98,42 @@ export const getReceipt = (id) => client.get(`/receipts/${id}`).then(r => r.data
 export const createReceipt = (payload) => client.post('/receipts', payload).then(r => r.data);
 export const verifyReceipt = (id, payload) => client.post(`/receipts/${id}/verify`, payload || {}).then(r => r.data);
 export const rejectReceipt = (id, payload) => client.post(`/receipts/${id}/reject`, payload).then(r => r.data);
+
+// ── Installment plans (the property purchase journey) ────────────────────────
+// Distinct from the payment plans above, which are the subscription price list.
+export const listInstallmentPlans = (params) => client.get('/installment-plans', { params }).then(r => r.data);
+export const getInstallmentPlan = (id) => client.get(`/installment-plans/${id}`).then(r => r.data);
+export const createInstallmentPlan = (payload) => client.post('/installment-plans', payload).then(r => r.data);
+export const updateInstallmentPlan = (id, payload) => client.put(`/installment-plans/${id}`, payload).then(r => r.data);
+export const deleteInstallmentPlan = (id) => client.delete(`/installment-plans/${id}`).then(r => r.data);
+// Assignment is per property UNIT, not per property.
+export const listPlansForUnit = (propertyUnitId) =>
+  client.get(`/installment-plans/units/${propertyUnitId}`).then(r => r.data);
+export const assignPlanToUnit = (planId, propertyUnitId) =>
+  client.post(`/installment-plans/${planId}/units`, { property_unit_id: propertyUnitId }).then(r => r.data);
+export const unassignPlanFromUnit = (planId, propertyUnitId) =>
+  client.delete(`/installment-plans/${planId}/units/${propertyUnitId}`).then(r => r.data);
+
+/**
+ * Every plan available on a unit, with its total, monthly amount and surcharge
+ * ALREADY CALCULATED for this quantity — plus the outright total to compare
+ * against. The purchase screen displays these; it never derives them, and the
+ * server reprices from the same code at checkout regardless of what is sent.
+ */
+export const getUnitPurchaseOptions = (propertyUnitId, quantity = 1) =>
+  client.get(`/installment-plans/units/${propertyUnitId}/options`, { params: { quantity } }).then(r => r.data);
+
+// ── Payment schedules and the allocation ledger ──────────────────────────────
+export const getInvoiceSchedules = (invoiceId) => client.get(`/invoices/${invoiceId}/schedules`).then(r => r.data);
+// Which payment contributed how much to which schedule, split fee/principal.
+export const getInvoiceAllocations = (invoiceId) => client.get(`/invoices/${invoiceId}/allocations`).then(r => r.data);
+// Recalculates totals and regenerates the whole schedule set. Unpaid invoices only.
+export const updateInvoiceQuantity = (invoiceId, quantity) =>
+  client.put(`/invoices/${invoiceId}/quantity`, { quantity }).then(r => r.data);
+export const cancelInvoice = (invoiceId, payload) =>
+  client.post(`/invoices/${invoiceId}/cancel`, payload || {}).then(r => r.data);
+// Mandatory reason — it is recorded on the fee application as an audit entry.
+export const waiveScheduleFee = (scheduleId, reason) =>
+  client.post(`/payment-schedules/${scheduleId}/waive-fee`, { reason }).then(r => r.data);
+// Overpayments held beyond every schedule, awaiting an admin decision.
+export const listCreditBalances = () => client.get('/payment-schedules/credit-balances').then(r => r.data);

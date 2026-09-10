@@ -127,6 +127,8 @@ export const NAV = [
       { to: '/finance/debit-notes',       label: 'Debit Note',        icon: FilePlus,     permission: 'finance.debit-notes.manage' },
       { to: '/finance/payment-reminders', label: 'Payment Reminder',  icon: Bell,         permission: 'finance.payment-reminders.manage' },
       { to: '/finance/taxes',             label: 'Taxes',             icon: Tag,          permission: 'finance.taxes.manage' },
+      { to: '/finance/installment-plans', label: 'Installment Plans', icon: CalendarDays, permission: 'finance.invoices.view' },
+      { to: '/finance/purchase-notifications', label: 'Purchase Notifications', icon: Bell, permission: 'finance.invoices.view' },
       { to: '/finance/payment-plans',     label: 'Payment Plans',     icon: CalendarDays, permission: 'finance.invoices.view' },
       { to: '/finance/reports',           label: 'Report',            icon: FolderOpen,   permission: 'finance.reports.view' },
     ],

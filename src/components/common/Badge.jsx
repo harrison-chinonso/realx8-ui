@@ -35,6 +35,21 @@ const colors = {
   in_progress: TONES.caution,
   payment_under_review: TONES.caution,
   pending: TONES.caution,
+
+  // The purchase journey's schedule statuses. Timing and settlement are two
+  // independent dimensions, so both sets live here and a schedule renders one
+  // badge from each — merging them would lose the fact that a schedule can be
+  // overdue and part paid at the same time.
+  upcoming: TONES.neutral,
+  due: TONES.info,
+  in_grace: TONES.caution,
+  unpaid: TONES.neutral,
+  partially_paid: TONES.caution,
+  // A plan with an overdue installment. Recoverable — settling it returns the
+  // plan to active — but it reads as a problem until then.
+  in_default: TONES.negative,
+  expired: TONES.neutral,
+
   default: TONES.neutral,
 };
 

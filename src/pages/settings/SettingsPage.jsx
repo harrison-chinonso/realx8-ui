@@ -117,6 +117,52 @@ const SETTING_GROUPS = [
     ],
   },
   {
+    group: 'inventory',
+    label: 'Inventory & Holds',
+    /**
+     * When a payment takes property units off the market.
+     *
+     * Creating an invoice never reduces availability — a buyer who has not paid
+     * has secured nothing. These settings decide how much of an approved
+     * payment it takes before the invoiced units are actually held.
+     *
+     * Blank means inherit: a company that sets nothing gets the platform value,
+     * and failing that the built-in default of holding on any payment.
+     */
+    fields: [
+      {
+        key: 'inventory_hold_policy',
+        label: 'Hold units when',
+        type: 'select',
+        options: [
+          { value: 'any_payment', label: 'Any approved payment (default)' },
+          { value: 'threshold_amount', label: 'Payments reach a fixed amount' },
+          { value: 'threshold_percentage', label: 'Payments reach a percentage of the invoice' },
+        ],
+      },
+      {
+        key: 'inventory_hold_threshold_amount',
+        label: 'Threshold amount — for the fixed-amount policy',
+        type: 'number',
+        placeholder: '500000',
+      },
+      {
+        key: 'inventory_hold_threshold_percentage',
+        label: 'Threshold percentage — for the percentage policy',
+        type: 'number',
+        placeholder: '20',
+      },
+      {
+        // Off by default: expiring invoices on a company that never asked for
+        // it would cancel live purchases.
+        key: 'invoice_expiry_days',
+        label: 'Expire unpaid invoices after (days) — blank to never expire',
+        type: 'number',
+        placeholder: 'never',
+      },
+    ],
+  },
+  {
     group: 'security',
     label: 'Security',
   },
@@ -1080,16 +1126,36 @@ function SystemConfigTab() {
         {fields.map(({ section, items }) => (
           <div key={section} className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 space-y-4">
             <h2 className="font-medium text-slate-700 border-b border-slate-100 pb-2">{section}</h2>
-            {items.map(({ key, label, type, placeholder }) => (
+            {items.map(({ key, label, type, placeholder, options }) => (
               <div key={key}>
                 <label className="mb-1 block text-sm font-medium text-slate-700">{label}</label>
-                <input
-                  type={type}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                  value={form[key] || ''}
-                  placeholder={placeholder}
-                  onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                />
+                {/*
+                  * `select` needs its own branch — rendering it through the input
+                  * below produces <input type="select">, which the browser falls
+                  * back to a plain text box and silently accepts any value.
+                  *
+                  * The blank option is meaningful, not padding: an empty setting
+                  * means "inherit the platform value" everywhere in this form.
+                  */}
+                {type === 'select' ? (
+                  <Select
+                    value={form[key] || ''}
+                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                  >
+                    <option value="">Use the platform default</option>
+                    {(options || []).map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
+                  </Select>
+                ) : (
+                  <input
+                    type={type}
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                    value={form[key] || ''}
+                    placeholder={placeholder}
+                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -1129,13 +1195,15 @@ export default function SettingsPage() {
         // Own rows only, like the other company-scoped groups. Blank means
         // "inheriting"; the field placeholders show what that inherits to.
         getSettings(null, { group: 'invoicing' }),
+        getSettings(null, { group: 'inventory' }),
         getSettings(null, { group: 'assistant' }),
-      ]).then(([gen, email, payment, invoicing, aiAssistant]) => {
+      ]).then(([gen, email, payment, invoicing, inventory, aiAssistant]) => {
         setValues({
           ...(gen.data || {}),
           ...(email.data || {}),
           ...(payment.data || {}),
           ...(invoicing.data || {}),
+          ...(inventory.data || {}),
           ...(aiAssistant.data || {}),
         });
       });
@@ -1244,7 +1312,7 @@ export default function SettingsPage() {
             <h1 className="text-xl font-semibold">{currentGroup?.label} Settings</h1>
 
             {/* Company admins: inform them that global defaults are active if they haven't configured their own values */}
-            {!isSuperiorAdmin && ['email', 'payment', 'invoicing', 'assistant'].includes(activeGroup) && (
+            {!isSuperiorAdmin && ['email', 'payment', 'invoicing', 'inventory', 'assistant'].includes(activeGroup) && (
               <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 <span className="mt-0.5">🔒</span>
                 <span>

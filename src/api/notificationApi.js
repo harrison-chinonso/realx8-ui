@@ -14,3 +14,13 @@ export const listNotificationTemplates = (params) => client.get('/notification-t
 export const createNotificationTemplate = (payload) => client.post('/notification-templates', payload).then(r => r.data);
 export const updateNotificationTemplate = (id, payload) => client.put(`/notification-templates/${id}`, payload).then(r => r.data);
 export const deleteNotificationTemplate = (id) => client.delete(`/notification-templates/${id}`).then(r => r.data);
+
+// ── Notification configuration (purchase-journey events) ─────────────────────
+// A company either has its own configuration or inherits the platform's — the
+// resolution is per company, not per event, so these are always saved as a set.
+export const getNotificationConfig = (params) =>
+  client.get('/notification-configs', { params }).then(r => r.data);
+export const saveNotificationConfig = (events, params) =>
+  client.put('/notification-configs', { events, ...(params || {}) }).then(r => r.data);
+export const resetNotificationConfig = (params) =>
+  client.delete('/notification-configs', { params }).then(r => r.data);

@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import useAuthStore from '../../store/authStore';
 import PayInvoiceModal from '../../components/finance/PayInvoiceModal';
 import InvoiceSettlementPanel from '../../components/finance/InvoiceSettlementPanel';
+import PaymentSchedulePanel from '../../components/finance/PaymentSchedulePanel';
 import Table from '../../components/common/Table';
 import Select from '../../components/ui/Select';
 
@@ -231,6 +232,13 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
       </div>
+
+      {/*
+        * The plan and its schedule table, for BOTH audiences — a buyer needs to
+        * see what they owe and when at least as much as staff do. Renders
+        * nothing for an invoice with no payment plan.
+        */}
+      <PaymentSchedulePanel invoiceId={id} onChanged={loadData} />
 
       {!isBuyer && <InvoiceSettlementPanel invoiceId={id} onChanged={loadData} />}
 

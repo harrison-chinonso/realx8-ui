@@ -39,6 +39,8 @@ import PaymentRemindersPage from './pages/finance/PaymentRemindersPage';
 import ReportsPage from './pages/finance/ReportsPage';
 import TransactionsPage from './pages/finance/TransactionsPage';
 import PaymentPlansPage from './pages/finance/PaymentPlansPage';
+import InstallmentPlansPage from './pages/finance/InstallmentPlansPage';
+import PurchaseNotificationsPage from './pages/finance/PurchaseNotificationsPage';
 import ReceiptsPage from './pages/finance/ReceiptsPage';
 import SupportPage from './pages/support/SupportPage';
 import UsersPage from './pages/users/UsersPage';
@@ -252,6 +254,10 @@ export default function App() {
           <Route path="/finance/invoices/due" element={<StaffInvoicesRouter><InvoicesPage status="due" /></StaffInvoicesRouter>} />
           <Route path="/finance/invoices/create" element={<StaffInvoicesRouter><CreateInvoicePage /></StaffInvoicesRouter>} />
           <Route path="/finance/invoices/:id" element={<InvoiceDetailPage />} />
+          {/* The property purchase journey's plan templates — distinct from
+              /finance/payment-plans, which is the subscription price list. */}
+          <Route path="/finance/installment-plans" element={<InstallmentPlansPage />} />
+          <Route path="/finance/purchase-notifications" element={<PurchaseNotificationsPage />} />
           <Route path="/finance/taxes" element={<TaxesPage />} />
           <Route path="/finance/bank-accounts" element={<BankAccountsPage />} />
           <Route path="/finance/credit-notes" element={<CreditNotesPage />} />
