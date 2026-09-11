@@ -7,6 +7,7 @@ import { publicUrlFor } from '../../components/common/PublicLinkPanel';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import useShareToken from '../../hooks/useShareToken';
+import useAuthStore from '../../store/authStore';
 
 const EMPTY = { data: [], pagination: { page: 1, totalPages: 1, total: 0 } };
 const PAGE_SIZE = 12;
@@ -18,6 +19,7 @@ const PAGE_SIZE = 12;
  */
 export default function ListedPropertiesPage() {
   const navigate = useNavigate();
+  const noCompany = useAuthStore((s) => s.company_id) == null && !useAuthStore.getState().isSuperiorAdmin;
   /**
    * The short code where the server offers one, the sealed token otherwise.
    * Both resolve to the same thing; the code is what keeps the URL short enough
@@ -123,7 +125,12 @@ export default function ListedPropertiesPage() {
         </div>
       ) : (
         <div className="rounded-xl bg-white p-8 text-center text-slate-500 shadow-sm ring-1 ring-slate-200">
-          {query ? 'No properties match your search.' : 'No approved properties are available yet.'}
+          {/* Same distinction as the detail page: an account attached to no
+              company has nothing to browse, and saying so is more use than
+              implying the company has listed nothing. */}
+          {noCompany
+            ? 'Your account is not linked to a company yet, so there are no properties to browse. Ask an administrator to attach it.'
+            : query ? 'No properties match your search.' : 'No approved properties are available yet.'}
         </div>
       )}
 

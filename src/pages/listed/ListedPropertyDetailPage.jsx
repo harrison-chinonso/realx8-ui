@@ -27,6 +27,17 @@ export default function ListedPropertyDetailPage() {
   // Purchasing is for clients only. Uses the ACTIVE profile, so a realtor who
   // switches to their client profile can buy.
   const canPurchase = useAuthStore((s) => s.effectiveType()) === 'client';
+  /**
+   * A client or realtor with no company sees nothing at all, by design: the
+   * catalogue is company-scoped and an account attached to nobody cannot be
+   * shown one company's stock over another's.
+   *
+   * Worth telling them WHICH of those it is, though. Reporting it as "this
+   * property is not available" sends people looking for a fault in the
+   * property, or in the purchase flow, when the account is what needs fixing.
+   */
+  const hasCompany = useAuthStore((s) => s.company_id) != null
+    || useAuthStore.getState().isSuperiorAdmin;
 
   useEffect(() => {
     let cancelled = false;
@@ -46,7 +57,17 @@ export default function ListedPropertyDetailPage() {
       <div className="space-y-4">
         <Link to="/properties/listed"><Button variant="secondary" size="sm">← Back to Listed Properties</Button></Link>
         <div className="rounded-xl bg-white p-8 text-center text-slate-500 shadow-sm ring-1 ring-slate-200">
-          This property is not available.
+          {hasCompany ? (
+            'This property is not available.'
+          ) : (
+            <>
+              <p className="font-medium text-slate-700">Your account is not linked to a company yet.</p>
+              <p className="mt-1 text-sm">
+                Properties are listed by a company, so there is nothing to show until an
+                administrator attaches your account to one.
+              </p>
+            </>
+          )}
         </div>
       </div>
     );
