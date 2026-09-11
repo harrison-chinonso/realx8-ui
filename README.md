@@ -66,6 +66,8 @@ services are peeled onto separate deployments later.
 | `npm run docker:up` | build + serve behind nginx on 8080 |
 | `npm run cf:deploy` | build + deploy to Cloudflare Workers |
 | `npm run cf:dev` | run the Cloudflare worker locally |
+| `npm run verify:export` | table export: which value each column contributes, and CSV escaping |
+| `npm run verify:dashboard-export` | the dashboard report is built from data, not from the screen |
 
 ## Layout
 

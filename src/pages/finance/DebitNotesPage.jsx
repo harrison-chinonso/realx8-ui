@@ -81,7 +81,6 @@ export default function DebitNotesPage() {
     setSaving(true);
     try {
       const payload = {
-        debit_note_id: form.debit_note_id.trim(),
         client_id: Number(form.client_id),
         party_type: form.party_type || 'client',
         amount: Number(form.amount),
@@ -146,7 +145,21 @@ export default function DebitNotesPage() {
       />
       <Modal open={editing !== null} onClose={closeModal} title={`${editing?.id ? 'Edit' : 'New'} Debit Note`}>
         <form onSubmit={handleSave} className="space-y-3">
-          <Input label="Debit Note #" value={form.debit_note_id} onChange={handleChange('debit_note_id')} placeholder="DN-001" required />
+          {/*
+            The number is assigned by the server, not typed.
+
+            It has to be unique within the company, and only the database can
+            guarantee that against two people saving at once — so asking for it
+            here offered a value that was discarded on create and could clash
+            on edit. Existing notes show theirs; a new one says where it comes
+            from.
+          */}
+          <div className="space-y-1">
+            <span className="block text-sm font-medium text-slate-700">Debit Note #</span>
+            <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              {form.debit_note_id || 'Assigned automatically when you save'}
+            </p>
+          </div>
           <PartySelect
             partyType={form.party_type}
             userId={form.client_id}

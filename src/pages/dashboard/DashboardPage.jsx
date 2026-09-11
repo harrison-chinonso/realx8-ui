@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { RefreshCw, ArrowUpRight, ArrowUp, ArrowDown, Minus, Send, Plus } from 'lucide-react';
 
 import useDashboardData from '../../hooks/useDashboardData';
+import { exportDashboardPdf, exportDashboardExcel } from '../../utils/dashboardExport';
 import useDashboardStore from '../../store/dashboardStore';
 import { useCurrency, useAppearance } from '../../context/useAppearance';
 import useAuthStore from '../../store/authStore';
@@ -22,10 +23,21 @@ import SupportStatsWidget from '../../components/dashboard/SupportStatsWidget';
 import RealtorDashboard from './RealtorDashboard';
 import ClientDashboard from './ClientDashboard';
 
-// ─── Export helper (print-friendly) ──────────────────────────────────────────
-function handleExport() {
-  window.print();
-}
+/**
+ * Exporting the dashboard.
+ *
+ * `window.print()` is still offered, because printing the page as it looks is
+ * genuinely what someone occasionally wants — but it is no longer what
+ * "Export" means. PDF and Excel are built from the dashboard's DATA (see
+ * utils/dashboardExport.js): everything it computed, including widgets that
+ * happen to be toggled off or scrolled out of view, laid out as a paginated
+ * report rather than a screenshot of a web page.
+ */
+const EXPORT_CHOICES = [
+  ['pdf', 'PDF report'],
+  ['excel', 'Excel workbook'],
+  ['print', 'Print this screen'],
+];
 
 // A role/tenant-type value ("Platform", "Admin", "Staff"...) sometimes ends
 // up in the same slot a human first name would occupy. Rather than greet
@@ -105,6 +117,29 @@ function StaffDashboard() {
   const getDateRange = useDashboardStore((s) => s.getDateRange);
 
   const { data, loading, error, reload } = useDashboardData();
+
+  const [exporting, setExporting] = useState('');
+  const [exportError, setExportError] = useState('');
+
+  const runExport = async (choice) => {
+    if (choice === 'print') { window.print(); return; }
+    setExportError('');
+    setExporting(choice);
+    try {
+      const options = {
+        data,
+        symbol: currencySymbol || '',
+        title: 'Dashboard report',
+        period: preset,
+      };
+      if (choice === 'pdf') await exportDashboardPdf(options);
+      else await exportDashboardExcel(options);
+    } catch (error) {
+      setExportError(error?.message || 'Export failed.');
+    } finally {
+      setExporting('');
+    }
+  };
 
   const [notifications, setNotifications] = useState([]);
   const [notifBootstrapped, setNotifBootstrapped] = useState(false);
@@ -209,15 +244,30 @@ function StaffDashboard() {
             >
               <RefreshCw size={14} />
             </button>
-            <button
-              onClick={handleExport}
-              className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+            <select
+              value=""
+              disabled={Boolean(exporting) || loading}
+              aria-label="Export the dashboard"
+              onChange={(event) => {
+                const choice = event.target.value;
+                event.target.value = '';
+                if (choice) runExport(choice);
+              }}
+              className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium
+                         text-slate-600 shadow-sm transition-colors hover:bg-slate-50
+                         disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Print / Export
-            </button>
+              <option value="">{exporting ? 'Preparing…' : 'Export'}</option>
+              {EXPORT_CHOICES.map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
             <QuickActionBar />
             <WidgetToggleBar />
           </div>
+          {exportError && (
+            <p role="alert" className="mt-2 text-xs text-red-600">{exportError}</p>
+          )}
         </div>
       </div>
 

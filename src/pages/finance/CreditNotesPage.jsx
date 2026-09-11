@@ -83,7 +83,6 @@ export default function CreditNotesPage() {
     setSaving(true);
     try {
       const payload = {
-        credit_note_id: form.credit_note_id.trim(),
         client_id: Number(form.client_id),
         party_type: form.party_type || 'client',
         amount: Number(form.amount),
@@ -148,7 +147,21 @@ export default function CreditNotesPage() {
       />
       <Modal open={editing !== null} onClose={closeModal} title={`${editing?.id ? 'Edit' : 'New'} Credit Note`}>
         <form onSubmit={handleSave} className="space-y-3">
-          <Input label="Credit Note #" value={form.credit_note_id} onChange={handleChange('credit_note_id')} placeholder="CN-001" required />
+          {/*
+            The number is assigned by the server, not typed.
+
+            It has to be unique within the company, and only the database can
+            guarantee that against two people saving at once — so asking for it
+            here offered a value that was discarded on create and could clash
+            on edit. Existing notes show theirs; a new one says where it comes
+            from.
+          */}
+          <div className="space-y-1">
+            <span className="block text-sm font-medium text-slate-700">Credit Note #</span>
+            <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              {form.credit_note_id || 'Assigned automatically when you save'}
+            </p>
+          </div>
           <PartySelect
             partyType={form.party_type}
             userId={form.client_id}
