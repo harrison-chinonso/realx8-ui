@@ -18,7 +18,13 @@ const PAGE_SIZE = 12;
  */
 export default function ListedPropertiesPage() {
   const navigate = useNavigate();
-  const { token: shareToken } = useShareToken();
+  /**
+   * The short code where the server offers one, the sealed token otherwise.
+   * Both resolve to the same thing; the code is what keeps the URL short enough
+   * to paste into a chat without it looking alarming.
+   */
+  const { token: sealedToken, code: shortCode } = useShareToken();
+  const shareToken = shortCode || sealedToken;
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [result, setResult] = useState(EMPTY);

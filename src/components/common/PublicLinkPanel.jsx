@@ -33,7 +33,13 @@ export const publicUrlFor = (token, companyCode, realtorCode, shareToken) => {
  * `property` must carry public_token, public_enabled and public_expires_at.
  */
 export default function PublicLinkPanel({ property, onChange }) {
-  const { token: shareToken } = useShareToken();
+  /**
+   * The short code where the server offers one, the sealed token otherwise.
+   * Both resolve to the same thing; the code is what keeps the URL short enough
+   * to paste into a chat without it looking alarming.
+   */
+  const { token: sealedToken, code: shortCode } = useShareToken();
+  const shareToken = shortCode || sealedToken;
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');

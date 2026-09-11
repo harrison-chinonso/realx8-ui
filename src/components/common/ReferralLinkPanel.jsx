@@ -11,7 +11,7 @@ import useShareToken from '../../hooks/useShareToken';
  */
 export default function ReferralLinkPanel({ realtorCode, companyCode }) {
   const [copied, setCopied] = useState(null);
-  const { token, ready } = useShareToken();
+  const { token, code, ready } = useShareToken();
 
   if (!realtorCode) {
     return (
@@ -21,12 +21,23 @@ export default function ReferralLinkPanel({ realtorCode, companyCode }) {
     );
   }
 
-  // The sealed token carries the company, this realtor's code and the company's
-  // branding, so the prospect lands on a page already themed for the company
-  // and nobody can edit the attribution out of the URL. If it could not be
-  // minted, fall back to the plain codes — an unbranded link still works.
+  /**
+   * The link carries a short code, and the server looks the rest up.
+   *
+   * It used to carry a sealed token holding the company, this realtor's code
+   * and a snapshot of the branding — correct, tamper-proof, and around two
+   * hundred characters, which is long enough that people hesitated to paste it
+   * into WhatsApp. The short code resolves to exactly the same thing.
+   *
+   * The order of the fallbacks is the order of preference: short code, then the
+   * sealed token for a server that has not been updated, then the plain codes.
+   * The last of those is the tamperable form the seal was introduced to
+   * replace, so it is genuinely a last resort rather than an equal option.
+   */
   const params = new URLSearchParams();
-  if (token) {
+  if (code) {
+    params.set('ref', code);
+  } else if (token) {
     params.set('ref', token);
   } else {
     if (companyCode) params.set('company_code', companyCode);
