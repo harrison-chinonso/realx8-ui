@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { switchRoleApi, enableProfileApi } from '../api/authApi';
+import { switchRoleApi, enableProfileApi, logout as logoutApi } from '../api/authApi';
 import { setSessionKey, clearSessionKey } from '../api/payloadCrypto';
+import { resetRefreshBudget } from '../api/refreshBudget';
 
 const useAuthStore = create(
   persist(
@@ -36,6 +37,9 @@ const useAuthStore = create(
          * that passes a partial payload must not silently wipe the key.
          */
         if (payload.payloadKey !== undefined) setSessionKey(payload.payloadKey);
+        // A new session starts with a clean refresh budget, so a previous
+        // session's loop cannot end this one early.
+        if (payload.accessToken) resetRefreshBudget();
         set({
           user: u,
           accessToken: payload.accessToken ?? null,
@@ -48,8 +52,31 @@ const useAuthStore = create(
         });
       },
 
+      /**
+       * Signing out, locally and on the server.
+       *
+       * The server call was missing entirely: every layout's logout button
+       * cleared this store and nothing else, so POST /auth/logout — which
+       * deletes the refresh token and releases the single-sign-in hold — was
+       * never reached by anything. The refresh token stayed valid for its full
+       * seven days, and a user who signed out could be refused a fresh sign-in
+       * by their own abandoned session.
+       *
+       * It is deliberately fire-and-forget. Local state is cleared FIRST and
+       * unconditionally: a user who clicks Logout must end up signed out even
+       * if the network is down or their token has already expired. Waiting on
+       * the request, or letting it throw, would mean a failed call leaves them
+       * apparently still signed in — which is the worst outcome of the three.
+       */
       logout: () => {
+        const { refreshToken } = get();
         clearSessionKey();
+        if (refreshToken) {
+          logoutApi(refreshToken).catch(() => {
+            // Already expired, revoked, or unreachable. The session is over
+            // locally either way, and the refresh token expires on its own.
+          });
+        }
         return set({
         user: null,
         accessToken: null,

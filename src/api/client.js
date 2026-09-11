@@ -3,6 +3,7 @@ import useAuthStore from '../store/authStore';
 import { API_BASE } from './apiBase';
 import { extractError } from '../utils/extractError';
 import { signRequest, HEADER_NAME } from './frontendSignature';
+import { refreshLooping } from './refreshBudget';
 import {
   isEncryptionEnabled, keyForRequest, encryptBody, decryptBody, isEnvelope,
   ensureSessionKey, setSessionKey, clearSessionKey, hasSessionKey,
@@ -15,6 +16,7 @@ const client = axios.create({
 
 let isRefreshing = false;
 let queue = [];
+
 
 const processQueue = (error, token = null) => {
   queue.forEach(({ resolve, reject }) => {
@@ -158,6 +160,20 @@ client.interceptors.response.use(
 
       originalRequest._retry = true;
       isRefreshing = true;
+
+      if (refreshLooping()) {
+        /**
+         * The loop-breaker. Ending the session here is what makes the failure
+         * recoverable: the user lands on the sign-in page instead of a screen
+         * whose every request fails silently.
+         */
+        console.warn('[auth] too many token refreshes in a short window — ending the session');
+        isRefreshing = false;
+        clearSessionKey();
+        useAuthStore.getState().logout();
+        error.userMessage = 'Your session could not be renewed. Please sign in again.';
+        return Promise.reject(error);
+      }
 
       try {
         const activeRoleId = useAuthStore.getState().activeRole?.id || null;

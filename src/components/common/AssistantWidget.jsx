@@ -44,12 +44,27 @@ export default function AssistantWidget() {
   const inputRef = useRef(null);
   const streamRef = useRef(null);
 
+  /**
+   * Asked once per sign-in, not once per token.
+   *
+   * This used to depend on `token`, which turns a single 401 into an unbounded
+   * loop: the request fails, the client refreshes, the new token lands in the
+   * store, `token` changes, the effect re-runs, and the cycle repeats for as
+   * long as the request keeps failing. Observed in production as hundreds of
+   * `GET /assistant/status 401` interleaved with `POST /auth/refresh 200`.
+   *
+   * Whether the assistant is available does not change when a token rotates —
+   * only when somebody signs in or out — so the dependency is the BOOLEAN. A
+   * refresh no longer re-fetches anything, and a failure stays a single failed
+   * request.
+   */
+  const isAuthenticated = Boolean(token);
   useEffect(() => {
-    if (!token) { setStatus(null); return; }
+    if (!isAuthenticated) { setStatus(null); return; }
     getAssistantStatus()
       .then((res) => setStatus(res?.data ?? null))
       .catch(() => setStatus(null));
-  }, [token]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (open) endRef.current?.scrollIntoView({ behavior: 'smooth' });
