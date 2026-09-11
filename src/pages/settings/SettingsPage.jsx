@@ -1103,14 +1103,6 @@ function SystemConfigTab() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold">System Configuration</h1>
-        {/*
-          The old copy here said "Changes take effect immediately — no restart
-          required", which is not true of Google: auth-service registers the
-          Google strategy once at boot (configurePassport), so a corrected
-          client id or callback URL is not used until the service restarts.
-          Claiming otherwise sends someone re-testing a sign-in that cannot
-          have changed yet.
-        */}
         <p className="text-sm text-slate-500 mt-1">
           Google OAuth, JWT, and Cloudinary credentials. JWT and Cloudinary values are read
           per use and apply straight away; <strong>Google OAuth is read once at startup, so
