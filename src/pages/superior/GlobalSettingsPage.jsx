@@ -79,6 +79,28 @@ const FIELD_GROUPS = {
     { key: 'stripe_secret_key', label: 'Stripe Secret Key', type: 'password' },
   ],
   system: [
+    /**
+     * Google OAuth lives here, on the PLATFORM settings page.
+     *
+     * It was only on /settings, which the sidebar hides from a superior admin
+     * (`!isSuperiorAdmin`) — so the one person who owns the platform's single
+     * OAuth client had no way to reach it, and a wrong callback URL could only
+     * be corrected by editing the database directly.
+     *
+     * Platform-level by nature: there is one Google client for the deployment,
+     * and these rows are stored with company_id NULL in the 'system' group,
+     * which is what auth-service reads at boot.
+     */
+    { key: 'google_client_id', label: 'Google Client ID', type: 'text', placeholder: '…apps.googleusercontent.com' },
+    { key: 'google_client_secret', label: 'Google Client Secret', type: 'password', sensitive: true, placeholder: 'GOCSPX-…' },
+    /**
+     * The single most common way Google sign-in breaks: a value carried over
+     * from development, which Google rejects with redirect_uri_mismatch. The
+     * placeholder shows the shape a deployed one takes rather than a localhost
+     * example that would be copied verbatim.
+     */
+    { key: 'google_callback_url', label: 'Google Callback URL', type: 'text', placeholder: 'https://your-api-host/api/auth/google/callback',
+      hint: 'Must match an Authorised redirect URI on the OAuth client in Google Cloud Console, exactly. Read once at startup — restart the API after changing it.' },
     { key: 'jwt_secret', label: 'JWT Secret', type: 'password', sensitive: true },
     { key: 'jwt_expires_in', label: 'JWT Expires In', type: 'text', placeholder: '7d' },
     { key: 'cloudinary_cloud_name', label: 'Cloudinary Cloud Name', type: 'text' },
@@ -407,7 +429,7 @@ function FieldTab({ tabKey, companyId, scopeLabel, onToast }) {
 
   return (
     <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 space-y-4">
-      {fields.map(({ key, label, type, placeholder, sensitive, options }) =>
+      {fields.map(({ key, label, type, placeholder, sensitive, options, hint }) =>
         type === 'password' || sensitive ? (
           <PasswordField key={key} label={label} fieldKey={key}
             value={values[key] || ''} onChange={(v) => setValues((s) => ({ ...s, [key]: v }))} />
@@ -428,6 +450,9 @@ function FieldTab({ tabKey, companyId, scopeLabel, onToast }) {
                 onChange={(e) => setValues((s) => ({ ...s, [key]: e.target.value }))}
                 className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-400" />
             )}
+            {/* Where getting a value subtly wrong fails somewhere else entirely,
+                the field says so rather than leaving it to be discovered. */}
+            {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
           </div>
         )
       )}
