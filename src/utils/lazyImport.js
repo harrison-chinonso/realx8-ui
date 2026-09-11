@@ -14,6 +14,16 @@
  * error: the application is simply out of date, and reloading fixes it
  * completely. This turns it into that.
  *
+ * ── The host config matters too ─────────────────────────────────────────────
+ *
+ * vercel.json excludes /assets/ from the single-page-app rewrite. Without that
+ * exclusion a missing chunk is answered with index.html at 200 rather than a
+ * 404, so the browser receives HTML where it asked for a module and reports a
+ * content-type problem instead of a missing file. That explanation lives here
+ * because vercel.json cannot carry comments: Vercel validates it against a
+ * strict schema and rejects unknown properties, so a "$comment" key fails the
+ * whole deployment with "couldn't load a valid project configuration".
+ *
  * It is deliberately NOT an automatic reload. A reload discards whatever is in
  * a half-filled form elsewhere on the page, and doing that to someone who
  * clicked "Export" would be a worse surprise than the error. The caller is

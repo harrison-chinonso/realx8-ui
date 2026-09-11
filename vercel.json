@@ -1,19 +1,4 @@
 {
-  "$comment": [
-    "The catch-all rewrite is what makes client-side routing work: /invoices/34 has no",
-    "file behind it, so it must return index.html for the router to resolve.",
-    "",
-    "/assets/ is excluded deliberately. Vercel serves an existing file before any rewrite,",
-    "so this changes nothing for assets that are present — but a MISSING one was falling",
-    "through to the rewrite and being answered with index.html at 200. The browser then",
-    "received HTML where it had asked for a module, which surfaces as the useless",
-    "'Failed to fetch dynamically imported module' rather than an honest 404.",
-    "",
-    "That happens after every deploy: hashed filenames change, the old files are removed,",
-    "and any tab still running the previous build asks for chunks that no longer exist.",
-    "With this exclusion the request 404s, which is both diagnosable and something the",
-    "app can detect and recover from — see lazyImport in src/utils/lazyImport.js."
-  ],
   "rewrites": [
     { "source": "/((?!assets/).*)", "destination": "/index.html" }
   ]
