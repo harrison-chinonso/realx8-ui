@@ -87,5 +87,65 @@ check('The file starts with a UTF-8 BOM so Excel reads ₦ correctly',
   csvText.charCodeAt(0) === 0xFEFF, 'without it, currency and accents arrive mangled');
 check('Unicode survives', csvText.includes('Ìbàdàn ₦'));
 
-console.log(`\n  ${pass}/${pass + fail} passed.\n`);
-process.exit(fail ? 1 : 0);
+console.log('\n── Stale-build detection ────────────────────────────────────────');
+
+const staleBundle = path.join(SP, 'lazyImport.cjs');
+require('child_process').execFileSync('npx', [
+  'esbuild', path.join(__dirname, '..', 'src', 'utils', 'lazyImport.js'),
+  '--bundle', '--format=cjs', '--platform=node', `--outfile=${staleBundle}`,
+], { stdio: 'ignore' });
+const { isStaleBuildError, lazyImport, STALE_BUILD } = require(staleBundle);
+
+// The exact strings browsers produce when a hashed chunk has been removed.
+const BROWSER_MESSAGES = [
+  'Failed to fetch dynamically imported module: https://x/assets/exceljs.min-C1oitp1v.js',
+  'error loading dynamically imported module',
+  "Expected a JavaScript module script but the server responded with a MIME type of 'text/html'. "
+    + "Strict MIME type checking is enforced for module scripts per HTML spec.",
+  'Importing a module script failed.',
+];
+check('Every browser phrasing of a missing chunk is recognised',
+  BROWSER_MESSAGES.every((m) => isStaleBuildError(new Error(m))),
+  BROWSER_MESSAGES.map((m) => isStaleBuildError(new Error(m))).join(', '));
+
+check('A real error inside the module is NOT treated as a stale build',
+  !isStaleBuildError(new TypeError("Cannot read properties of undefined (reading 'x')")),
+  'reporting a genuine bug as "reload the page" would send someone chasing nothing');
+
+(async () => {
+  let translated = null;
+  try {
+    await lazyImport(async () => { throw new Error('Failed to fetch dynamically imported module: /assets/a.js'); });
+  } catch (error) { translated = error; }
+  check('A stale chunk becomes an actionable error, not the browser string',
+    translated?.code === STALE_BUILD && /new version of the app/i.test(translated.message),
+    translated?.message);
+
+  let passedThrough = null;
+  try {
+    await lazyImport(async () => { throw new RangeError('maximum call stack size exceeded'); });
+  } catch (error) { passedThrough = error; }
+  check('A genuine error is rethrown untouched',
+    passedThrough instanceof RangeError && passedThrough.code !== STALE_BUILD);
+
+  console.log('\n── Export progress ─────────────────────────────────────────────');
+
+  const seen = [];
+  exportCsv({
+    rows: [{ ref: 'INV-0001', client: 'A', status: 'PAID', amount: 1 }],
+    columns,
+    filename: 'test',
+    onProgress: (p) => seen.push(p),
+  });
+  check('CSV export reports progress and finishes at 100%',
+    seen.length >= 2 && seen[seen.length - 1].percent === 100,
+    seen.map((p) => `${p.percent}% ${p.stage}`).join(' -> '));
+  check('Progress never goes backwards',
+    seen.every((p, i) => i === 0 || p.percent >= seen[i - 1].percent),
+    'a bar that jumps back reads as a fault');
+  check('Each stage is named, so the slow part is identifiable',
+    seen.every((p) => typeof p.stage === 'string' && p.stage.length > 0));
+
+  console.log(`\n  ${pass}/${pass + fail} passed.\n`);
+  process.exit(fail ? 1 : 0);
+})();

@@ -1,3 +1,4 @@
+import { lazyImport } from './lazyImport';
 /**
  * Exporting the dashboard as a real report.
  *
@@ -138,9 +139,13 @@ export const buildSections = (data, symbol) => {
   return sections;
 };
 
-export const exportDashboardPdf = async ({ data, symbol = '', title = 'Dashboard report', period = '' }) => {
-  const { jsPDF } = await import('jspdf');
-  const autoTable = (await import('jspdf-autotable')).default;
+export const exportDashboardPdf = async ({
+  data, symbol = '', title = 'Dashboard report', period = '', onProgress = () => {},
+}) => {
+  onProgress({ stage: 'Loading the PDF engine', percent: 10 });
+  const { jsPDF } = await lazyImport(() => import('jspdf'));
+  const autoTable = (await lazyImport(() => import('jspdf-autotable'))).default;
+  onProgress({ stage: 'Laying out the report', percent: 55 });
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -196,12 +201,18 @@ export const exportDashboardPdf = async ({ data, symbol = '', title = 'Dashboard
     cursor = (doc.lastAutoTable?.finalY ?? cursor) + 24;
   });
 
+  onProgress({ stage: 'Saving', percent: 100 });
   doc.save(`${String(title).toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`);
 };
 
 /** The same report as a spreadsheet, one sheet per section. */
-export const exportDashboardExcel = async ({ data, symbol = '', title = 'Dashboard report' }) => {
-  const ExcelJS = (await import('exceljs')).default ?? (await import('exceljs'));
+export const exportDashboardExcel = async ({
+  data, symbol = '', title = 'Dashboard report', onProgress = () => {},
+}) => {
+  onProgress({ stage: 'Loading the spreadsheet engine', percent: 10 });
+  const module = await lazyImport(() => import('exceljs'));
+  const ExcelJS = module.default ?? module;
+  onProgress({ stage: 'Building the workbook', percent: 55 });
   const workbook = new ExcelJS.Workbook();
   workbook.created = new Date();
 
@@ -213,7 +224,9 @@ export const exportDashboardExcel = async ({ data, symbol = '', title = 'Dashboa
     sheet.views = [{ state: 'frozen', ySplit: 1 }];
   });
 
+  onProgress({ stage: 'Writing the file', percent: 85 });
   const buffer = await workbook.xlsx.writeBuffer();
+  onProgress({ stage: 'Saving', percent: 100 });
   const url = URL.createObjectURL(new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   }));

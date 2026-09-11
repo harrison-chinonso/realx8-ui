@@ -4,6 +4,7 @@ import useDashboardStore from '../../store/dashboardStore';
 
 const WIDGET_LABELS = {
   kpiSummary:         'Cash Position & Portfolio',
+  topPerformers:      'Top Performers',
   operationalSummary: 'Pipeline',
   financeSummary:     'Revenue Panel',
   topDuePayments:     'Top Due Payments',

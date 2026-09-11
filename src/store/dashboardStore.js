@@ -84,6 +84,7 @@ export function resolveDateRange(preset, customStart, customEnd) {
 // ─── Default widget visibility ────────────────────────────────────────
 const DEFAULT_WIDGETS = {
   kpiSummary: true,
+  topPerformers: true,
   operationalSummary: true,
   financeSummary: true,
   topDuePayments: true,

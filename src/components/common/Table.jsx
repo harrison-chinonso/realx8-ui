@@ -1,4 +1,9 @@
 import { useMemo, useState } from 'react';
+import Input from '../ui/Input';
+import Select from '../ui/Select';
+import Button from '../ui/Button';
+import ExportProgress from './ExportProgress';
+import { isStaleBuildError } from '../../utils/lazyImport';
 import { exportTable, exportableColumns, cellValue } from '../../utils/tableExport';
 
 /**
@@ -62,6 +67,8 @@ export default function Table({
   const [filters, setFilters] = useState({});
   const [busy, setBusy] = useState('');
   const [failed, setFailed] = useState('');
+  const [stale, setStale] = useState(false);
+  const [progress, setProgress] = useState(null);
 
   const filterColumns = useMemo(
     () => columns.filter((c) => filterable.includes(c.accessor ?? c.key)),
@@ -95,10 +102,13 @@ export default function Table({
 
   const runExport = async (format) => {
     setFailed('');
+    setStale(false);
     setBusy(format);
+    setProgress({ stage: 'Preparing', percent: 5 });
     try {
       await exportTable({
         format,
+        onProgress: setProgress,
         // Exports what is on screen: if someone has searched or filtered, the
         // file is that view. Exporting everything regardless would quietly
         // hand back rows they had just excluded.
@@ -108,9 +118,17 @@ export default function Table({
         title: exportTitle || exportName,
       });
     } catch (error) {
+      /**
+       * A stale build is not really an export failure — the app is simply out
+       * of date — so it gets its own message and a Reload button rather than
+       * the browser's "Failed to fetch dynamically imported module", which
+       * tells the user nothing they can act on.
+       */
+      setStale(isStaleBuildError(error));
       setFailed(error?.message || 'Export failed.');
     } finally {
       setBusy('');
+      setProgress(null);
     }
   };
 
@@ -125,62 +143,71 @@ export default function Table({
   return (
     <div className="space-y-3">
       {showToolbar && (
-        <div className="flex flex-wrap items-center gap-2">
+        /**
+         * Built from the shared ui/ primitives, not hand-styled controls.
+         *
+         * These were raw <input>/<select>/<button> elements with hardcoded
+         * slate-* classes, which read as a different application sitting above
+         * every table: the design system draws from tokens (--surface, --line-strong,
+         * the tenant's brand colour) and renders its own option list, so a native
+         * select's operating-system popup stood out immediately next to it.
+         */
+        <div className="flex flex-wrap items-end gap-2">
           {searchable && (
-            <input
+            <Input
               type="search"
               value={query}
               onChange={(event) => handleQuery(event.target.value)}
               placeholder={searchPlaceholder}
               aria-label="Search this table"
-              className="min-w-[12rem] flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm
-                         text-slate-700 placeholder:text-slate-400 focus:border-slate-400
-                         focus:outline-none focus:ring-2 focus:ring-slate-200"
+              containerClassName="min-w-[12rem] flex-1"
             />
           )}
 
           {filterColumns.map((column) => {
             const key = column.accessor ?? column.key;
+            const heading = String(column.label ?? column.header ?? key);
             return (
-              <select
+              <Select
                 key={key}
                 value={filters[key] || ''}
-                aria-label={`Filter by ${column.label ?? column.header ?? key}`}
+                aria-label={`Filter by ${heading}`}
                 onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700
-                           focus:border-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-200"
-              >
-                <option value="">All {String(column.label ?? column.header ?? key).toLowerCase()}</option>
-                {optionsFor(tableRows, column).map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+                className="min-w-[10rem]"
+                options={[
+                  { value: '', label: `All ${heading.toLowerCase()}` },
+                  ...optionsFor(tableRows, column).map((option) => ({ value: option, label: option })),
+                ]}
+              />
             );
           })}
 
           {exportable && (
-            <div className="ml-auto flex items-center gap-1">
+            <div className="ml-auto flex items-center gap-1.5">
               {[['csv', 'CSV'], ['excel', 'Excel'], ['pdf', 'PDF']].map(([format, label]) => (
-                <button
+                <Button
                   key={format}
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => runExport(format)}
                   disabled={Boolean(busy) || !visible.length}
                   title={visible.length ? `Export ${visible.length} row(s) as ${label}` : 'Nothing to export'}
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700
-                             hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {busy === format ? '…' : label}
-                </button>
+                </Button>
               ))}
             </div>
           )}
         </div>
       )}
 
-      {failed && (
-        <p role="alert" className="text-sm text-red-600">{failed}</p>
-      )}
+      <ExportProgress
+        progress={progress}
+        error={failed}
+        staleBuild={stale}
+        onDismiss={() => setFailed('')}
+      />
 
       <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
         <div className="overflow-x-auto">

@@ -1,8 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { RefreshCw, ArrowUpRight, ArrowUp, ArrowDown, Minus, Send, Plus } from 'lucide-react';
+import { RefreshCw, ArrowUpRight, ArrowUp, ArrowDown, Minus, Send, Plus, Download } from 'lucide-react';
 
 import useDashboardData from '../../hooks/useDashboardData';
+import Select from '../../components/ui/Select';
+import ExportProgress from '../../components/common/ExportProgress';
+import { isStaleBuildError } from '../../utils/lazyImport';
 import { exportDashboardPdf, exportDashboardExcel } from '../../utils/dashboardExport';
 import useDashboardStore from '../../store/dashboardStore';
 import { useCurrency, useAppearance } from '../../context/useAppearance';
@@ -20,6 +23,7 @@ import LeadStatusPanel from '../../components/dashboard/LeadStatusPanel';
 import RealtorLeaderboard from '../../components/dashboard/RealtorLeaderboard';
 import RecentActivitiesFeed from '../../components/dashboard/RecentActivitiesFeed';
 import SupportStatsWidget from '../../components/dashboard/SupportStatsWidget';
+import TopPerformersPanel from '../../components/dashboard/TopPerformersPanel';
 import RealtorDashboard from './RealtorDashboard';
 import ClientDashboard from './ClientDashboard';
 
@@ -120,24 +124,31 @@ function StaffDashboard() {
 
   const [exporting, setExporting] = useState('');
   const [exportError, setExportError] = useState('');
+  const [exportStale, setExportStale] = useState(false);
+  const [exportProgress, setExportProgress] = useState(null);
 
   const runExport = async (choice) => {
     if (choice === 'print') { window.print(); return; }
     setExportError('');
+    setExportStale(false);
     setExporting(choice);
+    setExportProgress({ stage: 'Preparing', percent: 5 });
     try {
       const options = {
         data,
         symbol: currencySymbol || '',
         title: 'Dashboard report',
         period: preset,
+        onProgress: setExportProgress,
       };
       if (choice === 'pdf') await exportDashboardPdf(options);
       else await exportDashboardExcel(options);
     } catch (error) {
+      setExportStale(isStaleBuildError(error));
       setExportError(error?.message || 'Export failed.');
     } finally {
       setExporting('');
+      setExportProgress(null);
     }
   };
 
@@ -210,6 +221,7 @@ function StaffDashboard() {
     propertyStatusMap,
     realtorLeaderboard,
     recentSales, activities,
+    topPerformers,
     openTickets, closedTickets, escalatedTickets, avgResolutionHours, totalTickets,
   } = data;
 
@@ -244,29 +256,39 @@ function StaffDashboard() {
             >
               <RefreshCw size={14} />
             </button>
-            <select
-              value=""
-              disabled={Boolean(exporting) || loading}
-              aria-label="Export the dashboard"
-              onChange={(event) => {
-                const choice = event.target.value;
-                event.target.value = '';
-                if (choice) runExport(choice);
-              }}
-              className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium
-                         text-slate-600 shadow-sm transition-colors hover:bg-slate-50
-                         disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <option value="">{exporting ? 'Preparing…' : 'Export'}</option>
-              {EXPORT_CHOICES.map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
+            {/*
+              The shared Select, matching DateFilterBar beside it.
+
+              This was a native <select>, whose option list is drawn by the
+              operating system and so ignores the design tokens entirely — it
+              looked like a different application next to the controls either
+              side of it. Select renders its own list, and the wrapper here
+              mirrors DateFilterBar's framing so the two read as a pair.
+            */}
+            <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 shadow-sm">
+              <Download size={13} className="shrink-0 text-slate-400" />
+              <Select
+                value=""
+                disabled={Boolean(exporting) || loading}
+                aria-label="Export the dashboard"
+                placeholder={exporting ? 'Preparing…' : 'Export'}
+                onChange={(event) => { if (event.target.value) runExport(event.target.value); }}
+                className="h-7 cursor-pointer border-0 bg-transparent px-0 text-xs font-medium text-slate-700 shadow-none focus-visible:ring-0"
+                options={EXPORT_CHOICES.map(([value, label]) => ({ value, label }))}
+              />
+            </div>
             <QuickActionBar />
             <WidgetToggleBar />
           </div>
-          {exportError && (
-            <p role="alert" className="mt-2 text-xs text-red-600">{exportError}</p>
+          {(exportProgress || exportError) && (
+            <div className="mt-2 max-w-md">
+              <ExportProgress
+                progress={exportProgress}
+                error={exportError}
+                staleBuild={exportStale}
+                onDismiss={() => setExportError('')}
+              />
+            </div>
           )}
         </div>
       </div>
@@ -357,6 +379,107 @@ function StaffDashboard() {
         </div>
       </Section>
 
+      {/*
+        ══ TOP PERFORMERS ══════════════════════════════════════════════════
+        Placed directly under the executive numbers because it answers the
+        question those numbers raise: the cash position says how much came in,
+        this says where from.
+      */}
+      <Section visible={widgets.topPerformers}>
+        <TopPerformersPanel data={topPerformers} fmt={fmt} period={preset} />
+      </Section>
+
+      {/* ══ REVENUE TREND CHART ════════════════════════════════════════════════ */}
+      <Section visible={widgets.revenueChart}>
+        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900">Revenue Trend</h2>
+              <p className="text-[11px] text-slate-400">Monthly paid revenue — last 12 months</p>
+            </div>
+            <Link to="/finance/reports" className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline">
+              <ArrowUpRight size={12} /> Detailed Report
+            </Link>
+          </div>
+          <RevenueChart data={monthlyRevenue} />
+        </section>
+      </Section>
+
+      {/* ══ REVENUE PANEL ════════════════════════════════════════════════════ */}
+      <Section visible={widgets.financeSummary}>
+        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-slate-900">Revenue Panel</h2>
+              <p className="text-[11px] text-slate-400">Money actually received, {preset.toLowerCase()}</p>
+            </div>
+            <Link to="/finance/reports" className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
+              <ArrowUpRight size={11} /> View Report
+            </Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Period Revenue · {preset}</p>
+              <p className="mt-1 break-words text-2xl font-bold leading-tight tabular-nums" style={{ color: accent }} title={fmt(rangedRevenue)}>{fmt(rangedRevenue)}</p>
+              {/* Value and delta are both computed over the SAME window
+                  (rangedRevenue vs the prior period of equal length), so this
+                  can never contradict the figure it sits next to. */}
+              {momGrowthKind === 'pct' && (
+                <div className={`mt-1.5 flex items-center gap-1 text-xs font-medium ${parseFloat(momGrowth) > 0 ? 'text-emerald-600' : parseFloat(momGrowth) < 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                  {parseFloat(momGrowth) > 0 ? <ArrowUp size={12} /> : parseFloat(momGrowth) < 0 ? <ArrowDown size={12} /> : <Minus size={12} />}
+                  {momGrowth > 0 ? '+' : ''}{momGrowth}% vs prior period
+                </div>
+              )}
+              {momGrowthKind === 'from-zero' && <p className="mt-1.5 text-xs font-medium text-slate-400">New this period</p>}
+              {momGrowthKind === 'no-baseline' && <p className="mt-1.5 text-xs text-slate-400">No prior period</p>}
+            </div>
+            <div className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Year to date</p>
+              <p className="mt-1 break-words text-xl font-bold leading-tight text-slate-900 tabular-nums" title={fmt(ytdRevenue)}>{fmt(ytdRevenue)}</p>
+            </div>
+          </div>
+        </section>
+      </Section>
+
+      {/* ══ SECTION 4 — DEBTORS + REMINDERS ══════════════════════════════════ */}
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Section visible={widgets.topDuePayments}>
+          <TopDuePaymentsTable invoices={duePayments} fmt={fmt} />
+        </Section>
+        <Section visible={widgets.paymentReminders}>
+          <PaymentRemindersWidget reminders={reminders} fmt={fmt} />
+        </Section>
+      </div>
+
+      {/* ══ SECTION 5 — LEAD STATUS + PROPERTY STATUS ════════════════════════ */}
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Section visible={widgets.leadStatus}>
+          <LeadStatusPanel statusMap={leadStatusMap} totalLeads={totalLeadsInRange} />
+        </Section>
+        <Section visible={widgets.propertyStatus}>
+          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">Property Status</h2>
+                <p className="text-[11px] text-slate-400">Portfolio availability breakdown</p>
+              </div>
+              <Link to="/properties" className="text-xs font-medium text-blue-600 hover:underline">View All →</Link>
+            </div>
+            <PropertyStatusChart statusMap={propertyStatusMap} />
+          </section>
+        </Section>
+      </div>
+
+      {/* ══ SECTION 6 — REALTOR LEADERBOARD ══════════════════════════════════ */}
+      <Section visible={widgets.realtorLeaderboard}>
+        <RealtorLeaderboard realtors={realtorLeaderboard} fmt={fmt} period={preset} range={getDateRange()} />
+      </Section>
+
+      {/* ══ SECTION 7 — ACTIVITY FEED + RECENT SALES ════════════════════════ */}
+      <Section visible={widgets.recentActivities}>
+        <RecentActivitiesFeed activities={activities} recentSales={recentSales} fmt={fmt} />
+      </Section>
+
       {/* ══ PIPELINE — the one place a stepped/funnel treatment is earned ═══ */}
       <Section visible={widgets.operationalSummary}>
         <section aria-label="Sales pipeline" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -399,97 +522,6 @@ function StaffDashboard() {
             </div>
           )}
         </section>
-      </Section>
-
-      {/* ══ REVENUE PANEL ════════════════════════════════════════════════════ */}
-      <Section visible={widgets.financeSummary}>
-        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-slate-900">Revenue Panel</h2>
-              <p className="text-[11px] text-slate-400">Money actually received, {preset.toLowerCase()}</p>
-            </div>
-            <Link to="/finance/reports" className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-              <ArrowUpRight size={11} /> View Report
-            </Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Period Revenue · {preset}</p>
-              <p className="mt-1 break-words text-2xl font-bold leading-tight tabular-nums" style={{ color: accent }} title={fmt(rangedRevenue)}>{fmt(rangedRevenue)}</p>
-              {/* Value and delta are both computed over the SAME window
-                  (rangedRevenue vs the prior period of equal length), so this
-                  can never contradict the figure it sits next to. */}
-              {momGrowthKind === 'pct' && (
-                <div className={`mt-1.5 flex items-center gap-1 text-xs font-medium ${parseFloat(momGrowth) > 0 ? 'text-emerald-600' : parseFloat(momGrowth) < 0 ? 'text-rose-600' : 'text-slate-400'}`}>
-                  {parseFloat(momGrowth) > 0 ? <ArrowUp size={12} /> : parseFloat(momGrowth) < 0 ? <ArrowDown size={12} /> : <Minus size={12} />}
-                  {momGrowth > 0 ? '+' : ''}{momGrowth}% vs prior period
-                </div>
-              )}
-              {momGrowthKind === 'from-zero' && <p className="mt-1.5 text-xs font-medium text-slate-400">New this period</p>}
-              {momGrowthKind === 'no-baseline' && <p className="mt-1.5 text-xs text-slate-400">No prior period</p>}
-            </div>
-            <div className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Year to date</p>
-              <p className="mt-1 break-words text-xl font-bold leading-tight text-slate-900 tabular-nums" title={fmt(ytdRevenue)}>{fmt(ytdRevenue)}</p>
-            </div>
-          </div>
-        </section>
-      </Section>
-
-      {/* ══ REVENUE TREND CHART ════════════════════════════════════════════════ */}
-      <Section visible={widgets.revenueChart}>
-        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900">Revenue Trend</h2>
-              <p className="text-[11px] text-slate-400">Monthly paid revenue — last 12 months</p>
-            </div>
-            <Link to="/finance/reports" className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline">
-              <ArrowUpRight size={12} /> Detailed Report
-            </Link>
-          </div>
-          <RevenueChart data={monthlyRevenue} />
-        </section>
-      </Section>
-
-      {/* ══ SECTION 4 — DEBTORS + REMINDERS ══════════════════════════════════ */}
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Section visible={widgets.topDuePayments}>
-          <TopDuePaymentsTable invoices={duePayments} fmt={fmt} />
-        </Section>
-        <Section visible={widgets.paymentReminders}>
-          <PaymentRemindersWidget reminders={reminders} fmt={fmt} />
-        </Section>
-      </div>
-
-      {/* ══ SECTION 5 — LEAD STATUS + PROPERTY STATUS ════════════════════════ */}
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Section visible={widgets.leadStatus}>
-          <LeadStatusPanel statusMap={leadStatusMap} totalLeads={totalLeadsInRange} />
-        </Section>
-        <Section visible={widgets.propertyStatus}>
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">Property Status</h2>
-                <p className="text-[11px] text-slate-400">Portfolio availability breakdown</p>
-              </div>
-              <Link to="/properties" className="text-xs font-medium text-blue-600 hover:underline">View All →</Link>
-            </div>
-            <PropertyStatusChart statusMap={propertyStatusMap} />
-          </section>
-        </Section>
-      </div>
-
-      {/* ══ SECTION 6 — REALTOR LEADERBOARD ══════════════════════════════════ */}
-      <Section visible={widgets.realtorLeaderboard}>
-        <RealtorLeaderboard realtors={realtorLeaderboard} fmt={fmt} period={preset} range={getDateRange()} />
-      </Section>
-
-      {/* ══ SECTION 7 — ACTIVITY FEED + RECENT SALES ════════════════════════ */}
-      <Section visible={widgets.recentActivities}>
-        <RecentActivitiesFeed activities={activities} recentSales={recentSales} fmt={fmt} />
       </Section>
 
       {/* ══ SECTION 8 — SUPPORT PERFORMANCE ════════════════════════════════ */}

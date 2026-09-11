@@ -1,3 +1,4 @@
+import { lazyImport } from './lazyImport';
 /**
  * Exporting a table to CSV, Excel or PDF.
  *
@@ -21,6 +22,17 @@
  * are fetched the first time somebody exports and never by anyone who does
  * not. CSV needs no library at all and stays instant.
  */
+
+/**
+ * Progress reporting.
+ *
+ * The stages are REAL, not a timer pretending to measure something: loading
+ * the library is genuinely the slow step (exceljs is larger than the rest of
+ * this application put together), and building the file is the next. Showing a
+ * smooth fake bar would be worse than showing none, because it would give no
+ * hint about which part is taking the time.
+ */
+const noProgress = () => {};
 
 /** Columns worth putting in a file, in display order. */
 export const exportableColumns = (columns = []) => columns.filter(
@@ -75,7 +87,8 @@ const csvCell = (value) => {
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 };
 
-export const exportCsv = ({ rows, columns, filename }) => {
+export const exportCsv = ({ rows, columns, filename, onProgress = noProgress }) => {
+  onProgress({ stage: 'Building the file', percent: 40 });
   const cols = exportableColumns(columns);
   const lines = [
     cols.map((c) => csvCell(headerOf(c))).join(','),
@@ -88,11 +101,15 @@ export const exportCsv = ({ rows, columns, filename }) => {
    * ₦ and every accented name arrives mangled.
    */
   const blob = new Blob([`﻿${lines.join('\r\n')}`], { type: 'text/csv;charset=utf-8;' });
+  onProgress({ stage: 'Saving', percent: 100 });
   download(blob, `${filename}.csv`);
 };
 
-export const exportExcel = async ({ rows, columns, filename, title }) => {
-  const ExcelJS = (await import('exceljs')).default ?? (await import('exceljs'));
+export const exportExcel = async ({ rows, columns, filename, title, onProgress = noProgress }) => {
+  onProgress({ stage: 'Loading the spreadsheet engine', percent: 10 });
+  const module = await lazyImport(() => import('exceljs'));
+  const ExcelJS = module.default ?? module;
+  onProgress({ stage: 'Building the workbook', percent: 55 });
   const cols = exportableColumns(columns);
 
   const workbook = new ExcelJS.Workbook();
@@ -114,16 +131,20 @@ export const exportExcel = async ({ rows, columns, filename, title }) => {
   sheet.views = [{ state: 'frozen', ySplit: 1 }];
   sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: cols.length || 1 } };
 
+  onProgress({ stage: 'Writing the file', percent: 85 });
   const buffer = await workbook.xlsx.writeBuffer();
+  onProgress({ stage: 'Saving', percent: 100 });
   download(
     new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
     `${filename}.xlsx`,
   );
 };
 
-export const exportPdf = async ({ rows, columns, filename, title, subtitle }) => {
-  const { jsPDF } = await import('jspdf');
-  const autoTable = (await import('jspdf-autotable')).default;
+export const exportPdf = async ({ rows, columns, filename, title, subtitle, onProgress = noProgress }) => {
+  onProgress({ stage: 'Loading the PDF engine', percent: 10 });
+  const { jsPDF } = await lazyImport(() => import('jspdf'));
+  const autoTable = (await lazyImport(() => import('jspdf-autotable'))).default;
+  onProgress({ stage: 'Laying out the pages', percent: 55 });
   const cols = exportableColumns(columns);
 
   // Landscape: these tables are wider than they are tall, and portrait forces
@@ -158,6 +179,7 @@ export const exportPdf = async ({ rows, columns, filename, title, subtitle }) =>
     },
   });
 
+  onProgress({ stage: 'Saving', percent: 100 });
   doc.save(`${filename}.pdf`);
 };
 

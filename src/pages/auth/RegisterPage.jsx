@@ -7,6 +7,27 @@ import useSharedBrand from '../../hooks/useSharedBrand';
 import PropertyCarousel from '../../components/common/PropertyCarousel';
 import { useAppearance } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
+import { apiUrl } from '../../api/apiBase';
+
+/**
+ * A full-page redirect, not an XHR, so it has to be a URL the BROWSER can
+ * follow — derived from the API base rather than hardcoded, for the reason
+ * LoginPage gives: a pinned localhost:3000 broke Google in every deployment
+ * but a local one.
+ */
+const GOOGLE_AUTH_URL = apiUrl('/auth/google');
+
+/* ── Google icon — matched to the one on the sign-in page ── */
+function GoogleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#FFC107" d="M43.6 20.5h-1.9V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z" />
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z" />
+      <path fill="#1976D2" d="M43.6 20.5h-1.9V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.4l6.2 5.2C39.9 36.6 44 31 44 24c0-1.3-.1-2.3-.4-3.5z" />
+    </svg>
+  );
+}
 
 const PUBLIC_ROLE_NAMES = ['client', 'realtor'];
 
@@ -282,6 +303,26 @@ export default function RegisterPage() {
         >
           {loading ? 'Creating account…' : 'Create Account'}
         </button>
+
+        <div className="flex items-center gap-3 text-xs text-white/25">
+          <span className="h-px flex-1 bg-white/10" />
+          or continue with
+          <span className="h-px flex-1 bg-white/10" />
+        </div>
+
+        {/*
+          Same control as the sign-in page, and the same endpoint: /auth/google
+          creates the account on first use, so one route serves both. An <a>
+          rather than a button because this is a full-page redirect the browser
+          must follow, not something fetch can do.
+        */}
+        <a
+          href={GOOGLE_AUTH_URL}
+          className="flex w-full items-center justify-center gap-2 h-11 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-white/70 hover:bg-white/10 transition"
+        >
+          <GoogleIcon />
+          Sign up with Google
+        </a>
 
         <p className="text-sm text-white/35 text-center">
           Already have an account?{' '}

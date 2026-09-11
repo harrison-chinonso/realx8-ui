@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { listProperties } from '../api/propertyApi';
 import { listLeads, listDeals } from '../api/crmApi';
-import { listInvoices, listTransactions, listPaymentReminders, revenueReport } from '../api/financeApi';
+import { listInvoices, listTransactions, listPaymentReminders, revenueReport, topPerformersReport } from '../api/financeApi';
 import { listTickets } from '../api/supportApi';
 import { listClients, listUsers, listRealtors, listReferralTransactions } from '../api/userApi';
 import { getAgentPerformance } from '../api/crmApi';
@@ -98,6 +98,7 @@ export default function useDashboardData() {
         notificationsList,
         revenueReportData,
         agentPerformance,
+        topPerformersData,
       ] = await Promise.all([
         safe(() => listClients({ limit: 2000 })),
         safe(() => listProperties({ limit: 2000 })),
@@ -115,6 +116,17 @@ export default function useDashboardData() {
         // The leaderboard is scoped and totalled server-side; it needs the same
         // window the rest of the dashboard is showing.
         getAgentPerformance({ from: from.toISOString(), to: to.toISOString() }).catch(() => null),
+        /**
+         * Ranked server-side over the same window as everything else.
+         *
+         * Swallows its own failure: this is one panel, and a report endpoint
+         * being unavailable should cost that panel, not the whole dashboard.
+         */
+        topPerformersReport({
+          start_date: from.toISOString(),
+          end_date: to.toISOString(),
+          limit: 5,
+        }).then((r) => r?.data ?? null).catch(() => null),
       ]);
 
       if (controller.signal.aborted) return;
@@ -443,6 +455,9 @@ export default function useDashboardData() {
         conversionRate,
         leadStatusMap,
         totalLeadsInRange: leadsInRange.length,
+
+        // Rankings, computed server-side — see financeApi.topPerformersReport.
+        topPerformers: topPerformersData,
 
         // Tables & feeds
         duePayments,

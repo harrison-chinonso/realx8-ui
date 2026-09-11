@@ -74,6 +74,16 @@ export const paystackVerify = (payload) => client.post('/payments/paystack/verif
 
 // Reports
 export const revenueReport = () => client.get('/reports/revenue').then(r => r.data);
+
+/**
+ * Top performing properties, units and clients, ranked by money RECEIVED.
+ *
+ * Computed in SQL rather than by grouping invoices in the browser: the
+ * dashboard already ships a lot of rows to the client, and this would have
+ * meant every payment as well.
+ */
+export const topPerformersReport = (params = {}) =>
+  client.get('/reports/top-performers', { params }).then(r => r.data);
 export const transactionReport = (params) => client.get('/reports/transactions', { params }).then(r => r.data);
 export const invoiceReport = (params) => client.get('/reports/invoices', { params }).then(r => r.data);
 
