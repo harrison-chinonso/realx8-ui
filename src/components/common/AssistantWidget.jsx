@@ -63,7 +63,16 @@ export default function AssistantWidget() {
     if (!isAuthenticated) { setStatus(null); return; }
     getAssistantStatus()
       .then((res) => setStatus(res?.data ?? null))
-      .catch(() => setStatus(null));
+      .catch((error) => {
+
+        const status = error?.response?.status;
+        const reason = error?.response?.data?.reason || error?.response?.data?.message;
+        console.warn(
+          `[assistant] hidden: status check failed`
+          + `${status ? ` (HTTP ${status}${reason ? ` — ${reason}` : ''})` : ` — ${error?.message || 'network error'}`}`,
+        );
+        setStatus(null);
+      });
   }, [isAuthenticated]);
 
   useEffect(() => {
