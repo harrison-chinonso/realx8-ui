@@ -68,6 +68,7 @@ services are peeled onto separate deployments later.
 | `npm run cf:dev` | run the Cloudflare worker locally |
 | `npm run verify:export` | table export: which value each column contributes, and CSV escaping |
 | `npm run verify:dashboard-export` | the dashboard report is built from data, not from the screen |
+| `npm run verify:interop` | payload encryption agrees with Realx8-Core about the wire |
 
 ## Layout
 

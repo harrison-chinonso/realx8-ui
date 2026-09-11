@@ -17,7 +17,8 @@
     "cf:deploy": "npm run build && wrangler deploy --env=\"\"",
     "cf:deploy:prod": "npm run build && wrangler deploy --env production",
     "verify:export": "node scripts/verify-export.cjs",
-    "verify:dashboard-export": "node scripts/verify-dashboard-export.cjs"
+    "verify:dashboard-export": "node scripts/verify-dashboard-export.cjs",
+    "verify:interop": "node scripts/verify-payload-interop.cjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
