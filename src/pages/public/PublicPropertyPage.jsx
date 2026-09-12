@@ -132,14 +132,24 @@ export default function PublicPropertyPage() {
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
         <header className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
+          {/*
+            * Stacked on a phone, side by side from `sm` up — the same shape as
+            * the signed-in property page, and for the same reason: `flex-1`
+            * plus `min-w-0` means the title SHRINKS instead of wrapping, since
+            * flex items give up width before a wrap is considered. The status
+            * pill then sat beside a name broken down a narrow column.
+            *
+            * `self-start` keeps the pill hugging its own text once it is on its
+            * own row; stretched, it would run the full width of the card.
+            */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 sm:flex-1">
               <h1 className="break-words text-2xl font-bold text-slate-900">{property.name}</h1>
               {property.type && <p className="mt-1 text-sm font-medium text-slate-600">{property.type}</p>}
               {location && <p className="mt-1 text-sm text-slate-500">{location}</p>}
             </div>
             {property.status && (
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
+              <span className="self-start rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
                 {property.status}
               </span>
             )}

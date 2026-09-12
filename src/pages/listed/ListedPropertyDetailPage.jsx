@@ -83,13 +83,25 @@ export default function ListedPropertyDetailPage() {
       <Link to="/properties/listed"><Button variant="secondary" size="sm">← Back to Listed Properties</Button></Link>
 
       <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
+        {/*
+          * Stacked on a phone, side by side from `sm` up.
+          *
+          * These were always one row. The title block is `flex-1 min-w-0`, so it
+          * SHRINKS rather than wrapping — flex items give up width before a
+          * wrap is considered — while Button carries `whitespace-nowrap` and
+          * keeps every pixel of "Purchase Now". On a narrow screen the name was
+          * squeezed into whatever was left and broke mid-word down a ribbon a
+          * few characters wide.
+          */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 sm:flex-1">
             <h1 className="break-words text-2xl font-bold text-slate-900">{property.name}</h1>
             {property.type && <p className="mt-1 text-sm font-medium" style={{ color: 'var(--primary)' }}>{property.type}</p>}
             <p className="mt-1 text-sm text-slate-500">{location || 'No address provided.'}</p>
           </div>
-          <div className="flex items-center gap-2">
+          {/* flex-wrap so the badge and the button stack rather than overflow on
+              the narrowest phones. */}
+          <div className="flex flex-wrap items-center gap-2">
             <Badge value={property.status} />
             {canPurchase && <Button type="button" onClick={() => setShowPurchase(true)}>Purchase Now</Button>}
           </div>
