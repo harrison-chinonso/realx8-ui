@@ -142,7 +142,7 @@ export default function ReceiptsPage() {
 
     setSaving(true);
     try {
-      await rejectReceipt(rejectingReceipt.id, { notes: rejectNotes.trim() || null });
+      await rejectReceipt(rejectingReceipt.id, { reason: rejectNotes.trim() });
       closeRejectModal(true);
       await load();
       setFeedback('success', `Receipt ${rejectingReceipt.receipt_number || rejectingReceipt.number || rejectingReceipt.id} rejected.`);
@@ -334,18 +334,28 @@ export default function ReceiptsPage() {
       <Modal open={Boolean(rejectingReceipt)} onClose={closeRejectModal} title="Reject Receipt" size="sm">
         <form onSubmit={handleReject} className="space-y-4">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Rejection Notes</span>
+            <span className="text-sm font-medium text-slate-700">Reason for rejection</span>
             <textarea
               rows={4}
               value={rejectNotes}
               onChange={(event) => setRejectNotes(event.target.value)}
               className={`${INPUT_CLASS} resize-none`}
-              placeholder="Why is this receipt being rejected?"
+              placeholder="What is wrong with this payment, and what should the buyer do?"
             />
+            {/*
+              * Compulsory, and the buyer reads it verbatim on their payments
+              * page. "Rejected" with no explanation leaves them nothing to act
+              * on, which is how a corrected payment never arrives.
+              */}
+            <span className="block text-xs text-slate-500">
+              The buyer is shown this, so say what needs to change.
+            </span>
           </label>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={closeRejectModal} disabled={saving}>Cancel</Button>
-            <Button type="submit" variant="danger" disabled={saving}>{saving ? 'Rejecting...' : 'Reject Receipt'}</Button>
+            <Button type="submit" variant="danger" disabled={saving || !rejectNotes.trim()}>
+              {saving ? 'Rejecting...' : 'Reject Receipt'}
+            </Button>
           </div>
         </form>
       </Modal>

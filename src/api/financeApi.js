@@ -109,6 +109,11 @@ export const createReceipt = (payload) => client.post('/receipts', payload).then
 export const verifyReceipt = (id, payload) => client.post(`/receipts/${id}/verify`, payload || {}).then(r => r.data);
 export const rejectReceipt = (id, payload) => client.post(`/receipts/${id}/reject`, payload).then(r => r.data);
 
+// The buyer's own corrections, allowed while a payment is pending or rejected.
+// Refused server-side once it is approved or cancelled.
+export const updateOwnReceipt = (id, payload) => client.put(`/receipts/${id}`, payload).then(r => r.data);
+export const cancelOwnReceipt = (id) => client.post(`/receipts/${id}/cancel`, {}).then(r => r.data);
+
 // ── Installment plans (the property purchase journey) ────────────────────────
 // Distinct from the payment plans above, which are the subscription price list.
 export const listInstallmentPlans = (params) => client.get('/installment-plans', { params }).then(r => r.data);

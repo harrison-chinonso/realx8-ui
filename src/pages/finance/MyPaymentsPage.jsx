@@ -1,6 +1,7 @@
 import { useSearchParams } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import PaymentAnalysisPanel from '../../components/finance/PaymentAnalysisPanel';
+import MySubmittedPaymentsPanel from '../../components/finance/MySubmittedPaymentsPanel';
 
 /**
  * The client's own invoices, or their own payments.
@@ -24,10 +25,26 @@ export default function MyPaymentsPage({ section = 'invoices' }) {
         </h1>
         <p className="text-sm text-slate-500">
           {isPayments
-            ? 'Every payment recorded against your invoices.'
+            ? 'What you have submitted, and what has been applied to your invoices.'
             : 'Everything billed to you — all invoices, what is due and what is still pending.'}
         </p>
       </div>
+
+      {/*
+        * Submissions come FIRST on the payments view.
+        *
+        * The panel below lists payments recorded against an invoice, which only
+        * happens once an admin approves one — so a buyer waiting on a decision,
+        * or one whose proof was refused, previously saw an empty page and no
+        * sign their upload had landed anywhere.
+        */}
+      {isPayments && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-slate-900">Payments you have submitted</h2>
+          <MySubmittedPaymentsPanel />
+        </div>
+      )}
+      {isPayments && <h2 className="text-sm font-semibold text-slate-900">Applied to your invoices</h2>}
       {user?.id
         ? (
           <PaymentAnalysisPanel
