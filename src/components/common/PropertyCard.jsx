@@ -3,7 +3,7 @@ import Badge from './Badge';
 import Button from '../ui/Button';
 import ActionsMenu from './ActionsMenu';
 import { describeUnits, describeUnitConfig } from './PropertyUnitFields';
-import { firstImageUrl } from '../../utils/parseImages';
+import { coverImageUrl } from '../../utils/parseImages';
 
 /** Total units across every configuration, e.g. "30 units". */
 const describeUnitTotal = (configs, property) => {
@@ -26,7 +26,7 @@ const describeUnitTotal = (configs, property) => {
  * `onShare` adds a share affordance.
  */
 export default function PropertyCard({ property, onOpen, onEdit, onDelete, onShare, summaryMode = 'full' }) {
-  const image = firstImageUrl(property.images);
+  const image = coverImageUrl(property.images);
   const location = [property.city, property.state].filter(Boolean).join(', ');
   // Prefer the real configurations; fall back to the mirrored property fields
   // for endpoints that do not include them.
