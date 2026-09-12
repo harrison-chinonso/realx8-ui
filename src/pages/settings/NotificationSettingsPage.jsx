@@ -324,6 +324,8 @@ export default function NotificationSettingsPage() {
                 )}
                 {preview.data.permission_recipients?.length ? (
                   <div className="overflow-hidden rounded-lg ring-1 ring-slate-200">
+                    {/* Scrolls inside its own box rather than widening the page on a phone. */}
+                    <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-slate-200">
                       <tbody className="divide-y divide-slate-100">
                         {preview.data.permission_recipients.map((u) => (
@@ -335,6 +337,7 @@ export default function NotificationSettingsPage() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 ) : (
                   <p className="rounded-lg bg-amber-50 px-4 py-2 text-amber-800">

@@ -59,6 +59,14 @@ export default function Table({
   /** Base filename and PDF heading. Falls back to something neutral. */
   exportName = 'report',
   exportTitle,
+  /**
+   * What to say when there is nothing to show.
+   *
+   * A specific message carries real information — "they arrive when someone
+   * buys from a shared link" tells someone the feature works and they are not
+   * missing data — and a generic "No data available." throws that away.
+   */
+  emptyMessage = 'No data available.',
   /** Supply to search on the SERVER instead — required for server-paginated tables. */
   onSearch,
 }) {
@@ -209,7 +217,52 @@ export default function Table({
         onDismiss={() => setFailed('')}
       />
 
-      <div className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+      {/*
+        ── Phones get cards, not a table ────────────────────────────────────
+
+        A four-column table on a 375px screen is unusable however it is
+        styled: either the columns crush to a few characters each, or the
+        whole thing scrolls sideways and the first column — the name, the one
+        you are scanning for — goes off the edge as soon as you scroll to see
+        a status. Realtors and clients use this application on a phone, so
+        that is the common case rather than the edge case.
+
+        The same rows are rendered as stacked label/value cards below `sm`,
+        where there is room for a full property name and nothing has to be
+        scrolled horizontally to be read. The table returns at `sm` and up.
+        Both views come from the same columns and the same render functions,
+        so nothing can drift between them.
+      */}
+      <ul className="space-y-3 sm:hidden">
+        {visible.map((row, ri) => (
+          <li key={row.id ?? ri} className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+            <dl className="space-y-2">
+              {columns.map((column, ci) => (
+                <div key={column.key ?? column.accessor ?? ci} className="flex items-start justify-between gap-3">
+                  <dt className="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-400">
+                    {column.label ?? column.header}
+                  </dt>
+                  {/* min-w-0 is what lets long values wrap instead of pushing
+                      the label off the card. */}
+                  <dd className="min-w-0 break-words text-right text-sm text-slate-700">
+                    {column.render ? column.render(row) : row[column.key ?? column.accessor]}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            {renderActions && (
+              <div className="mt-3 border-t border-slate-100 pt-3">{renderActions(row)}</div>
+            )}
+          </li>
+        ))}
+        {!visible.length && (
+          <li className="rounded-xl bg-white px-4 py-8 text-center text-sm text-slate-500 shadow-sm ring-1 ring-slate-200">
+            {loading ? 'Loading…' : (tableRows.length ? 'No rows match your search or filters.' : emptyMessage)}
+          </li>
+        )}
+      </ul>
+
+      <div className="hidden overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200 sm:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
             <thead className="bg-slate-50">
@@ -229,7 +282,12 @@ export default function Table({
               {visible.map((row, ri) => (
                 <tr key={row.id ?? ri} className="hover:bg-slate-50">
                   {columns.map((column, ci) => (
-                    <td key={column.key ?? column.accessor ?? ci} className="px-4 py-3 text-slate-700">
+                    <td
+                      key={column.key ?? column.accessor ?? ci}
+                      /* max-w plus break-words keeps one long name from widening
+                         the column past the viewport and pushing the rest off. */
+                      className="max-w-[18rem] break-words px-4 py-3 align-top text-slate-700"
+                    >
                       {column.render
                         ? column.render(row)
                         : row[column.key ?? column.accessor]}
@@ -253,7 +311,7 @@ export default function Table({
                          * for missing records.
                          */
                         ? 'No rows match your search or filters.'
-                        : 'No data available.')}
+                        : emptyMessage)}
                   </td>
                 </tr>
               )}

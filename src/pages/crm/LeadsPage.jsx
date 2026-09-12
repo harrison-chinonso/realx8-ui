@@ -670,6 +670,7 @@ export default function LeadsPage() {
         <p className="text-sm text-slate-500">Loading leads...</p>
       ) : (
         <Table
+        searchable={false}
           columns={columns}
           data={filteredLeads}
           renderActions={(row) => (
@@ -1093,6 +1094,8 @@ export default function LeadsPage() {
             )}
 
             <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
+              {/* Scrolls inside its own box rather than widening the page on a phone. */}
+              <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-slate-200 text-sm">
                 <thead className="bg-slate-50 text-left text-slate-600">
                   <tr>
@@ -1129,6 +1132,7 @@ export default function LeadsPage() {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         </div>

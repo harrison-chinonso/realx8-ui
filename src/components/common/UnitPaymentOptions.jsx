@@ -57,6 +57,10 @@ export default function UnitPaymentOptions({ unitId, quantity = 1 }) {
 
       {plans.length > 0 && (
         <div className="overflow-hidden rounded-lg ring-1 ring-slate-200">
+          {/* A buyer chooses a plan on a phone. Four money columns do not fit
+              a 375px screen, and without this the table widens the whole page
+              instead of scrolling inside its own box. */}
+          <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-xs">
             <thead className="bg-slate-50">
               <tr>
@@ -105,6 +109,7 @@ export default function UnitPaymentOptions({ unitId, quantity = 1 }) {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

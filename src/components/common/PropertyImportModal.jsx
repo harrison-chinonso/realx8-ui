@@ -103,6 +103,8 @@ export default function PropertyImportModal({ open, onClose, onImported }) {
 
         {rowErrors.length > 0 && (
           <div className="max-h-56 overflow-y-auto rounded-lg border border-red-200">
+            {/* Scrolls inside its own box rather than widening the page on a phone. */}
+            <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="sticky top-0 bg-red-50">
                 <tr>
@@ -119,6 +121,7 @@ export default function PropertyImportModal({ open, onClose, onImported }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
 

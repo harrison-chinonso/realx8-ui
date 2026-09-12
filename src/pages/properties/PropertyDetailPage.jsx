@@ -20,6 +20,7 @@ import {
   uploadPropertyMedia,
 } from '../../api/propertyApi';
 import Badge from '../../components/common/Badge';
+import Table from '../../components/common/Table';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
@@ -523,49 +524,43 @@ export default function PropertyDetailPage() {
 
         {tab === 'units' && (
           <div className="space-y-4">
-            <div className="overflow-hidden rounded-lg ring-1 ring-slate-200">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Unit Name</th>
-                      <th className="px-4 py-3 text-right font-semibold text-slate-600">Quantity</th>
-                      <th className="px-4 py-3 text-right font-semibold text-slate-600">Property Size</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Measured In</th>
-                      <th className="px-4 py-3 text-right font-semibold text-slate-600">Price</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
-                      <th className="px-4 py-3 text-right font-semibold text-slate-600">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {units.map((unit) => (
-                      <tr key={unit.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-medium text-slate-900">{describeUnitConfig(unit)}</td>
-                        <td className="px-4 py-3 text-right text-slate-700">{unit.quantity ?? '—'}</td>
-                        <td className="px-4 py-3 text-right text-slate-700">{unit.size ? Number(unit.size).toLocaleString() : '—'}</td>
-                        <td className="px-4 py-3 text-slate-700">{unit.unit || 'sqm'}</td>
-                        <td className="px-4 py-3 text-right font-medium text-slate-900">{fmt(unit.price || 0)}</td>
-                        <td className="px-4 py-3"><Badge value={unit.status} /></td>
-                        <td className="px-4 py-3 text-right">
-                          {canManageUnits ? (
-                            <Button type="button" variant="danger" size="sm" onClick={() => handleDeleteUnit(unit)}>Delete</Button>
-                          ) : (
-                            <span className="text-xs text-slate-400">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                    {!units.length && (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
-                          No unit configurations yet. Add one below.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            {/*
+                  The shared Table, not a hand-rolled one.
+
+                  Seven columns is unreadable on a phone whatever the styling:
+                  it scrolls sideways and the unit name — the thing a buyer is
+                  actually scanning — leaves the screen as soon as you scroll to
+                  see a price. The shared component renders stacked cards below
+                  `sm` and the table above it, so this is the one place that
+                  needed changing rather than every table in the application.
+
+                  Search and export are off: this sits inside a tab beside a
+                  form, and a toolbar there is clutter. The property list above
+                  is where a search belongs.
+                */}
+                <Table
+                  searchable={false}
+                  exportable={false}
+                  rows={units}
+                  columns={[
+                    { key: 'name', label: 'Unit Name', render: (unit) => describeUnitConfig(unit) },
+                    { key: 'quantity', label: 'Quantity', render: (unit) => unit.quantity ?? '—' },
+                    {
+                      key: 'size',
+                      label: 'Property Size',
+                      render: (unit) => (unit.size ? Number(unit.size).toLocaleString() : '—'),
+                    },
+                    { key: 'unit', label: 'Measured In', render: (unit) => unit.unit || 'sqm' },
+                    { key: 'price', label: 'Price', render: (unit) => fmt(unit.price || 0) },
+                    { key: 'status', label: 'Status', render: (unit) => <Badge value={unit.status} /> },
+                  ]}
+                  emptyMessage="No unit configurations yet. Add one below."
+                  renderActions={canManageUnits ? (unit) => (
+                    <Button type="button" variant="danger" size="sm" onClick={() => handleDeleteUnit(unit)}>
+                      Delete
+                    </Button>
+              ) : undefined}
+            />
 
             {canManageUnits ? (
               <div className="rounded-lg border border-slate-200 p-4">
@@ -595,47 +590,44 @@ export default function PropertyDetailPage() {
           <PropertyInstallmentPlansPanel propertyId={id} />
         )}
         {tab === 'requests' && (
-          <div className="overflow-hidden rounded-lg ring-1 ring-slate-200">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-sm">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Buyer</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Contact</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Unit</th>
-                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Qty</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Requested</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {requests.map((request) => (
-                    <tr key={request.id} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">{request.buyer_name || '—'}</td>
-                      <td className="px-4 py-3 text-slate-700">
-                        <div>{request.buyer_email || '—'}</div>
-                        {request.buyer_phone && <div className="text-xs text-slate-500">{request.buyer_phone}</div>}
-                      </td>
-                      <td className="px-4 py-3 text-slate-700">
-                        {request.unit_label || 'Any'}
-                        {request.unit_price ? <div className="text-xs text-slate-500">{fmt(request.unit_price)}</div> : null}
-                      </td>
-                      <td className="px-4 py-3 text-right text-slate-700">{request.quantity}</td>
-                      <td className="px-4 py-3 text-slate-500">{formatDate(request.created_at || request.createdAt)}</td>
-                      <td className="px-4 py-3"><Badge value={request.status} /></td>
-                    </tr>
-                  ))}
-                  {!requests.length && (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
-                        No purchase requests yet. They arrive when someone buys from a shared link.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          /* Same reasoning as the units tab: six columns, and on a phone the
+             buyer's name scrolls out of view before you reach the status. */
+          <Table
+            searchable={false}
+            exportable={false}
+            rows={requests}
+            emptyMessage="No purchase requests yet. They arrive when someone buys from a shared link."
+            columns={[
+              { key: 'buyer', label: 'Buyer', render: (r) => r.buyer_name || '—' },
+              {
+                key: 'contact',
+                label: 'Contact',
+                render: (r) => (
+                  <div>
+                    <div>{r.buyer_email || '—'}</div>
+                    {r.buyer_phone && <div className="text-xs text-slate-500">{r.buyer_phone}</div>}
+                  </div>
+                ),
+              },
+              {
+                key: 'unit',
+                label: 'Unit',
+                render: (r) => (
+                  <div>
+                    {r.unit_label || 'Any'}
+                    {r.unit_price ? <div className="text-xs text-slate-500">{fmt(r.unit_price)}</div> : null}
+                  </div>
+                ),
+              },
+              { key: 'quantity', label: 'Qty', render: (r) => r.quantity },
+              {
+                key: 'requested',
+                label: 'Requested',
+                render: (r) => formatDate(r.created_at || r.createdAt),
+              },
+              { key: 'status', label: 'Status', render: (r) => <Badge value={r.status} /> },
+            ]}
+          />
         )}
         {tab === 'plots' && (
           <div className="grid gap-3 md:grid-cols-2">
@@ -665,43 +657,41 @@ export default function PropertyDetailPage() {
         )}
         {tab === 'documents' && (
           <div className="space-y-6">
-            <div className="rounded-xl bg-white shadow-sm ring-1 ring-slate-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Name</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Type</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Download</th>
-                      <th className="px-4 py-3 text-right font-semibold text-slate-600">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {documents.map((document) => (
-                      <tr key={document.id} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 text-slate-700">{document.name || document.file_name || 'Untitled Document'}</td>
-                        <td className="px-4 py-3 text-slate-700"><DocumentTypeBadge value={document.type} /></td>
-                        <td className="px-4 py-3 text-slate-700">
-                          {document.url ? (
-                            <a href={document.url} target="_blank" rel="noreferrer" className="font-medium hover:underline" style={{ color: 'var(--primary)' }}>
-                              Open Document
-                            </a>
-                          ) : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <Button type="button" variant="danger" size="sm" onClick={() => handleDeleteDocument(document)}>Delete</Button>
-                        </td>
-                      </tr>
-                    ))}
-                    {!documents.length && (
-                      <tr>
-                        <td colSpan={4} className="px-4 py-8 text-center text-slate-500">No documents added yet.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            {/* Shared Table for the mobile card layout — see the units tab. */}
+            <Table
+              searchable={false}
+              exportable={false}
+              rows={documents}
+              emptyMessage="No documents added yet."
+              columns={[
+                {
+                  key: 'name',
+                  label: 'Name',
+                  render: (d) => d.name || d.file_name || 'Untitled Document',
+                },
+                { key: 'type', label: 'Type', render: (d) => <DocumentTypeBadge value={d.type} /> },
+                {
+                  key: 'download',
+                  label: 'Download',
+                  render: (d) => (d.url ? (
+                    <a
+                      href={d.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium hover:underline"
+                      style={{ color: 'var(--primary)' }}
+                    >
+                      Open Document
+                    </a>
+                  ) : '—'),
+                },
+              ]}
+              renderActions={(d) => (
+                <Button type="button" variant="danger" size="sm" onClick={() => handleDeleteDocument(d)}>
+                  Delete
+                </Button>
+              )}
+            />
 
             <div className="rounded-lg border border-slate-200 p-4">
               <div className="mb-3">

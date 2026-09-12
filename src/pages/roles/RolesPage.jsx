@@ -215,6 +215,13 @@ export default function RolesPage() {
                 <Button onClick={() => setRoleModalOpen(true)}>+ New Role</Button>
               </div>
               <Table
+              /*
+                This page has its own search box, which filters on the SERVER and
+                therefore searches every row rather than the page in view. The
+                table's built-in search would sit beside it searching only the
+                loaded rows — two boxes, different answers.
+              */
+              searchable={false}
                 columns={roleColumns}
                 rows={roles}
                 renderActions={(role) => (

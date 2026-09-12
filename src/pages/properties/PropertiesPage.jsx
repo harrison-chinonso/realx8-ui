@@ -209,6 +209,8 @@ export default function PropertiesPage() {
         )
       ) : (
         <Table
+        searchable={false}
+        exportable={false}
           columns={[
             { key: 'name', label: 'Property' },
             { key: 'city', label: 'City' },

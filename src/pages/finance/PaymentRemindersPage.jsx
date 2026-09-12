@@ -106,6 +106,13 @@ export default function PaymentRemindersPage() {
         <Button onClick={openCreate}>+ New Reminder</Button>
       </div>
       <Table
+      /*
+        This page has its own search box, which filters on the SERVER and
+        therefore searches every row rather than the page in view. The
+        table's built-in search would sit beside it searching only the
+        loaded rows — two boxes, different answers.
+      */
+      searchable={false}
         columns={columns}
         data={items}
         loading={loading}

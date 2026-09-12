@@ -640,6 +640,13 @@ function TemplatesPanel() {
         <div className="rounded-xl bg-white p-6 text-sm text-slate-500 shadow-sm ring-1 ring-slate-200">Loading templates...</div>
       ) : (
         <Table
+        /*
+          This page has its own search box, which filters on the SERVER and
+          therefore searches every row rather than the page in view. The
+          table's built-in search would sit beside it searching only the
+          loaded rows — two boxes, different answers.
+        */
+        searchable={false}
           columns={columns}
           rows={templates}
           renderActions={(template) => (
