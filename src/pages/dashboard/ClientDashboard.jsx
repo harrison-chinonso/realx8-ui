@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { getDashboardSummary } from '../../api/userApi';
 import SummaryTile from '../../components/dashboard/SummaryTile';
 import TransactionHistory from '../../components/dashboard/TransactionHistory';
+import InvoicePickerModal from '../../components/finance/InvoicePickerModal';
+import PayInvoiceModal from '../../components/finance/PayInvoiceModal';
+import Button from '../../components/ui/Button';
 import { useCurrency } from '../../context/useAppearance';
 import useAuthStore from '../../store/authStore';
 
@@ -20,14 +23,20 @@ export default function ClientDashboard() {
   const user = useAuthStore((state) => state.user);
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  // Two steps, two pieces of state: which invoice, and then paying it. The
+  // picker closes as the payment modal opens, so they are never both on screen.
+  const [picking, setPicking] = useState(false);
+  const [payingInvoiceId, setPayingInvoiceId] = useState(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     let cancelled = false;
     getDashboardSummary()
       .then((response) => { if (!cancelled) setData(response?.data ?? response); })
       .catch((err) => { if (!cancelled) setError(err?.userMessage || 'Could not load your dashboard.'); });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => load(), [load]);
 
   if (error) return <div className="rounded-2xl bg-rose-50 p-6 text-sm text-rose-700 ring-1 ring-rose-200">{error}</div>;
 
@@ -47,13 +56,25 @@ export default function ClientDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-bold text-slate-900">
-          Welcome back, {user?.name?.split(' ')[0] || 'there'} 👋
-        </h1>
-        <p className="text-[11px] text-slate-400">
-          {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-lg font-bold text-slate-900">
+            Welcome back, {user?.name?.split(' ')[0] || 'there'} 👋
+          </h1>
+          <p className="text-[11px] text-slate-400">
+            {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        {/*
+          * Offered whenever anything is outstanding, and simply absent when
+          * nothing is — a Pay Now that opens an empty list is a dead end, and
+          * the summary already says the balance is zero.
+          */}
+        {(invoices.unpaid?.count ?? 0) > 0 && (
+          <Button type="button" className="self-start" onClick={() => setPicking(true)}>
+            Pay Now
+          </Button>
+        )}
       </div>
 
       <div>
@@ -91,6 +112,24 @@ export default function ClientDashboard() {
       </div>
 
       <TransactionHistory rows={data.transactions || []} fmt={fmt} emptyText="No transactions yet." />
+
+      <InvoicePickerModal
+        open={picking}
+        userId={user?.id}
+        onClose={() => setPicking(false)}
+        onSelect={(invoiceId) => { setPicking(false); setPayingInvoiceId(invoiceId); }}
+      />
+      <PayInvoiceModal
+        open={Boolean(payingInvoiceId)}
+        invoiceId={payingInvoiceId}
+        onClose={() => setPayingInvoiceId(null)}
+        /**
+         * Reload after a receipt is submitted: the invoice moves to
+         * payment_under_review, so the tiles the buyer just acted on are now
+         * stale and would still be inviting them to pay it.
+         */
+        onSubmitted={() => { setPayingInvoiceId(null); load(); }}
+      />
     </div>
   );
 }
