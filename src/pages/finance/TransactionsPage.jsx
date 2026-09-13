@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { createTransaction, listTransactions, updateTransaction } from '../../api/financeApi';
 import Table from '../../components/common/Table';
 import Button from '../../components/ui/Button';
@@ -32,23 +33,28 @@ const toApiPayload = (form) => {
   return payload;
 };
 
-const STATUS_TABS = [
-  { key: 'all', label: 'All Payments', status: null },
-  { key: 'pending', label: 'Pending', status: 'pending' },
-  { key: 'completed', label: 'Completed', status: 'completed' },
-];
-
 /**
- * One page, one menu entry, tabs for the rest.
+ * The record of payments that have SETTLED.
  *
- * Pending used to be its own menu item pointing at the same page, so both
- * entries highlighted together and neither actually filtered. `status` still
- * seeds the tab so /finance/transactions/pending keeps working as a deep link.
+ * ── Why there are no status tabs ────────────────────────────────────────────
+ *
+ * There used to be three — All, Pending, Completed — and they filtered
+ * correctly. The problem was upstream of them: every `INSERT INTO transactions`
+ * in the backend writes `status: 'completed'`, because a transaction row is
+ * created BECAUSE a payment settled. The column only ever holds one value.
+ *
+ * So Pending was permanently empty and All was identical to Completed, which
+ * reads exactly like a tab component that was never wired up — and was reported
+ * as one. Tabs over a column with a single value are worse than no tabs: they
+ * make a working page look broken, and they invite someone to go looking for
+ * the filtering bug that is not there.
+ *
+ * A payment awaiting a decision is a `receipt`, not a transaction, and it has
+ * its own screen — Payment Approvals. The link below says so, because "where
+ * are the pending ones?" is the reasonable next question once the tabs are gone.
  */
-export default function TransactionsPage({ status = null }) {
+export default function TransactionsPage() {
   const formatCurrency = useCurrency();
-  const [tab, setTab] = useState(STATUS_TABS.find((t) => t.status === status)?.key ?? 'all');
-  const activeStatus = STATUS_TABS.find((t) => t.key === tab)?.status ?? null;
   const isSuperiorAdmin = useAuthStore((state) => state.isSuperiorAdmin);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,14 +65,14 @@ export default function TransactionsPage({ status = null }) {
   const load = async () => {
     setLoading(true);
     try {
-      const response = await listTransactions(activeStatus ? { status: activeStatus } : undefined);
+      const response = await listTransactions();
       setItems(getItems(response));
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, [activeStatus]);
+  useEffect(() => { load(); }, []);
 
   const openCreate = () => {
     setEditing({});
@@ -111,6 +117,21 @@ export default function TransactionsPage({ status = null }) {
   };
 
 
+  /**
+   * A completed payment is a record of money that moved, not a draft.
+   *
+   * Correcting one is an accounting action — a credit note, a reversing entry —
+   * because the figure has already been reported, allocated against an invoice
+   * and possibly paid commission on. Editing the row in place would change all
+   * of those silently and leave no trace of what it used to say. The same rule
+   * the receipts model states for a verified payment: approved means frozen.
+   *
+   * Hiding the button is the courtesy; the server refuses the write regardless,
+   * because a hidden button is not a permission.
+   */
+  const FROZEN = ['completed', 'approved', 'paid', 'verified', 'cancelled', 'reversed'];
+  const isFrozen = (row) => FROZEN.includes(String(row?.status || '').toLowerCase());
+
   const columns = [
     { header: 'Date', render: (row) => formatDate(row.date || row.createdAt) },
     { header: 'Description', accessor: 'description' },
@@ -124,28 +145,15 @@ export default function TransactionsPage({ status = null }) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-800">Payments</h1>
-          <p className="text-sm text-slate-500">Manage finance transactions and references.</p>
+          <p className="text-sm text-slate-500">
+            Payments that have settled. Waiting to be approved?{' '}
+            <Link to="/receipts" className="font-medium underline underline-offset-2">
+              Payment Approvals
+            </Link>
+            .
+          </p>
         </div>
         <Button onClick={openCreate}>+ New Transaction</Button>
-      </div>
-
-      <div className="flex flex-wrap gap-1 border-b border-slate-200">
-        {STATUS_TABS.map((item) => {
-          const isActive = item.key === tab;
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => setTab(item.key)}
-              className={`-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
-                isActive ? 'text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-              style={isActive ? { borderColor: 'var(--primary, #2563eb)' } : undefined}
-            >
-              {item.label}
-            </button>
-          );
-        })}
       </div>
 
       <Table
@@ -154,7 +162,16 @@ export default function TransactionsPage({ status = null }) {
         loading={loading}
         renderActions={(row) => (
           <div className="flex justify-end gap-3">
-            <Button onClick={() => openEdit(row)} variant="primary" size="sm">Edit</Button>
+            {isFrozen(row)
+              ? (
+                <span
+                  className="text-xs text-slate-400"
+                  title="This payment has been completed. Correct it with a credit note rather than an edit."
+                >
+                  Locked
+                </span>
+              )
+              : <Button onClick={() => openEdit(row)} variant="primary" size="sm">Edit</Button>}
           </div>
         )}
       />

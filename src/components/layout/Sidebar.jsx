@@ -3,6 +3,7 @@ import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
 import { NAV, isNavItemVisible, filterNavItems } from './navConfig';
 import CollapsibleSection from './CollapsibleSection';
+import NavBadge from './NavBadge';
 
 export default function Sidebar() {
   const hasPermission = useAuthStore((state) => state.hasPermission);
@@ -42,6 +43,7 @@ export default function Sidebar() {
           >
             <item.icon className="h-4 w-4 shrink-0" />
             <span>{item.label}</span>
+            <NavBadge item={item} />
           </NavLink>
         ))}
         {topItems.length > 0 && <div className="my-2 border-t border-slate-700" />}

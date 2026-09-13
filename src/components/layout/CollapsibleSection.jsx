@@ -12,6 +12,7 @@
 import { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
+import NavBadge from './NavBadge';
 
 const isPathActive = (pathname, to) =>
   !!to && (pathname === to || pathname.startsWith(to + '/'));
@@ -38,6 +39,7 @@ function NavItemLink({ item, onNavigate, linkClassName, activeLinkClassName }) {
     >
       <item.icon className="h-4 w-4 shrink-0" />
       <span className="truncate">{item.label}</span>
+      <NavBadge item={item} />
     </NavLink>
   );
 }
@@ -62,6 +64,8 @@ function NavGroup({ item, onNavigate, linkClassName, activeLinkClassName, border
       >
         <item.icon className="h-4 w-4 shrink-0" />
         <span className="flex-1 truncate text-left">{item.label}</span>
+        {/* Closed sub-menus show the total of what is inside them. */}
+        {!open && <NavBadge item={item} className="ml-0" />}
         <ChevronRight
           className={`h-3.5 w-3.5 shrink-0 opacity-50 transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
         />

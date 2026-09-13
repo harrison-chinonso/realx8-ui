@@ -15,6 +15,7 @@ import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
 import { listNotifications } from '../../api/notificationApi';
 import ProfileToggle from '../common/ProfileToggle';
+import NavBadge from './NavBadge';
 
 // ── Sidebar content (shared between desktop + mobile drawer) ─
 function SidebarContent({ onNavigate }) {
@@ -84,6 +85,7 @@ function SidebarContent({ onNavigate }) {
           >
             <item.icon className="h-4 w-4 shrink-0" />
             <span>{item.label}</span>
+            <NavBadge item={item} />
           </NavLink>
         ))}
 

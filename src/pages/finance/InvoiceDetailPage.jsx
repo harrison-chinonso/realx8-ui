@@ -55,6 +55,9 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState(null);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
+  // null | 'missing' | 'unavailable' — see loadData.
+  const [loadError, setLoadError] = useState(null);
+  const [paymentsFailed, setPaymentsFailed] = useState(false);
   const [sending, setSending] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
   const [savingPayment, setSavingPayment] = useState(false);
@@ -80,19 +83,47 @@ export default function InvoiceDetailPage() {
     listBankAccounts().then((res) => setBankAccounts(res?.data ?? [])).catch(() => setBankAccounts([]));
   }, [isBuyer]);
 
+  /**
+   * The invoice and its payment history are fetched INDEPENDENTLY.
+   *
+   * They used to be a single Promise.all with one catch, which meant any
+   * failure of either call blanked the page to "Invoice not found." — including
+   * a failure of the payments call, a network blip, or the finance service
+   * still coming up after a restart. The invoice was right there and the page
+   * said it did not exist, so everybody went looking for a missing invoice
+   * instead of the request that actually failed. A buyer who had just been sent
+   * here by "Proceed to Payment" was told the thing they had that second
+   * created was not found.
+   *
+   * Now: the invoice decides whether there is a page, and the payment history
+   * is additive. A 404 means gone; anything else means "could not load", which
+   * is a different sentence with a different remedy — and is offered a retry
+   * rather than a dead end.
+   */
   const loadData = async () => {
     setLoading(true);
     try {
-      const [invoiceResponse, paymentsResponse] = await Promise.all([
-        getInvoice(id),
-        getInvoicePayments(id),
-      ]);
+      const invoiceResponse = await getInvoice(id);
       setInvoice(getData(invoiceResponse));
-      setPayments(getItems(paymentsResponse));
+      setLoadError(null);
+      setPaymentsFailed(false);
     } catch (error) {
       console.error(error);
       setInvoice(null);
+      setLoadError(error?.response?.status === 404 ? 'missing' : 'unavailable');
       setPayments([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setPayments(getItems(await getInvoicePayments(id)));
+    } catch (error) {
+      // The invoice still renders. Its payment history is one panel, and an
+      // empty one is a far smaller lie than "this invoice does not exist".
+      console.error(error);
+      setPayments([]);
+      setPaymentsFailed(true);
     } finally {
       setLoading(false);
     }
@@ -185,7 +216,26 @@ export default function InvoiceDetailPage() {
   };
 
   if (loading) return <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">Loading invoice...</div>;
-  if (!invoice) return <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">Invoice not found.</div>;
+
+  if (!invoice) {
+    return (
+      <div className="space-y-3 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+        <p className="text-slate-700">
+          {loadError === 'missing'
+            ? 'This invoice does not exist, or it is not one of yours.'
+            : 'This invoice could not be loaded just now. It has not gone anywhere — please try again.'}
+        </p>
+        <div className="flex gap-2">
+          {loadError !== 'missing' && (
+            <Button type="button" onClick={loadData}>Try again</Button>
+          )}
+          <Link to="/finance/my-invoices">
+            <Button type="button" variant="secondary">Back to my invoices</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   /**
    * Settled, cancelled or expired: nothing further can be recorded against it.
@@ -391,6 +441,20 @@ export default function InvoiceDetailPage() {
 
       <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 space-y-4">
         <h2 className="text-lg font-semibold">Payment History</h2>
+        {/*
+          An empty table and a table that failed to load look identical, and
+          the difference matters here: "no payments yet" and "we could not
+          read your payments" lead to opposite conclusions about whether the
+          money arrived.
+        */}
+        {paymentsFailed && (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg bg-warning-surface px-4 py-2 text-sm text-warning">
+            <span>Your payment history could not be loaded. This does not affect the invoice itself.</span>
+            <button type="button" onClick={loadData} className="font-semibold underline underline-offset-2">
+              Try again
+            </button>
+          </div>
+        )}
         <Table
           columns={[
             { key: 'payment_method', label: 'Method', render: (row) => enumLabel(row.payment_method) },

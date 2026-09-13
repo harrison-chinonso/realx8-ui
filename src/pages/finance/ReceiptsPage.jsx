@@ -16,6 +16,7 @@ import { useCurrency } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
 import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentMethods';
 import { enumLabel } from '../../utils/enumLabel';
+import useNavBadgeStore from '../../store/navBadgeStore';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const EMPTY_FORM = { amount: '', payment_method: '', invoice_id: '', notes: '' };
@@ -65,6 +66,8 @@ export default function ReceiptsPage() {
   const [rejectNotes, setRejectNotes] = useState('');
   const [message, setMessage] = useState(null);
 
+  const refreshBadges = useNavBadgeStore((state) => state.refresh);
+
   const setFeedback = (type, text) => {
     setMessage({ type, text });
   };
@@ -74,6 +77,16 @@ export default function ReceiptsPage() {
     try {
       const response = await listReceipts();
       setItems(getItems(response));
+      /**
+       * Re-read the sidebar badge whenever this list is reloaded.
+       *
+       * Both approving and rejecting already call load(), so hooking it here
+       * covers every path that changes the queue — including the first visit,
+       * where the count may have gone stale since the last poll. Putting it in
+       * the two handlers instead would mean a third action added later silently
+       * leaving the badge wrong.
+       */
+      refreshBadges({ enabled: true });
     } catch (error) {
       console.error(error);
       setItems([]);

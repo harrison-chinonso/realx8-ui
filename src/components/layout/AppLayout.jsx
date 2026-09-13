@@ -5,6 +5,7 @@ import MinimalLayout from './MinimalLayout';
 import BoldLayout from './BoldLayout';
 import GroupedLayout from './GroupedLayout';
 import AssistantWidget from '../common/AssistantWidget';
+import { NavBadges } from './NavBadge';
 
 const TEMPLATES = {
   classic: ClassicLayout,
@@ -19,6 +20,12 @@ export default function AppLayout({ children }) {
   const Layout = TEMPLATES[template] || ClassicLayout;
   return (
     <>
+      {/*
+        Mounted here, above the layout templates, so the counts are fetched once
+        per session rather than once per template — and so switching template in
+        Appearance settings cannot change whether badges work.
+      */}
+      <NavBadges />
       <Layout>{children}</Layout>
       <AssistantWidget />
     </>

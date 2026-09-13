@@ -12,6 +12,7 @@ import { useAppearance } from '../../context/useAppearance';
 import { listNotifications } from '../../api/notificationApi';
 import Button from '../ui/Button';
 import ProfileToggle from '../common/ProfileToggle';
+import NavBadge from './NavBadge';
 
 function MinimalSidebar({ expanded, onToggle, mobileOpen, onClose }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -72,6 +73,7 @@ function MinimalSidebar({ expanded, onToggle, mobileOpen, onClose }) {
               }>
               <item.icon className="h-4 w-4 shrink-0" />
               <span>{item.label}</span>
+              <NavBadge item={item} />
             </NavLink>
           ))}
         </nav>
@@ -113,7 +115,12 @@ function MinimalSidebar({ expanded, onToggle, mobileOpen, onClose }) {
                 }>
                 <item.icon className="h-4 w-4 shrink-0" />
                 {expanded && <span className="truncate text-sm">{item.label}</span>}
+                {expanded && <NavBadge item={item} />}
               </NavLink>
+              {/* Collapsed: no label to sit beside, so it rides the icon. */}
+              {!expanded && (
+                <NavBadge item={item} className="pointer-events-none absolute right-0 top-0 ml-0" />
+              )}
               {!expanded && (
                 <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity group-hover/item:opacity-100">
                   {item.label}

@@ -12,6 +12,7 @@ import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
 import { listNotifications } from '../../api/notificationApi';
 import ProfileToggle from '../common/ProfileToggle';
+import NavBadge from './NavBadge';
 
 function usePageTitle() {
   const location = useLocation();
@@ -106,6 +107,7 @@ function BoldSidebar({ open, onClose }) {
                     }>
                     <item.icon className="h-4 w-4 shrink-0" />
                     <span>{item.label}</span>
+                    <NavBadge item={item} />
                   </NavLink>
                 ))}
                 {topItems.length > 0 && <div className="my-2 border-t border-slate-200" />}

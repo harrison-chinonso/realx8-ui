@@ -77,34 +77,11 @@ export const NAV = [
       { to: '/properties/inspections', label: 'Property Inspection',icon: ClipboardList, permission: 'properties.inspections.view' },
     ],
   },
-
-  // ── 4. Investments ────────────────────────────────────────────────────────
-  {
-    section: 'Investments',
-    items: [
-      { to: '/investments/retention-alerts', label: 'Manage Schedule', icon: Calendar,     permission: 'investments.view' },
-      // Was two entries on the same route ("Manage Plans" / "All Investments"),
-      // both landing on the page's Plans tab. Plans and Investments are tabs there.
-      { to: '/investments',                  label: 'Investments',     icon: ListTree,     permission: 'investments.view' },
-    ],
-  },
-
-  // ── 5. Leads & Deals ──────────────────────────────────────────────────────
-  {
-    section: 'Leads & Deals',
-    items: [
-      { to: '/crm/leads',           label: 'Manage Leads',      icon: Target,     permission: 'crm.leads.view' },
-      { to: '/crm/deals',           label: 'Manage Deals',      icon: Handshake,  permission: 'crm.deals.view' },
-      { to: '/crm/tasks',           label: 'Tasks',             icon: CheckSquare, permission: 'crm.tasks.view' },
-      { to: '/crm/pipelines',       label: 'Pipeline',          icon: GitBranch,  permission: 'crm.pipelines.manage' },
-      { to: '/crm/sources-labels',  label: 'Sources & Labels',  icon: Tags,       permission: 'crm.leads.view' },
-      { to: '/crm/analytics',       label: 'Analytics/Reports', icon: BarChart2,  permission: 'crm.analytics.view' },
-      // Reachable only by clicking through the dashboard widget until now.
-      { to: '/crm/agent-performance', label: 'Realtor Leaderboard', icon: Award,    permission: 'crm.analytics.view' },
-    ],
-  },
-
-  // ── 6. Finance ────────────────────────────────────────────────────────────
+  // ── 4. Finance ────────────────────────────────────────────────────────────
+  // Directly after Property: the two are used together all day — you look at a
+  // unit, then at what has been invoiced and paid for it — and everything else
+  // is visited far less often.
+  //
   // Invoicing and Payments used to be top-level sections of their own. They are
   // sub-menus here so everything money-related hangs off a single Finance entry:
   // Finance → Invoicing → All Invoices.
@@ -121,10 +98,27 @@ export const NAV = [
       {
         label: 'Payments', icon: CreditCard,
         children: [
-          // One entry — Pending and Completed are tabs on this page. Two entries
-          // pointed at the same route and highlighted together.
+          /**
+           * Two screens, two different things, and the split is the point.
+           *
+           * "All Payments" is the settled ledger — every row in it is money
+           * that has already moved. "Payment Approvals" is the queue of
+           * receipts a buyer has submitted and nobody has decided on yet.
+           * They read from different tables and neither can show the other's
+           * rows, which is why the first has no Pending tab.
+           */
           { to: '/finance/transactions',  label: 'All Payments',      icon: CreditCard, permission: 'finance.invoices.view' },
-          { to: '/receipts',              label: 'Payment Approvals', icon: Receipt,    permission: 'finance.commissions.view' },
+          /**
+           * `badge` names a count in navBadgeStore; the pill is drawn only when
+           * that count is above zero. `badgeLabel` completes the sentence a
+           * screen reader reads — "3 payments awaiting approval" rather than
+           * an unexplained "3".
+           */
+          {
+            to: '/receipts', label: 'Payment Approvals', icon: Receipt,
+            permission: 'finance.commissions.view',
+            badge: 'pendingApprovals', badgeLabel: 'payments awaiting approval',
+          },
           // Lives with the payment settings it configures: these are the accounts
           // buyers are shown for a bank deposit.
           { to: '/finance/bank-accounts', label: 'Bank Accounts',     icon: Landmark,   permission: 'finance.bank-accounts.manage' },
@@ -137,6 +131,32 @@ export const NAV = [
       { to: '/finance/debit-notes',       label: 'Debit Note',        icon: FilePlus,     permission: 'finance.debit-notes.manage' },
       { to: '/finance/taxes',             label: 'Taxes',             icon: Tag,          permission: 'finance.taxes.manage' },
       { to: '/finance/reports',           label: 'Report',            icon: FolderOpen,   permission: 'finance.reports.view' },
+    ],
+  },
+
+  // ── 5. Investments ────────────────────────────────────────────────────────
+  {
+    section: 'Investments',
+    items: [
+      { to: '/investments/retention-alerts', label: 'Manage Schedule', icon: Calendar,     permission: 'investments.view' },
+      // Was two entries on the same route ("Manage Plans" / "All Investments"),
+      // both landing on the page's Plans tab. Plans and Investments are tabs there.
+      { to: '/investments',                  label: 'Investments',     icon: ListTree,     permission: 'investments.view' },
+    ],
+  },
+
+  // ── 6. Leads & Deals ──────────────────────────────────────────────────────
+  {
+    section: 'Leads & Deals',
+    items: [
+      { to: '/crm/leads',           label: 'Manage Leads',      icon: Target,     permission: 'crm.leads.view' },
+      { to: '/crm/deals',           label: 'Manage Deals',      icon: Handshake,  permission: 'crm.deals.view' },
+      { to: '/crm/tasks',           label: 'Tasks',             icon: CheckSquare, permission: 'crm.tasks.view' },
+      { to: '/crm/pipelines',       label: 'Pipeline',          icon: GitBranch,  permission: 'crm.pipelines.manage' },
+      { to: '/crm/sources-labels',  label: 'Sources & Labels',  icon: Tags,       permission: 'crm.leads.view' },
+      { to: '/crm/analytics',       label: 'Analytics/Reports', icon: BarChart2,  permission: 'crm.analytics.view' },
+      // Reachable only by clicking through the dashboard widget until now.
+      { to: '/crm/agent-performance', label: 'Realtor Leaderboard', icon: Award,    permission: 'crm.analytics.view' },
     ],
   },
 

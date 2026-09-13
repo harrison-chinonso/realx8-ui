@@ -111,7 +111,18 @@ export default function ClientDashboard() {
         </div>
       </div>
 
-      <TransactionHistory rows={data.transactions || []} fmt={fmt} emptyText="No transactions yet." />
+      {/*
+        Payments, not transactions — and the heading says so.
+        `payments` is the accurate field; `transactions` is the alias the API
+        still sends for clients that have not been redeployed. Reading both
+        means this panel does not depend on which one arrives first.
+      */}
+      <TransactionHistory
+        title="Recent Payments"
+        rows={data.payments || data.transactions || []}
+        fmt={fmt}
+        emptyText="No payments yet. Anything you submit appears here straight away, before it is approved."
+      />
 
       <InvoicePickerModal
         open={picking}

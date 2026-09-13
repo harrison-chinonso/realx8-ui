@@ -269,7 +269,14 @@ export default function App() {
           <Route path="/finance/payment-reminders" element={<PaymentRemindersPage />} />
           <Route path="/finance/reports" element={<ReportsPage />} />
           <Route path="/finance/transactions" element={<TransactionsPage />} />
-          <Route path="/finance/transactions/pending" element={<TransactionsPage status="pending" />} />
+          {/*
+            /finance/transactions/pending is gone. It rendered the same page
+            pre-filtered to a status no transaction is ever written with, so it
+            was a permanently empty screen. Redirected rather than deleted —
+            it has been in the menu, so it is in browser histories and
+            bookmarks, and a 404 there would read as a broken deploy.
+          */}
+          <Route path="/finance/transactions/pending" element={<Navigate to="/receipts" replace />} />
           <Route path="/finance/payment-plans" element={<PaymentPlansPage />} />
 
           <Route path="/media/posts" element={<MediaPostsPage />} />

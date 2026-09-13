@@ -15,6 +15,7 @@ import { useAppearance } from '../../context/useAppearance';
 import { listNotifications } from '../../api/notificationApi';
 import Button from '../ui/Button';
 import ProfileToggle from '../common/ProfileToggle';
+import NavBadge from './NavBadge';
 
 // Only these sections get their own nav-bar dropdown; everything else → More
 const PRIMARY_SECTION_NAMES = ['Property', 'CRM', 'Finance', 'Media', 'Users'];
@@ -36,6 +37,7 @@ function DropdownItems({ items, onNavigate, indent = '', linkClass = dropdownLin
         <p className={`flex items-center gap-2 px-4 pb-1 pt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 ${indent}`}>
           <item.icon className="h-3 w-3 shrink-0" />
           {item.label}
+          <NavBadge item={item} />
         </p>
         <DropdownItems items={item.children} onNavigate={onNavigate} linkClass={linkClass} indent="pl-4" />
       </div>
@@ -43,6 +45,7 @@ function DropdownItems({ items, onNavigate, indent = '', linkClass = dropdownLin
       <NavLink key={item.to + item.label} to={item.to} end={item.to === '/'} onClick={onNavigate}
         className={(state) => `${linkClass(state)} ${indent}`}>
         <item.icon className="h-4 w-4 shrink-0" /><span>{item.label}</span>
+        <NavBadge item={item} />
       </NavLink>
     )
   );
@@ -138,6 +141,7 @@ function TopNav({ onMobileMenuOpen }) {
             }>
             <item.icon className="h-4 w-4 shrink-0" />
             <span>{item.label}</span>
+            <NavBadge item={item} />
           </NavLink>
         ))}
 
@@ -153,6 +157,8 @@ function TopNav({ onMobileMenuOpen }) {
                 className="px-2.5 py-1.5 whitespace-nowrap"
               >
                 {section.section}
+                {/* On the trigger, or it is hidden inside the menu it should open. */}
+                <NavBadge items={section.items} className="ml-1" />
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
               </Button>
               {isOpen && (
@@ -176,6 +182,8 @@ function TopNav({ onMobileMenuOpen }) {
                 className="px-2.5 py-1.5 whitespace-nowrap"
               >
                 More
+                {/* Sections folded behind "More" are the easiest to miss. */}
+                <NavBadge items={secondarySections.flatMap((section) => section.items)} className="ml-1" />
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
               </Button>
               {isOpen && (

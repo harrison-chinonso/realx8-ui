@@ -13,6 +13,7 @@ import { useAppearance } from '../../context/useAppearance';
 import { listNotifications } from '../../api/notificationApi';
 import Button from '../ui/Button';
 import ProfileToggle from '../common/ProfileToggle';
+import NavBadge from './NavBadge';
 
 function ClassicSidebar({ open, onClose }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -85,6 +86,7 @@ function ClassicSidebar({ open, onClose }) {
                     }>
                     <item.icon className="h-4 w-4 shrink-0" />
                     <span>{item.label}</span>
+                    <NavBadge item={item} />
                   </NavLink>
                 ))}
                 {topItems.length > 0 && <div className="my-2 border-t border-white/10" />}
