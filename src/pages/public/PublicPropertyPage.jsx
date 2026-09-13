@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getPublicProperty, createPurchaseRequest } from '../../api/propertyApi';
 import useAuthStore from '../../store/authStore';
 import useSharedBrand from '../../hooks/useSharedBrand';
+import { looksLikeShareCode } from '../../utils/shareCode';
 import Button from '../../components/ui/Button';
 import PropertyMap, { toCoords } from '../../components/common/PropertyMap';
 import { parseImages } from '../../utils/parseImages';
@@ -36,10 +37,19 @@ export default function PublicPropertyPage() {
   const { token } = useParams();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  // Brands this page for the company that shared the link, before the prospect
-  // has any account to derive a theme from.
-  useSharedBrand();
-  const sealedRef = params.get('ref');
+  /**
+   * Brands this page for the company that shared the link, before the prospect
+   * has any account to derive a theme from.
+   *
+   * A short link is `/p/K7M2QXV` with no query string at all, so the code in
+   * the path is what has to be resolved — there is no `?ref=` beside it any
+   * more. A legacy `/p/<long token>?ref=…` link still brands from the query.
+   */
+  const pathCode = looksLikeShareCode(token) ? token : null;
+  useSharedBrand(pathCode);
+  // What to carry forward to the sign-up page so it brands itself the same way
+  // and attributes the new account to the same people.
+  const sealedRef = params.get('ref') || pathCode;
   const accessToken = useAuthStore((s) => s.accessToken);
   // Signed-in realtors browsing a shared link do not get a purchase action;
   // anonymous visitors do, since they register as clients.
@@ -91,29 +101,57 @@ export default function PublicPropertyPage() {
     }
   };
 
+  /**
+   * Where a visitor with no account goes when they press Purchase.
+   *
+   * The sign-up form, with the company and the realtor already filled in — not
+   * the application's front door. Somebody who has just chosen a plot should be
+   * asked for their name and email, not shown a login screen for a product they
+   * have no account with and left to work out which company it belongs to.
+   *
+   * Three things travel with them, and each is separate:
+   *
+   *   redirect      back to this property, with the unit they picked, so the
+   *                 purchase completes by itself once they have an account.
+   *   ref           the share code, which brands the sign-up page as this
+   *                 company and carries the attribution in a form the visitor
+   *                 cannot edit.
+   *   company_code  the same binding in plain form.
+   *   realtor_code
+   *
+   * The plain codes are sent ALONGSIDE `ref` rather than instead of it. `ref`
+   * is the authority and the server re-resolves it; the plain pair is what
+   * fills the form's fields in immediately, so the company box is populated on
+   * first paint instead of a moment later when the resolve returns — and is
+   * what still works if the code has since been revoked.
+   *
+   * Both plain codes come from the SERVER's payload, never from this page's own
+   * query string. That is the difference that matters: `?c=` and `?r=` in a URL
+   * can be edited by whoever received the link, and were, which is how a
+   * referral could be re-attributed by hand.
+   */
+  const registrationUrl = (unitId) => {
+    const back = `/p/${token}?purchase=1${unitId ? `&unit=${unitId}` : ''}`
+      + `${params.get('ref') ? `&ref=${encodeURIComponent(params.get('ref'))}` : ''}`;
+
+    const query = new URLSearchParams({ redirect: back });
+    if (sealedRef) query.set('ref', sealedRef);
+    if (property?.company_code) query.set('company_code', property.company_code);
+    /**
+     * Who shared this link. Resolved server-side from the share code, and
+     * absent on a legacy link, which carried it as an editable `?r=` instead —
+     * honoured here as the fallback it is, and validated against the resolved
+     * company by the server before any account is attached to it.
+     */
+    const realtorCode = property?.realtor_code || params.get('r');
+    if (realtorCode) query.set('realtor_code', realtorCode);
+
+    return `/register?${query.toString()}`;
+  };
+
   const handlePurchase = (unitId) => {
     if (!accessToken) {
-      // Send them to register, remembering where to come back to and what they
-      // were buying, so the purchase resumes automatically afterwards.
-      // Carry ?ref= through so the visitor keeps the same branding and the same
-      // company/realtor attribution across the hop, and lands back here after.
-      const back = `/p/${token}?purchase=1${unitId ? `&unit=${unitId}` : ''}${sealedRef ? `&ref=${encodeURIComponent(sealedRef)}` : ''}`;
-      let attribution;
-      if (sealedRef) {
-        // Sealed: the codes travel inside the token, where they cannot be edited.
-        attribution = `&ref=${encodeURIComponent(sealedRef)}`;
-      } else {
-        // The company code comes from the server payload, not the URL, so an
-        // edited ?c= cannot bind the new account to the wrong company.
-        const company = property.company_code ? `&company_code=${encodeURIComponent(property.company_code)}` : '';
-        // The realtor code identifies WHO shared the link, so unlike the company
-        // code it can only come from the URL. The server still validates it
-        // against the resolved company before attaching the account.
-        const referrer = params.get('r');
-        const realtor = referrer ? `&realtor_code=${encodeURIComponent(referrer)}` : '';
-        attribution = `${company}${realtor}`;
-      }
-      navigate(`/register?redirect=${encodeURIComponent(back)}${attribution}`);
+      navigate(registrationUrl(unitId));
       return;
     }
     submitPurchase(unitId);

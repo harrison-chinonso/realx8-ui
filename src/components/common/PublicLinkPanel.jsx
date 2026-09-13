@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPropertyPublicLink, revokePropertyPublicLink } from '../../api/propertyApi';
 import useShareToken from '../../hooks/useShareToken';
 import Button from '../ui/Button';
@@ -8,14 +8,26 @@ const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
 /**
  * Build the public URL for a property.
  *
- * `shareToken` is the sealed token: it carries the company, the sharing
- * realtor and the company's branding, so the property page opens already
- * themed and the attribution cannot be edited out of the URL.
+ * `shareCode` is the property's own seven-character share code — the same kind
+ * of code a referral link carries, drawn from the same namespace. It resolves
+ * on its own to the property, the company AND the realtor who shared it, so
+ * when there is one the URL is nothing but the code:
  *
- * The plain `c` / `r` codes remain as a fallback for when a token could not be
- * minted, and because links shared before this change carry them.
+ *     https://app.example.com/p/K7M2QXV
+ *
+ * That is the whole point of it. The link it replaces was a forty-eight
+ * character token plus a `?ref=` — long enough that people hesitated to paste
+ * it into a chat, and long enough to look suspicious when they did.
+ *
+ * Everything below it is fallback, in descending order of how much it can
+ * carry. `shareToken` (the sealed referral token, or the sharer's referral
+ * code) still brands the page but cannot name the property's own link.
+ * The plain `c` / `r` codes carry attribution and no branding, and are what
+ * links shared before any of this was built still contain.
  */
-export const publicUrlFor = (token, companyCode, realtorCode, shareToken) => {
+export const publicUrlFor = (token, companyCode, realtorCode, shareToken, shareCode) => {
+  if (shareCode) return `${window.location.origin}/p/${shareCode}`;
+
   const params = new URLSearchParams();
   if (shareToken) {
     params.set('ref', shareToken);
@@ -45,7 +57,37 @@ export default function PublicLinkPanel({ property, onChange }) {
   const [error, setError] = useState('');
 
   const active = Boolean(property?.public_enabled && property?.public_token);
-  const url = active ? publicUrlFor(property.public_token, property.company_code, null, shareToken) : '';
+
+  /**
+   * Resolve the short code for a link that already exists.
+   *
+   * A property loaded from the API carries its `public_token` but not its share
+   * code — the code lives with the link, not on the property row — so a link
+   * generated before this panel was opened would otherwise be shown in its long
+   * form until somebody regenerated it, and the long form is the one people
+   * would not paste.
+   *
+   * The endpoint is get-or-create and idempotent: for a link that is already
+   * active it mints nothing new and returns the same token and the same code
+   * every time. It is a POST because that is the endpoint that owns this
+   * question, not because opening the panel changes anything.
+   */
+  useEffect(() => {
+    if (!active || property?.share_code) return undefined;
+    let cancelled = false;
+    createPropertyPublicLink(property.id, {})
+      .then((response) => {
+        const data = response?.data ?? response;
+        if (!cancelled && data?.code) onChange({ share_code: data.code });
+      })
+      // The long link still works; there is nothing to tell the user about.
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, property?.id, property?.share_code]);
+  const url = active
+    ? publicUrlFor(property.public_token, property.company_code, null, shareToken, property.share_code)
+    : '';
 
   const run = async (action) => {
     setBusy(true);
@@ -67,13 +109,16 @@ export default function PublicLinkPanel({ property, onChange }) {
       public_enabled: true,
       public_expires_at: null,
       company_code: data.company_code ?? property.company_code ?? null,
+      // The short code the link should be written with. Absent only when it
+      // could not be minted, in which case publicUrlFor falls back.
+      share_code: data.code ?? null,
     });
   });
 
   const handleRevoke = () => run(async () => {
     if (!window.confirm('Revoke this link? Anyone holding the current URL will lose access immediately.')) return;
     await revokePropertyPublicLink(property.id);
-    onChange({ public_token: null, public_enabled: false, public_expires_at: null });
+    onChange({ public_token: null, public_enabled: false, public_expires_at: null, share_code: null });
   });
 
   const handleCopy = async () => {

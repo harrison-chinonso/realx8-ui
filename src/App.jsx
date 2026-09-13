@@ -49,6 +49,7 @@ import EmployeesPage from './pages/users/EmployeesPage';
 import ClientsPage from './pages/users/ClientsPage';
 import RealtorsPage from './pages/users/RealtorsPage';
 import RolesPage from './pages/roles/RolesPage';
+import AuditLogPage from './pages/audit/AuditLogPage';
 import CommissionsPage from './pages/commissions/CommissionsPage';
 import MyCommissionsPage from './pages/realtor/MyCommissionsPage';
 import ReferralPage from './pages/referral/ReferralPage';
@@ -288,6 +289,13 @@ export default function App() {
           <Route path="/users/realtors" element={<RealtorsPage />} />
 
           <Route path="/roles" element={<RolesPage />} />
+          {/*
+            Inside the authenticated layout like any other screen. The route is
+            not gated here because the API is: a caller without `audit.view`
+            gets a 403 and an empty table, which is the same answer a hidden
+            route would give and one answer rather than two that could disagree.
+          */}
+          <Route path="/audit-logs" element={<AuditLogPage />} />
           <Route path="/commissions" element={<CommissionsPage />} />
           {/* The earner's own view. A realtor has no access to the
               company-wide commissions page. */}

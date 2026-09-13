@@ -67,7 +67,14 @@ export default function ListedPropertiesPage() {
     try {
       const data = (await getPropertyShareLink(property.id))?.data ?? {};
       if (!data.public_token) throw new Error('No share link was returned.');
-      const url = publicUrlFor(data.public_token, data.company_code, data.realtor_code, shareToken);
+      /**
+       * `data.code` is this realtor's own share code for this property, so the
+       * link is one short code that already names them — no `?ref=` beside it,
+       * and nothing in the URL a recipient could edit to re-attribute the
+       * referral. The remaining arguments are the fallbacks publicUrlFor uses
+       * when a code could not be minted.
+       */
+      const url = publicUrlFor(data.public_token, data.company_code, data.realtor_code, shareToken, data.code);
       // Use the native share sheet on mobile; fall back to a copyable panel.
       if (navigator.share) {
         try {

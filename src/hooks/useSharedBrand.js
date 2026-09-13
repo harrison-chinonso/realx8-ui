@@ -16,11 +16,19 @@ import { useAppearance } from '../context/useAppearance';
  * property link. They simply cannot brand the page, because a plain code in a
  * URL is editable and could be pointed at any company.
  */
-export function useSharedBrand() {
+/**
+ * @param {string|null} codeFromPath  a share code that arrived in the PATH
+ *        rather than in `?ref=`. A shared property is now `/p/K7M2QXV` and
+ *        nothing else, so the code that brands the page is the same code that
+ *        names the property — there is no query parameter left to read it from.
+ */
+export function useSharedBrand(codeFromPath = null) {
   const [searchParams] = useSearchParams();
   const { applyBrand } = useAppearance();
 
-  const ref = searchParams.get('ref');
+  // An explicit `?ref=` wins: it is the more specific statement of who shared
+  // this, and a link may legitimately carry both.
+  const ref = searchParams.get('ref') || codeFromPath || null;
   const [state, setState] = useState({
     loading: !!ref,
     company: null,

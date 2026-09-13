@@ -22,7 +22,7 @@ import {
   GraduationCap, Trophy, Megaphone, Award,
   UserRound, MessageSquare, Calendar, ThumbsUp,
   HelpCircle, Bell,
-  Globe, Building,
+  Globe, Building, ScrollText,
 } from 'lucide-react';
 
 export const SUPERIOR_ADMIN_NAV = [
@@ -53,6 +53,13 @@ export const NAV = [
       { to: '/realtor/levels',  label: 'Realtor Levels',      icon: Trophy,     permission: 'users.manage' },
       { to: '/users/verifications', label: 'Realtor Verifications', icon: ShieldCheck, permission: 'users.manage', hideForSuperior: true },
       { to: '/roles',           label: 'Roles & Permissions', icon: ShieldCheck, permission: 'roles.view' },
+      /**
+       * Hidden from anyone without `audit.view`, which is nobody by default
+       * except the platform administrator — the permission is granted per role
+       * on the Roles screen, deliberately, because who may read who-did-what is
+       * an owner's decision rather than a default.
+       */
+      { to: '/audit-logs',      label: 'Audit Trail',         icon: ScrollText,  permission: 'audit.view' },
       // A realtor's own people live here too. Every item above is gated on
       // users.manage, which realtors lack, so they see only these two.
       { to: '/realtor/referrals', label: 'My Referrals', icon: Share2,     permission: null, showForTypes: ['realtor'] },
