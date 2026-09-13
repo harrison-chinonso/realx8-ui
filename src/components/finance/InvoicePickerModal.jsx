@@ -76,12 +76,28 @@ export default function InvoicePickerModal({ open, userId, onClose, onSelect }) 
             * where the eye already ends up rather than at opposite edges of one
             * long row.
             *
-            * The card itself is not clickable: a button wrapping a button is
-            * invalid, and an implicitly-clickable card gives no keyboard
-            * affordance. Pay is the control.
+            * The WHOLE CARD is the hit area, but there is still exactly one
+            * control.
+            *
+            * Nesting a second button inside the card would be invalid markup,
+            * and making the <div> itself clickable would give a keyboard user
+            * nothing to focus. So the Pay button carries an ::after that spans
+            * the card (`absolute inset-0`), and the card is the positioning
+            * context. One button, one tab stop, one accessible name — and a
+            * target the size of the card.
+            *
+            * Worth the trouble because the assistant widget floats at the
+            * bottom-right at z-60 and was covering the Pay link on exactly the
+            * card a buyer was reaching for. A bigger target fixes that wherever
+            * the widget happens to sit, which a z-index tweak would not.
             */}
           {rows.map((row) => (
-            <div key={row.id} className="rounded-xl p-4 ring-1 ring-slate-200">
+            <div
+              key={row.id}
+              className="relative rounded-xl p-4 ring-1 ring-slate-200 transition
+                hover:bg-slate-50 hover:ring-slate-300
+                focus-within:ring-2 focus-within:ring-offset-1"
+            >
               <div className="flex items-start justify-between gap-3">
                 {/* min-w-0 lets the long half truncate; shrink-0 keeps the short
                     half whole, so a narrow screen clips the property name
@@ -105,8 +121,12 @@ export default function InvoicePickerModal({ open, userId, onClose, onSelect }) 
                 <button
                   type="button"
                   onClick={() => onSelect(row.id)}
-                  className="ml-auto shrink-0 text-sm font-semibold hover:underline"
+                  /* after:absolute after:inset-0 is what stretches the hit area
+                     over the card. The label stays where it reads best. */
+                  className="ml-auto shrink-0 text-sm font-semibold hover:underline
+                    after:absolute after:inset-0 after:rounded-xl after:content-['']"
                   style={{ color: 'var(--primary)' }}
+                  aria-label={`Pay invoice ${row.invoice_id}${row.property_name ? ` for ${row.property_name}` : ''}`}
                 >
                   Pay →
                 </button>

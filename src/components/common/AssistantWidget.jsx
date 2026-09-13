@@ -5,6 +5,7 @@ import {
   getAssistantStatus, streamAssistant, listConversations, getConversation, deleteConversation,
 } from '../../api/assistantApi';
 import useAuthStore from '../../store/authStore';
+import useDraggable from '../../hooks/useDraggable';
 
 /**
  * The in-app assistant.
@@ -31,6 +32,22 @@ export default function AssistantWidget() {
   const isAdmin = ['admin', 'super_admin', 'superior_admin'].includes(useAuthStore((s) => s.effectiveType()));
   const [status, setStatus] = useState(null);
   const [open, setOpen] = useState(false);
+
+  /**
+   * The launcher can be dragged out of the way.
+   *
+   * It floats above the page at z-60, so wherever it sits it is on top of
+   * something — and the report that prompted this was it covering the Pay link
+   * on an invoice card. Moving it is the direct remedy; the cards underneath
+   * were widened too, because a fix that depends on the user rearranging their
+   * UI is not much of a fix.
+   *
+   * Only the LAUNCHER moves. The open panel is a 24rem window that is sized and
+   * cornered by its own classes at two breakpoints, and dragging it would mean
+   * reimplementing all of that — while the panel is open the widget is the
+   * thing you are using, not the thing in the way.
+   */
+  const drag = useDraggable({ storageKey: 'realx8-assistant-position' });
   const [messages, setMessages] = useState([]);
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -186,11 +203,29 @@ export default function AssistantWidget() {
     <>
       {!open && (
         <button
+          ref={drag.ref}
           type="button"
-          onClick={() => setOpen(true)}
-          aria-label={`Chat with ${name}`}
-          className="fixed bottom-5 right-5 z-[60] flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition hover:brightness-95"
-          style={{ backgroundColor: 'var(--primary, #2563eb)' }}
+          {...drag.handlers}
+          onClick={() => {
+            // The pointerup that ended a drag is followed by a click. Opening
+            // the assistant every time somebody repositions it would make the
+            // widget effectively undraggable.
+            if (drag.wasDragged()) return;
+            setOpen(true);
+          }}
+          // Right-click to put it back, for anyone who drags it somewhere
+          // unhelpful and cannot find the corner again.
+          onContextMenu={(event) => {
+            if (!drag.moved) return;
+            event.preventDefault();
+            drag.reset();
+          }}
+          aria-label={`Chat with ${name} — drag to move`}
+          title={drag.moved ? 'Drag to move · right-click to reset' : 'Drag to move'}
+          className={`fixed bottom-5 right-5 z-[60] flex h-14 w-14 touch-none select-none
+            items-center justify-center rounded-full text-white shadow-lg transition
+            hover:brightness-95 ${drag.dragging ? 'scale-105 cursor-grabbing shadow-2xl' : 'cursor-grab'}`}
+          style={{ backgroundColor: 'var(--primary, #2563eb)', ...drag.style }}
         >
           <MessageCircle size={22} />
         </button>
