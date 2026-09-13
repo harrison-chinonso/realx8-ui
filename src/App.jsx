@@ -29,6 +29,7 @@ import AgentPerformancePage from './pages/crm/AgentPerformancePage';
 import SourcesLabelsPage from './pages/crm/SourcesLabelsPage';
 import InvoicesPage from './pages/finance/InvoicesPage';
 import MyPaymentsPage from './pages/finance/MyPaymentsPage';
+import MyPropertiesPage from './pages/finance/MyPropertiesPage';
 import CreateInvoicePage from './pages/finance/CreateInvoicePage';
 import InvoiceDetailPage from './pages/finance/InvoiceDetailPage';
 import TaxesPage from './pages/finance/TaxesPage';
@@ -233,6 +234,7 @@ export default function App() {
           <Route path="/properties/inspections" element={<InspectionsPage />} />
           <Route path="/properties/types" element={<PropertyTypesPage />} />
           <Route path="/finance/my-invoices" element={<MyPaymentsPage section="invoices" />} />
+          <Route path="/finance/my-properties" element={<MyPropertiesPage />} />
           <Route path="/finance/my-payments" element={<MyPaymentsPage section="payments" />} />
           <Route path="/properties/listed" element={<ListedPropertiesPage />} />
           <Route path="/properties/listed/:id" element={<ListedPropertyDetailPage />} />

@@ -6,25 +6,7 @@ import MoneyInput from '../ui/MoneyInput';
 import Badge from '../common/Badge';
 import Modal from '../common/Modal';
 import Select from '../ui/Select';
-
-/**
- * How a confirmed payment was made.
- *
- * The API serves this list on payment-options, from the same constant its
- * validation uses, so the picker and the check cannot drift. This is only the
- * fallback for a response that predates the field.
- *
- * `admin_approved` is absent on purpose: it is not something an admin chooses,
- * it is what "Mark invoice as paid" stamps on a payment that has no proof.
- */
-const CONFIRMABLE_METHOD_FALLBACK = ['bank_deposit', 'transfer', 'online_payment'];
-
-const METHOD_LABELS = {
-  bank_deposit: 'Bank deposit',
-  transfer: 'Bank transfer',
-  online_payment: 'Online payment',
-  admin_approved: 'Admin approved (no proof)',
-};
+import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentMethods';
 
 /**
  * Staff-side settlement for one invoice: review the buyer's proof of payment,
@@ -395,7 +377,7 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
               type="button"
               variant="danger"
               disabled={busy || !rejectNotes.trim()}
-              onClick={() => run(() => rejectReceipt(receipt.id, { notes: rejectNotes.trim() }), 'Proof declined.')}
+              onClick={() => run(() => rejectReceipt(receipt.id, { reason: rejectNotes.trim() }), 'Proof declined.')}
             >
               Decline
             </Button>

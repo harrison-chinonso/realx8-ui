@@ -18,7 +18,12 @@ const Bar = ({ value, max }) => (
   </div>
 );
 
-function Ranking({ icon: Icon, title, rows, fmt, emptyNote }) {
+/**
+ * Exported so the platform admin dashboard can rank companies with the same
+ * bar, the same ordering and the same empty note. A second copy over there
+ * would drift the moment either is touched.
+ */
+export function Ranking({ icon: Icon, title, rows, fmt, emptyNote }) {
   const max = rows?.length ? Math.max(...rows.map((r) => r.received)) : 0;
 
   return (

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getPaymentAnalysis } from '../../api/financeApi';
 import { useCurrency } from '../../context/useAppearance';
 import Modal from '../common/Modal';
-import Badge from '../common/Badge';
+import { STATE_TONE, STATE_LABEL, stateRank } from '../../utils/invoiceState';
 
 /**
  * Which invoice am I paying?
@@ -36,7 +36,10 @@ export default function InvoicePickerModal({ open, userId, onClose, onSelect }) 
         setRows(invoices
           .filter((row) => Number(row.balance) > 0)
           .sort((a, b) => {
-            if (a.state !== b.state) return a.state === 'due' ? -1 : 1;
+            // Rank, not a two-way comparison: there are more than two states
+            // now, so "is this one due?" no longer orders the list.
+            const byState = stateRank(a.state) - stateRank(b.state);
+            if (byState !== 0) return byState;
             return new Date(a.due_date || 0) - new Date(b.due_date || 0);
           }));
       })
@@ -64,28 +67,51 @@ export default function InvoicePickerModal({ open, userId, onClose, onSelect }) 
           <p className="text-sm text-slate-500">
             Choose the invoice you want to pay.
           </p>
+          {/*
+            * A card, not a single wide button.
+            *
+            * The status sits top-right against the reference and the Pay link
+            * bottom-right under the amount, so the two things a buyer is
+            * deciding between — how urgent is this, and do I act on it — are
+            * where the eye already ends up rather than at opposite edges of one
+            * long row.
+            *
+            * The card itself is not clickable: a button wrapping a button is
+            * invalid, and an implicitly-clickable card gives no keyboard
+            * affordance. Pay is the control.
+            */}
           {rows.map((row) => (
-            <button
-              key={row.id}
-              type="button"
-              onClick={() => onSelect(row.id)}
-              className="flex w-full flex-col gap-2 rounded-xl p-4 text-left ring-1 ring-slate-200 transition-colors hover:bg-slate-50 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <span className="min-w-0 sm:flex-1">
-                <span className="block truncate font-semibold text-slate-900">
+            <div key={row.id} className="rounded-xl p-4 ring-1 ring-slate-200">
+              <div className="flex items-start justify-between gap-3">
+                {/* min-w-0 lets the long half truncate; shrink-0 keeps the short
+                    half whole, so a narrow screen clips the property name
+                    rather than wrapping the status onto its own line. */}
+                <p className="min-w-0 truncate font-semibold text-slate-900">
                   {row.invoice_id}
                   {/* The property is what a buyer recognises the invoice by; the
                       reference on its own means nothing to them. */}
                   {row.property_name ? ` · ${row.property_name}` : ''}
+                </p>
+                <span className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATE_TONE[row.state] || 'bg-slate-100 text-slate-600'}`}>
+                  {STATE_LABEL[row.state] || row.state}
                 </span>
-                <span className="mt-0.5 block text-xs text-slate-500">
-                  {fmt(row.balance)} outstanding of {fmt(row.amount)}
-                </span>
-              </span>
-              <span className="flex shrink-0 items-center gap-2 self-start sm:self-auto">
-                <Badge value={row.state === 'due' ? 'overdue' : 'pending'} />
-              </span>
-            </button>
+              </div>
+
+              <div className="mt-2 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
+                <p className="min-w-0 text-sm text-slate-600">
+                  <span className="font-semibold text-slate-900">{fmt(row.balance)}</span>
+                  <span className="text-xs text-slate-500"> outstanding of {fmt(row.amount)}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onSelect(row.id)}
+                  className="ml-auto shrink-0 text-sm font-semibold hover:underline"
+                  style={{ color: 'var(--primary)' }}
+                >
+                  Pay →
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       )}

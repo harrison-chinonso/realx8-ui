@@ -14,7 +14,7 @@ export default function MyPaymentsPage({ section = 'invoices' }) {
   const user = useAuthStore((state) => state.user);
   const [searchParams] = useSearchParams();
   const requested = searchParams.get('status');
-  const initialTab = ['due', 'pending', 'paid'].includes(requested) ? requested : 'all';
+  const initialTab = ['due', 'in_progress', 'pending', 'paid'].includes(requested) ? requested : 'all';
   const isPayments = section === 'payments';
 
   return (
@@ -30,21 +30,6 @@ export default function MyPaymentsPage({ section = 'invoices' }) {
         </p>
       </div>
 
-      {/*
-        * Submissions come FIRST on the payments view.
-        *
-        * The panel below lists payments recorded against an invoice, which only
-        * happens once an admin approves one — so a buyer waiting on a decision,
-        * or one whose proof was refused, previously saw an empty page and no
-        * sign their upload had landed anywhere.
-        */}
-      {isPayments && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-slate-900">Payments you have submitted</h2>
-          <MySubmittedPaymentsPanel />
-        </div>
-      )}
-      {isPayments && <h2 className="text-sm font-semibold text-slate-900">Applied to your invoices</h2>}
       {user?.id
         ? (
           <PaymentAnalysisPanel
@@ -52,6 +37,18 @@ export default function MyPaymentsPage({ section = 'invoices' }) {
             linkInvoices
             initialTab={initialTab}
             show={isPayments ? 'payments' : 'invoices'}
+            /**
+             * Rendered between the totals and the payments table: the summary
+             * first, then anything still needing the buyer's attention, then
+             * the settled history.
+             *
+             * Only what is ACTIONABLE appears there. An approved payment is
+             * already in the table below as a recorded payment, and repeating
+             * it as a card put finished work in the position of most
+             * prominence while the submission actually waiting on someone sat
+             * further down.
+             */
+            afterSummary={isPayments ? <MySubmittedPaymentsPanel /> : null}
           />
         )
         : <div className="rounded-xl bg-white p-6 text-slate-500">Loading…</div>}

@@ -4,6 +4,7 @@ import {
   listReceipts,
   rejectReceipt,
   verifyReceipt,
+  getPaymentOptions,
 } from '../../api/financeApi';
 import Table from '../../components/common/Table';
 import Button from '../../components/ui/Button';
@@ -12,6 +13,8 @@ import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
 import ActionsMenu from '../../components/common/ActionsMenu';
 import { useCurrency } from '../../context/useAppearance';
+import Select from '../../components/ui/Select';
+import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentMethods';
 import { enumLabel } from '../../utils/enumLabel';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
@@ -48,6 +51,15 @@ export default function ReceiptsPage() {
   // Reviewing opens the proof and lets the admin credit a different figure —
   // a part payment against a larger invoice.
   const [reviewing, setReviewing] = useState(null);
+  /**
+   * The method and the reference are REQUIRED by the verify endpoint, and are
+   * read off the proof by the admin rather than inherited from what the buyer
+   * typed. This modal sent neither, so every Confirm here was rejected with
+   * "Choose how the payment was made" — the button appeared to do nothing.
+   */
+  const [reviewMethod, setReviewMethod] = useState('');
+  const [reviewReference, setReviewReference] = useState('');
+  const [reviewMethods, setReviewMethods] = useState(CONFIRMABLE_METHOD_FALLBACK);
   const [creditAmount, setCreditAmount] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
   const [rejectNotes, setRejectNotes] = useState('');
@@ -111,6 +123,24 @@ export default function ReceiptsPage() {
   const openReview = (receipt) => {
     setReviewing(receipt);
     setCreditAmount(String(receipt.amount ?? ''));
+    // Method starts EMPTY: it is the admin's reading of the proof, not the
+    // buyer's claim, so it has to be chosen rather than accepted by default.
+    setReviewMethod('');
+    // The reference is seeded from what the buyer gave, as a starting point the
+    // admin corrects against the document.
+    setReviewReference(receipt.reference || '');
+    setReviewMethods(CONFIRMABLE_METHOD_FALLBACK);
+    // Served from the same constant the validation uses, so the picker cannot
+    // offer a method the server will refuse. Best effort — the fallback above
+    // stands if this receipt has no invoice or the call fails.
+    if (receipt.invoice_id) {
+      getPaymentOptions(receipt.invoice_id)
+        .then((res) => {
+          const served = res?.data?.confirmable_payment_methods;
+          if (Array.isArray(served) && served.length) setReviewMethods(served);
+        })
+        .catch(() => {});
+    }
   };
 
   const handleVerify = async (event) => {
@@ -120,7 +150,11 @@ export default function ReceiptsPage() {
     try {
       // The server clamps this to the outstanding balance — an invoice total
       // can never be exceeded, only its balance reduced.
-      const result = await verifyReceipt(reviewing.id, { amount: Number(creditAmount) || undefined });
+      const result = await verifyReceipt(reviewing.id, {
+        amount: Number(creditAmount) || undefined,
+        payment_method: reviewMethod,
+        reference: reviewReference.trim(),
+      });
       const invoice = result?.data?.invoice;
       const credited = result?.data?.payment?.amount;
       setReviewing(null);
@@ -238,13 +272,15 @@ export default function ReceiptsPage() {
             <div className="flex items-center justify-end gap-2">
               {row.status === 'pending' ? (
                 <>
+                  {/*
+                    * Reject sits beside Review rather than inside the overflow
+                    * menu. Approving and rejecting are the two halves of the
+                    * same decision, and one of them being behind a "⋯" read as
+                    * there being no way to reject at all.
+                    */}
                   <Button type="button" variant="success" size="sm" onClick={() => openReview(row)}>Review</Button>
-                  <ActionsMenu
-                    items={[
-                      { label: '🖨 Print', onClick: () => printReceipt(row) },
-                      { label: '✗ Reject', variant: 'danger', onClick: () => setRejectingReceipt(row) },
-                    ]}
-                  />
+                  <Button type="button" variant="danger" size="sm" onClick={() => setRejectingReceipt(row)}>Reject</Button>
+                  <ActionsMenu items={[{ label: '🖨 Print', onClick: () => printReceipt(row) }]} />
                 </>
               ) : (
                 <Button type="button" variant="secondary" size="sm" onClick={() => printReceipt(row)}>Print</Button>
@@ -313,6 +349,31 @@ export default function ReceiptsPage() {
               <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">No proof was attached to this receipt.</p>
             )}
 
+            <label className="block space-y-1">
+              <span className="text-sm font-medium text-slate-700">How was it paid?</span>
+              <Select value={reviewMethod} onChange={(event) => setReviewMethod(event.target.value)}>
+                <option value="">Select a method…</option>
+                {reviewMethods.map((method) => (
+                  <option key={method} value={method}>{METHOD_LABELS[method] || method}</option>
+                ))}
+              </Select>
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-sm font-medium text-slate-700">Transaction reference</span>
+              <input
+                type="text"
+                value={reviewReference}
+                onChange={(event) => setReviewReference(event.target.value)}
+                placeholder="e.g. FT24098XYZ12"
+                className={INPUT_CLASS}
+              />
+              <span className="block text-xs text-slate-500">
+                Read it off the proof — it is what reconciles this payment against the bank
+                statement later.
+              </span>
+            </label>
+
             <MoneyInput
               label="Amount to credit"
               value={creditAmount}
@@ -325,7 +386,9 @@ export default function ReceiptsPage() {
 
             <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
               <Button type="button" variant="secondary" onClick={() => setReviewing(null)} disabled={saving}>Cancel</Button>
-              <Button type="submit" disabled={saving}>{saving ? 'Recording...' : 'Confirm Payment'}</Button>
+              <Button type="submit" disabled={saving || !reviewMethod || !reviewReference.trim()}>
+                {saving ? 'Recording...' : 'Confirm Payment'}
+              </Button>
             </div>
           </form>
         )}

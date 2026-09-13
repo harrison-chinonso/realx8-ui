@@ -4,19 +4,17 @@ import { getPaymentAnalysis } from '../../api/financeApi';
 import { useCurrency } from '../../context/useAppearance';
 import Badge from '../common/Badge';
 import SummaryTile from '../dashboard/SummaryTile';
+import { STATE_TONE, STATE_LABEL } from '../../utils/invoiceState';
 
 const TABS = [
   { key: 'all', label: 'All' },
   { key: 'due', label: 'Due' },
+  { key: 'in_progress', label: 'In progress' },
   { key: 'pending', label: 'Pending' },
   { key: 'paid', label: 'Paid' },
 ];
 
-const STATE_TONE = {
-  due: 'bg-rose-100 text-rose-700',
-  pending: 'bg-amber-100 text-amber-700',
-  paid: 'bg-emerald-100 text-emerald-700',
-};
+
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—');
 
@@ -33,8 +31,16 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString('en-GB
  *
  * `show` picks which halves render — the client's menu splits invoices and
  * payments onto separate pages, while the drill-down shows both together.
+ *
+ * `afterSummary` is rendered between the totals and the body. It exists because
+ * the client's payments page needs its own submissions to sit UNDER the summary
+ * and OVER the table, and both of those are inside this component — so ordering
+ * them as siblings of the panel is not possible, and rendering the panel twice
+ * would fetch the same endpoint twice.
  */
-export default function PaymentAnalysisPanel({ userId, linkInvoices = false, initialTab = 'all', show = 'both' }) {
+export default function PaymentAnalysisPanel({
+  userId, linkInvoices = false, initialTab = 'all', show = 'both', afterSummary = null,
+}) {
   const showInvoices = show === 'both' || show === 'invoices';
   const showPayments = show === 'both' || show === 'payments';
   const fmt = useCurrency();
@@ -81,6 +87,8 @@ export default function PaymentAnalysisPanel({ userId, linkInvoices = false, ini
         <SummaryTile label="Pending" value={fmt(t.pending.amount)} sub={`${t.pending.count} not yet due`} />
       </div>
 
+      {afterSummary}
+
       {showInvoices && (
       <div>
         <div className="mb-2 flex flex-wrap gap-1 border-b border-slate-200">
@@ -116,6 +124,10 @@ export default function PaymentAnalysisPanel({ userId, linkInvoices = false, ini
                 <th className="px-4 py-3 text-right font-semibold text-slate-600">Balance</th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-600">Due date</th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-600">State</th>
+                {/* Only where the invoice is reachable. In the admin drill-down
+                    `linkInvoices` is off, because an admin inspecting someone
+                    else's record should not be sent into that client's screens. */}
+                {linkInvoices && <th className="px-4 py-3 text-right font-semibold text-slate-600">&nbsp;</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -132,15 +144,33 @@ export default function PaymentAnalysisPanel({ userId, linkInvoices = false, ini
                   <td className="px-4 py-3 text-right font-semibold text-slate-900">{fmt(row.balance)}</td>
                   <td className="px-4 py-3 text-slate-500">{formatDate(row.due_date)}</td>
                   <td className="px-4 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${STATE_TONE[row.state] || 'bg-slate-100 text-slate-600'}`}>
-                      {row.state}
+                    <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATE_TONE[row.state] || 'bg-slate-100 text-slate-600'}`}>
+                      {STATE_LABEL[row.state] || row.state}
                     </span>
                   </td>
+                  {/*
+                    * An explicit button as well as the linked reference.
+                    *
+                    * The reference was already a link, but a coloured invoice
+                    * number reads as a label rather than a control — nobody
+                    * knew it was clickable. This says so.
+                    */}
+                  {linkInvoices && (
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        to={`/finance/invoices/${row.id}`}
+                        className="inline-flex whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 ring-slate-200 transition-colors hover:bg-slate-50"
+                        style={{ color: 'var(--primary)' }}
+                      >
+                        View details
+                      </Link>
+                    </td>
+                  )}
                 </tr>
               ))}
               {!invoices.length && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-slate-500">
+                  <td colSpan={linkInvoices ? 8 : 7} className="px-4 py-8 text-center text-slate-500">
                     {tab === 'all' ? 'No invoices yet.' : `No ${tab} invoices.`}
                   </td>
                 </tr>

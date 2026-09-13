@@ -54,6 +54,15 @@ export const requestRevision = (id, payload) => client.post(`/properties/${id}/r
 export const getPropertyDocuments = (id) => client.get(`/properties/${id}/documents`).then(r => r.data);
 export const addPropertyDocument = (id, payload) => client.post(`/properties/${id}/documents`, payload).then(r => r.data);
 export const deletePropertyDocument = (id) => client.delete(`/property-documents/${id}`).then(r => r.data);
+/**
+ * Turns buyer visibility on or off for one document.
+ *
+ * Sharing means VIEW — a prospective buyer can read it and gets no download
+ * affordance. Unshared documents are staff-only and are not even returned to a
+ * buyer by the listing endpoint.
+ */
+export const setPropertyDocumentShareable = (id, isShareable) =>
+  client.patch(`/property-documents/${id}/shareable`, { is_shareable: isShareable }).then(r => r.data);
 
 // Public share link (authenticated management)
 export const createPropertyPublicLink = (id, payload) => client.post(`/properties/${id}/public-link`, payload).then(r => r.data);

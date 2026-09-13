@@ -20,6 +20,11 @@ export const getInvoicePayments = (id) => client.get(`/invoices/${id}/payments`)
  */
 export const getPaymentAnalysis = (userId) => client.get(`/payment-analysis/${userId}`).then(r => r.data);
 
+// Everything a buyer owns, in one call. No id means "mine"; an explicit id is
+// an admin or upline realtor inspecting someone, authorised server-side.
+export const getMyProperties = (userId) =>
+  client.get(userId ? `/my-properties/${userId}` : '/my-properties').then(r => r.data);
+
 /** How a buyer may pay this invoice: bank details and/or a configured gateway. */
 export const getPaymentOptions = (invoiceId) => client.get(`/invoices/${invoiceId}/payment-options`).then(r => r.data);
 
@@ -113,6 +118,15 @@ export const rejectReceipt = (id, payload) => client.post(`/receipts/${id}/rejec
 // Refused server-side once it is approved or cancelled.
 export const updateOwnReceipt = (id, payload) => client.put(`/receipts/${id}`, payload).then(r => r.data);
 export const cancelOwnReceipt = (id) => client.post(`/receipts/${id}/cancel`, {}).then(r => r.data);
+
+// Documents an admin attaches to an invoice. Listing is open to the invoice's
+// owner; attaching and removing are staff-only, enforced server-side.
+export const listInvoiceDocuments = (invoiceId) =>
+  client.get(`/invoices/${invoiceId}/documents`).then(r => r.data);
+export const attachInvoiceDocument = (invoiceId, payload) =>
+  client.post(`/invoices/${invoiceId}/documents`, payload).then(r => r.data);
+export const deleteInvoiceDocument = (invoiceId, docId) =>
+  client.delete(`/invoices/${invoiceId}/documents/${docId}`).then(r => r.data);
 
 // ── Installment plans (the property purchase journey) ────────────────────────
 // Distinct from the payment plans above, which are the subscription price list.

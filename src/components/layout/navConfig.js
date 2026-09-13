@@ -177,6 +177,9 @@ export const NAV = [
       // Separate paths, not ?status= variants on one path: NavLink matches on
       // pathname, so sibling query-string links would all highlight together.
       // All / Due / Pending are tabs inside the invoices page.
+      // First in the client's group: the property is what they think they own;
+      // the invoice is how it was billed.
+      { to: '/finance/my-properties', label: 'My Properties', icon: Building2, permission: null, showForTypes: ['client'] },
       { to: '/finance/my-invoices',   label: 'My Invoices', icon: FileText,   permission: null, showForTypes: ['client'] },
       { to: '/finance/my-payments',   label: 'My Payments', icon: CreditCard, permission: null, showForTypes: ['client'] },
     ],

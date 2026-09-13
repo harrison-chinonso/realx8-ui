@@ -1,21 +1,35 @@
 import { useEffect, useState } from 'react';
+import { Building2 } from 'lucide-react';
 import client from '../../api/client';
+import { topPerformersReport } from '../../api/financeApi';
 import StatsCard from '../../components/common/StatsCard';
 import Badge from '../../components/common/Badge';
+import { Ranking } from '../../components/dashboard/TopPerformersPanel';
+import { useCurrency } from '../../context/useAppearance';
 import { Link } from 'react-router-dom';
 
 export default function PlatformDashboardPage() {
+  const fmt = useCurrency();
   const [overview, setOverview] = useState(null);
   const [companies, setCompanies] = useState([]);
+  const [topCompanies, setTopCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       client.get('/platform/overview').catch(() => ({ data: {} })),
       client.get('/companies?limit=5&sort=recent').catch(() => ({ data: [] })),
-    ]).then(([overviewRes, companiesRes]) => {
+      /**
+       * The same report the company dashboards use. A platform admin has no
+       * company of their own, so the endpoint returns a cross-company ranking
+       * — and `companies` comes back null for anyone who is bounded to one,
+       * which is why this page is the only place it is asked for.
+       */
+      topPerformersReport({ limit: 5 }).catch(() => null),
+    ]).then(([overviewRes, companiesRes, topRes]) => {
       setOverview(overviewRes.data?.data || overviewRes.data || {});
       setCompanies(Array.isArray(companiesRes.data?.data) ? companiesRes.data.data : []);
+      setTopCompanies(topRes?.data?.companies ?? []);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -55,6 +69,26 @@ export default function PlatformDashboardPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((s) => <StatsCard key={s.title} {...s} />)}
+        </div>
+      )}
+
+      {/*
+        * Ranked by money RECEIVED, the same basis as every other "top" panel in
+        * the app — a tenant that raised the largest unpaid invoices is not the
+        * platform's strongest.
+        *
+        * Sits above Recent Companies because "who is performing" is the
+        * question this page exists to answer; "who joined lately" is context.
+        */}
+      {topCompanies.length > 0 && (
+        <div className="md:max-w-md">
+          <Ranking
+            icon={Building2}
+            title="Top companies"
+            rows={topCompanies}
+            fmt={fmt}
+            emptyNote="No payments received yet."
+          />
         </div>
       )}
 

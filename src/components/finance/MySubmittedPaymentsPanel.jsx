@@ -5,20 +5,27 @@ import Button from '../ui/Button';
 import EditSubmittedPaymentModal from './EditSubmittedPaymentModal';
 
 /**
- * The payments a buyer has submitted, and what has become of them.
+ * The payments a buyer has submitted that still need something from them.
  *
- * This is the half of "My Payments" that was missing. The page next to it lists
+ * This is the half of "My Payments" that was missing. The table below it lists
  * payments RECORDED against an invoice — which only happens once an admin
  * approves one — so a buyer who had uploaded proof saw nothing at all until
  * somebody acted on it, and nothing ever if it was refused.
+ *
+ * Deliberately only the ACTIONABLE ones. An approved payment already appears in
+ * that table, and carding it here too put finished work at the top of the page
+ * while the submission actually waiting on somebody sat underneath it. A
+ * cancelled one has nowhere else to appear, so it is kept — folded away, since
+ * it is history the buyer rarely wants and occasionally needs.
  */
 
 /**
- * Four states, and what the buyer can do in each.
+ * The two states that get a card, and how each reads to the buyer.
  *
- * `verified` is the approved one — the database name is kept, the label is not,
- * because "verified" describes the admin's action and "Approved" describes the
- * outcome the buyer is waiting on.
+ * The other two are elsewhere by design: `verified` appears in the payments
+ * table below as a recorded payment, and `cancelled` in the folded list at the
+ * bottom of this panel. Neither needs anything from the buyer, so neither earns
+ * a card above the fold.
  */
 const STATES = {
   pending: {
@@ -26,20 +33,10 @@ const STATES = {
     tone: 'bg-amber-100 text-amber-800',
     hint: 'Submitted. An admin will confirm it.',
   },
-  verified: {
-    label: 'Approved',
-    tone: 'bg-emerald-100 text-emerald-800',
-    hint: 'Confirmed and applied to your invoice.',
-  },
   rejected: {
     label: 'Rejected',
     tone: 'bg-rose-100 text-rose-700',
     hint: 'Not accepted. Correct it and send it back.',
-  },
-  cancelled: {
-    label: 'Cancelled',
-    tone: 'bg-slate-100 text-slate-600',
-    hint: 'Withdrawn. It does not count toward your invoice.',
   },
 };
 
@@ -54,6 +51,7 @@ const formatDate = (value) => {
 export default function MySubmittedPaymentsPanel() {
   const fmt = useCurrency();
   const [rows, setRows] = useState(null);
+  const [showCancelled, setShowCancelled] = useState(false);
   const [error, setError] = useState('');
   const [editing, setEditing] = useState(null);
   const [cancelling, setCancelling] = useState(null);
@@ -92,10 +90,27 @@ export default function MySubmittedPaymentsPanel() {
     return <div className="rounded-xl bg-white p-6 text-sm text-slate-500 ring-1 ring-slate-200">Loading your payments…</div>;
   }
 
+  /**
+   * Pending AND rejected are both "actionable".
+   *
+   * A rejection is not an outcome the buyer is done with — it is a request to
+   * fix something — so it belongs beside the ones awaiting review rather than
+   * filed away with the finished ones.
+   */
+  const actionable = rows.filter((row) => EDITABLE.includes(row.status));
+  const cancelled = rows.filter((row) => row.status === 'cancelled');
+
   return (
     <div className="space-y-3">
       {error && <div className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700 ring-1 ring-rose-200">{error}</div>}
 
+      {actionable.length > 0 && (
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Awaiting your attention</p>
+      )}
+
+      {/* Nothing outstanding is not worth a panel of its own — the table below
+          is the answer to "what has happened to my payments". Only a buyer who
+          has never submitted anything gets told so explicitly. */}
       {rows.length === 0 && (
         <div className="rounded-xl bg-white p-8 text-center ring-1 ring-slate-200">
           <p className="text-sm font-medium text-slate-700">You have not submitted any payments yet.</p>
@@ -105,7 +120,7 @@ export default function MySubmittedPaymentsPanel() {
         </div>
       )}
 
-      {rows.map((row) => {
+      {actionable.map((row) => {
         const state = STATES[row.status] || STATES.pending;
         const canAct = EDITABLE.includes(row.status);
         return (
@@ -170,6 +185,31 @@ export default function MySubmittedPaymentsPanel() {
           </div>
         );
       })}
+
+      {cancelled.length > 0 && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowCancelled((open) => !open)}
+            className="text-xs font-medium text-slate-500 hover:text-slate-700"
+          >
+            {showCancelled ? 'Hide' : 'Show'} cancelled submissions ({cancelled.length})
+          </button>
+          {showCancelled && (
+            <div className="mt-2 space-y-1">
+              {cancelled.map((row) => (
+                <div key={row.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                  <span>
+                    {fmt(row.amount)} · {row.receipt_number}
+                    {formatDate(row.created_at) ? ` · ${formatDate(row.created_at)}` : ''}
+                  </span>
+                  <span className="font-medium">Cancelled — does not count toward your invoice</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <EditSubmittedPaymentModal
         receipt={editing}

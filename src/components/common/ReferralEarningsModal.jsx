@@ -3,6 +3,7 @@ import { getReferralEarnings } from '../../api/userApi';
 import { useCurrency } from '../../context/useAppearance';
 import Modal from './Modal';
 import Badge from './Badge';
+import { STATE_TONE, STATE_LABEL } from '../../utils/invoiceState';
 import SummaryTile from '../dashboard/SummaryTile';
 
 const formatDate = (value) => (value
@@ -93,7 +94,8 @@ export default function ReferralEarningsModal({ user, open, onClose }) {
                     <th className="px-4 py-3 text-right font-semibold text-slate-600">Amount</th>
                     <th className="px-4 py-3 text-left font-semibold text-slate-600">Mode</th>
                     <th className="px-4 py-3 text-left font-semibold text-slate-600">Invoice</th>
-                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
+                    <th className="px-4 py-3 text-right font-semibold text-slate-600">Paid</th>
+                    <th className="px-4 py-3 text-left font-semibold text-slate-600">Payment</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -106,11 +108,27 @@ export default function ReferralEarningsModal({ user, open, onClose }) {
                       <td className="px-4 py-3 text-right font-semibold text-slate-900">{fmt(row.amount)}</td>
                       <td className="px-4 py-3 capitalize text-slate-600">{row.payment_mode || '—'}</td>
                       <td className="px-4 py-3 text-slate-600">{row.invoice_ref || '—'}</td>
-                      <td className="px-4 py-3"><Badge value={row.status} /></td>
+                      <td className="px-4 py-3 text-right text-slate-700">
+                        {row.invoice_id ? fmt(row.paid) : '—'}
+                      </td>
+                      {/*
+                        * The PAYMENT state, not pr.status.
+                        *
+                        * pr.status is the sales pipeline — pending / contacted /
+                        * completed — which staff move by hand as they follow a
+                        * buyer up. Shown here it said "pending" about a purchase
+                        * the client had already paid for, which is the opposite
+                        * of what this table is being read for.
+                        */}
+                      <td className="px-4 py-3">
+                        <span className={`whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATE_TONE[row.payment_state] || 'bg-slate-100 text-slate-600'}`}>
+                          {STATE_LABEL[row.payment_state] || row.payment_state}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                   {!data.purchases.length && (
-                    <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500">This referral has not purchased anything yet.</td></tr>
+                    <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-500">This referral has not purchased anything yet.</td></tr>
                   )}
                 </tbody>
               </table>

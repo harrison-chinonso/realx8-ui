@@ -6,6 +6,7 @@ import {
   approveProperty,
   addPropertyUnitConfig,
   deletePropertyDocument,
+  setPropertyDocumentShareable,
   deletePropertyUnitConfig,
   getProperty,
   getPropertyAmenities,
@@ -37,7 +38,10 @@ import { enumLabel } from '../../utils/enumLabel';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const emptyAmenityForm = { name: '', description: '' };
-const emptyDocumentForm = { name: '', type: 'deed', url: '', file: null };
+// is_shareable defaults to false here for the same reason it does in the
+// database: a document becomes visible to buyers because somebody chose it,
+// never because they forgot to untick something.
+const emptyDocumentForm = { name: '', type: 'deed', url: '', file: null, is_shareable: false };
 
 const getData = (response) => response?.data ?? response ?? null;
 const getItems = (response) => response?.data ?? response ?? [];
@@ -90,6 +94,7 @@ export default function PropertyDetailPage() {
   const [savingAmenity, setSavingAmenity] = useState(false);
   const [documentForm, setDocumentForm] = useState(emptyDocumentForm);
   const [savingDocument, setSavingDocument] = useState(false);
+  const [sharingId, setSharingId] = useState(null);
   const [approvalNotes, setApprovalNotes] = useState('');
   const [approvalSaving, setApprovalSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -312,6 +317,25 @@ export default function PropertyDetailPage() {
     }));
   };
 
+  /**
+   * Flips buyer visibility for one document.
+   *
+   * Reloads rather than patching local state: the server decides, and a row
+   * that silently disagreed with it would be the worst possible bug in a
+   * control whose whole job is "who can see this".
+   */
+  const handleToggleShareable = async (doc) => {
+    setSharingId(doc.id);
+    try {
+      await setPropertyDocumentShareable(doc.id, !doc.is_shareable);
+      await loadDocuments();
+    } catch (error) {
+      alert(error?.response?.data?.message || 'Could not change who can see this document.');
+    } finally {
+      setSharingId(null);
+    }
+  };
+
   const handleAddDocument = async (event) => {
     event.preventDefault();
     setSavingDocument(true);
@@ -333,6 +357,7 @@ export default function PropertyDetailPage() {
       await addPropertyDocument(id, {
         name: name || 'Property Document',
         type: documentForm.type,
+        is_shareable: documentForm.is_shareable,
         url,
       });
       setDocumentForm(emptyDocumentForm);
@@ -671,6 +696,18 @@ export default function PropertyDetailPage() {
                 },
                 { key: 'type', label: 'Type', render: (d) => <DocumentTypeBadge value={d.type} /> },
                 {
+                  key: 'is_shareable',
+                  label: 'Buyers',
+                  /**
+                   * Stated on every row, not only the shared ones. "Staff only"
+                   * is the answer for most documents and it should be visible
+                   * rather than inferred from the absence of a badge.
+                   */
+                  render: (d) => (d.is_shareable
+                    ? <span className="whitespace-nowrap rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-semibold text-sky-700">Can view</span>
+                    : <span className="whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">Staff only</span>),
+                },
+                {
                   key: 'download',
                   label: 'Download',
                   render: (d) => (d.url ? (
@@ -687,16 +724,33 @@ export default function PropertyDetailPage() {
                 },
               ]}
               renderActions={(d) => (
-                <Button type="button" variant="danger" size="sm" onClick={() => handleDeleteDocument(d)}>
-                  Delete
-                </Button>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={sharingId === d.id}
+                    onClick={() => handleToggleShareable(d)}
+                    title={d.is_shareable
+                      ? 'Stop showing this to prospective buyers'
+                      : 'Let prospective buyers read this. They cannot download it.'}
+                  >
+                    {sharingId === d.id ? 'Saving…' : d.is_shareable ? 'Unshare' : 'Share'}
+                  </Button>
+                  <Button type="button" variant="danger" size="sm" onClick={() => handleDeleteDocument(d)}>
+                    Delete
+                  </Button>
+                </div>
               )}
             />
 
             <div className="rounded-lg border border-slate-200 p-4">
               <div className="mb-3">
                 <h2 className="text-sm font-semibold text-slate-900">Add Document</h2>
-                <p className="text-sm text-slate-500">Provide a document URL or upload a file.</p>
+                <p className="text-sm text-slate-500">
+                  Provide a document URL or upload a file. Documents are staff-only unless you
+                  share them.
+                </p>
               </div>
               <form onSubmit={handleAddDocument} className="grid gap-4 md:grid-cols-2">
                 <Input
@@ -724,6 +778,25 @@ export default function PropertyDetailPage() {
                 <label className="block space-y-1">
                   <span className="text-sm font-medium text-slate-700">Upload File</span>
                   <input type="file" onChange={handleDocumentFileChange} className={INPUT_CLASS} />
+                </label>
+                {/*
+                  * Sharing is decided when the document is added, as well as
+                  * afterwards from the table. Unticked by default — the same
+                  * fail-closed default the column and the database use.
+                  */}
+                <label className="md:col-span-2 flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={documentForm.is_shareable}
+                    onChange={(event) => setDocumentForm((current) => ({ ...current, is_shareable: event.target.checked }))}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300"
+                  />
+                  <span className="text-sm text-slate-700">
+                    Let prospective buyers view this
+                    <span className="mt-0.5 block text-xs text-slate-500">
+                      They can read it on the property page. No download is offered.
+                    </span>
+                  </span>
                 </label>
                 <div className="md:col-span-2 flex justify-end">
                   <Button type="submit" disabled={savingDocument}>{savingDocument ? 'Saving...' : 'Add Document'}</Button>

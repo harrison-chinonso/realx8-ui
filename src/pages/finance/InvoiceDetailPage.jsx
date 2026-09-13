@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import useAuthStore from '../../store/authStore';
 import PayInvoiceModal from '../../components/finance/PayInvoiceModal';
 import InvoiceSettlementPanel from '../../components/finance/InvoiceSettlementPanel';
+import InvoiceDocumentsPanel from '../../components/finance/InvoiceDocumentsPanel';
 import PaymentSchedulePanel from '../../components/finance/PaymentSchedulePanel';
 import Table from '../../components/common/Table';
 import Select from '../../components/ui/Select';
@@ -272,6 +273,59 @@ export default function InvoiceDetailPage() {
             <div className="mt-1 text-sm text-slate-800">{formatValue(invoice.tax_id)}</div>
           </div>
         </div>
+
+        {/*
+          * What was actually bought.
+          *
+          * The grid above names the property and nothing else, so a buyer
+          * holding an invoice for one of three units in the same development
+          * could not tell which one it was for, or how many. `purchase` comes
+          * from the purchase request that raised the invoice — absent on an
+          * invoice raised by hand, which is why the whole block is conditional
+          * rather than rendering a row of dashes.
+          */}
+        {(invoice.property_name || invoice.purchase) && (
+          <div className="rounded-lg bg-slate-50 p-4 ring-1 ring-slate-200">
+            <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              What this invoice is for
+            </div>
+            <div className="mt-2 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <div className="text-xs text-slate-500">Property</div>
+                <div className="mt-0.5 text-sm font-medium text-slate-900">
+                  {invoice.property_name || '—'}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500">Unit</div>
+                <div className="mt-0.5 text-sm text-slate-800">
+                  {invoice.purchase?.unit_label || '—'}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500">Quantity</div>
+                <div className="mt-0.5 text-sm text-slate-800">
+                  {invoice.purchase?.quantity ?? '—'}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500">Unit price</div>
+                <div className="mt-0.5 text-sm text-slate-800">
+                  {invoice.purchase?.unit_price ? fmt(invoice.purchase.unit_price) : '—'}
+                </div>
+              </div>
+            </div>
+            {/* capitalize goes on the MODE, not the sentence. On the paragraph
+                it title-cased the lot: "Purchased On Installment Terms." */}
+            {invoice.purchase?.payment_mode && (
+              <p className="mt-3 text-xs text-slate-500">
+                Purchased on{' '}
+                <span className="capitalize">{String(invoice.purchase.payment_mode).replace(/_/g, ' ')}</span>
+                {' '}terms.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/*
@@ -282,6 +336,13 @@ export default function InvoiceDetailPage() {
       <PaymentSchedulePanel invoiceId={id} onChanged={loadData} />
 
       {!isBuyer && <InvoiceSettlementPanel invoiceId={id} onChanged={loadData} />}
+
+      {/*
+        * Both audiences, different affordances: staff attach and remove, the
+        * buyer reads and downloads. The panel decides from `canManage` rather
+        * than being rendered twice.
+        */}
+      <InvoiceDocumentsPanel invoiceId={id} canManage={!isBuyer} />
 
       {!isBuyer && (
         <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 space-y-3">
