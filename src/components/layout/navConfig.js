@@ -167,11 +167,19 @@ export const NAV = [
           { to: '/finance/commission-payouts', label: 'Payouts', icon: DollarSign, permission: 'finance.commissions.manage' },
           { to: '/finance/commission-analytics', label: 'Analytics', icon: DollarSign, permission: 'finance.commissions.view' },
           /**
-           * The older flat-rate payables, kept and labelled for what they are.
-           * A company that has never activated a plan is still paid this way,
-           * so removing it would take their only commission screen away.
+           * The older flat-rate payables are deliberately NOT in this menu.
+           *
+           * `/commissions` still exists and still works if linked to directly —
+           * it is where the flat-rate payables live, and where
+           * `commission_rules` is configured. It is out of the menu because a
+           * company running the engine never writes to it, so it reads as a
+           * permanently empty screen next to the ones that matter.
+           *
+           * The consequence to know: a company with NO active plan is still
+           * paid the flat way, and its admins now have no menu route to
+           * approve or pay those commissions, or to configure the rules that
+           * set them. Put this entry back if such a company needs it.
            */
-          { to: '/commissions', label: 'Payables (flat rate)', icon: DollarSign, permission: 'finance.commissions.view' },
           /**
            * ONE entry for the earner, not two.
            *
