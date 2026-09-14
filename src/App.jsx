@@ -49,6 +49,7 @@ import EmployeesPage from './pages/users/EmployeesPage';
 import ClientsPage from './pages/users/ClientsPage';
 import RealtorsPage from './pages/users/RealtorsPage';
 import RolesPage from './pages/roles/RolesPage';
+import CommissionPlansPage from './pages/finance/CommissionPlansPage';
 import AuditLogPage from './pages/audit/AuditLogPage';
 import CommissionsPage from './pages/commissions/CommissionsPage';
 import MyCommissionsPage from './pages/realtor/MyCommissionsPage';
@@ -261,6 +262,7 @@ export default function App() {
           {/* The property purchase journey's plan templates — distinct from
               /finance/payment-plans, which is the subscription price list. */}
           <Route path="/finance/installment-plans" element={<InstallmentPlansPage />} />
+          <Route path="/finance/commission-plans" element={<CommissionPlansPage />} />
           <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
           <Route path="/finance/taxes" element={<TaxesPage />} />
           <Route path="/finance/bank-accounts" element={<BankAccountsPage />} />
