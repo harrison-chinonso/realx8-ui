@@ -285,9 +285,10 @@ export default function NotificationSettingsPage() {
       })}
 
       <p className="text-xs text-slate-500">
-        The person involved and their realtor come from the event itself. Where no realtor is
-        assigned, that recipient is simply left out. The &ldquo;anyone who can…&rdquo; groups are
-        set on the Roles screen, not here.
+        The person involved and their realtor are resolved from the event itself, so they are one
+        specific person. A realtor is only notified where one is assigned — where none is, that
+        recipient is left out. The &ldquo;anyone who can…&rdquo; groups come from your Roles screen,
+        so changing who is in one is a role change rather than a change here.
       </p>
 
       <div className="flex justify-end">

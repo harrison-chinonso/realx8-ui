@@ -140,8 +140,9 @@ export default function PublicLinkPanel({ property, onChange }) {
         )}
       </div>
       <p className="mb-4 text-sm text-slate-600">
-        One link per property, and it does not expire. Anyone holding it can view the property
-        without signing in; documents are never included. Revoking removes it entirely.
+        A property has a single link that does not expire. Anyone with it can view the property
+        without signing in — documents are never included — and accounts created from it are tied
+        to this company. Revoking removes the link entirely.
       </p>
 
       {error && <div className="mb-3 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
