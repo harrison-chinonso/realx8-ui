@@ -131,6 +131,17 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
   const patch = useCallback((next) => onChange({ ...config, ...next }), [config, onChange]);
 
   /**
+   * The five settings live under one `policy` key rather than scattered across
+   * the config, so a reader can see everything a plan decided in one place —
+   * and so the defaults have exactly one home in the engine.
+   */
+  const policy = config.policy || {};
+  const setPolicy = useCallback(
+    (next) => onChange({ ...config, policy: { ...(config.policy || {}), ...next } }),
+    [config, onChange],
+  );
+
+  /**
    * Validate and simulate together, debounced.
    *
    * Debounced because this fires on every keystroke in a rate field and each
@@ -485,6 +496,91 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
 
       {/* ── The consequences ───────────────────────────────────────────── */}
       <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+        <Section
+          title="Policy"
+          description="Five places the specification says two things. Every default here is what the engine did before these were settable, so leaving them alone changes nothing."
+        >
+          <Field
+            label="A realtor who is inactive when commission falls due"
+            hint="The status check runs and is recorded on the entitlement either way. This decides whether it withholds anything."
+          >
+            <Select
+              value={policy.gate || 'ENFORCE'}
+              onChange={(e) => setPolicy({ gate: e.target.value })}
+              disabled={disabled}
+            >
+              <option value="ENFORCE">Does not receive it</option>
+              <option value="ADVISORY">Receives it anyway — the check is recorded only</option>
+            </Select>
+          </Field>
+
+          {(policy.gate || 'ENFORCE') === 'ENFORCE' && (
+            <Field
+              label="…and what they lose"
+              hint="Forfeiting only the instalment leaves something for a reinstatement to resume. Forfeiting the balance means one missed checkpoint ends the entitlement."
+            >
+              <Select
+                value={policy.lapse_scope || 'INCREMENT'}
+                onChange={(e) => setPolicy({ lapse_scope: e.target.value })}
+                disabled={disabled}
+              >
+                <option value="INCREMENT">Only what fell due while they were inactive</option>
+                <option value="REMAINING">The whole unreleased balance</option>
+              </Select>
+            </Field>
+          )}
+
+          <Field
+            label="When commission becomes payable"
+            hint="A plan scoped to a property or project that leaves this unset follows the company's default plan."
+          >
+            <Select
+              value={config.vesting?.release_trigger || ''}
+              onChange={(e) => patch({
+                vesting: { ...(config.vesting || {}), release_trigger: e.target.value || undefined },
+              })}
+              disabled={disabled}
+            >
+              <option value="">Follow the company default</option>
+              <option value="ON_DEAL_CONFIRMATION">As soon as the deal is confirmed</option>
+              <option value="ON_INITIAL_DEPOSIT">Once any money has arrived</option>
+              <option value="ON_THRESHOLD">Once the buyer passes a percentage of the price</option>
+              <option value="PRO_RATA">In step with the buyer — 40% paid, 40% payable</option>
+              <option value="ON_FULL_PAYMENT">Only when the buyer has paid in full</option>
+              <option value="MILESTONE">Against named milestones</option>
+              <option value="SCHEDULED">On a fixed schedule after confirmation</option>
+            </Select>
+          </Field>
+
+          <Field
+            label="Part-payable commission"
+            hint="Forbidding it suits accounting that cannot represent a part-paid commission. It cannot be combined with a trigger that only ever releases part of one — the plan will not activate."
+          >
+            <Select
+              value={policy.partial_release || 'ALLOW'}
+              onChange={(e) => setPolicy({ partial_release: e.target.value })}
+              disabled={disabled}
+            >
+              <option value="ALLOW">An entitlement may become payable in parts</option>
+              <option value="FORBID">Payable whole, or not at all</option>
+            </Select>
+          </Field>
+
+          <Field
+            label="Cancellation penalties"
+            hint="A penalty is a charge for a sale that did not happen. Include it where realtors are expected to chase and recover it."
+          >
+            <Select
+              value={policy.penalties_commissionable ? 'true' : 'false'}
+              onChange={(e) => setPolicy({ penalties_commissionable: e.target.value === 'true' })}
+              disabled={disabled}
+            >
+              <option value="false">Not commissionable</option>
+              <option value="true">Commissionable</option>
+            </Select>
+          </Field>
+        </Section>
+
         <Section title="What this would pay" description="On a deal you describe, run through the real engine.">
           <div className="grid grid-cols-2 gap-2">
             <Field label="Property price">
