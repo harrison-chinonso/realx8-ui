@@ -464,6 +464,28 @@ export default function InvoiceDetailPage() {
             { key: 'date', label: 'Date', render: (row) => formatDate(row.paid_at || row.createdAt || row.created_at || row.date) },
             {
               /**
+               * The receipt the COMPANY issued for this payment.
+               *
+               * Distinct from the proof beside it, and the pair is the whole
+               * story of a payment: the buyer's evidence that they paid, and
+               * the company's acknowledgement that they did.
+               */
+              key: 'receipt',
+              label: 'Receipt',
+              render: (row) => (row.proof?.company_receipt_url ? (
+                <a
+                  href={row.proof.company_receipt_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium hover:underline"
+                  style={{ color: 'var(--primary)' }}
+                >
+                  Download
+                </a>
+              ) : <span className="text-xs text-slate-400">—</span>),
+            },
+            {
+              /**
                * The proof this payment was approved from.
                *
                * Once a proof is confirmed it leaves the review queue, so the

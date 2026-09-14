@@ -19,6 +19,7 @@ export default function TransactionHistory({ title = 'Recent Transactions', rows
               <th className="px-4 py-2.5 text-left font-semibold text-slate-600">What for</th>
               <th className="px-4 py-2.5 text-right font-semibold text-slate-600">Amount</th>
               <th className="px-4 py-2.5 text-left font-semibold text-slate-600">Status</th>
+              <th className="px-4 py-2.5 text-left font-semibold text-slate-600">Receipt</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -52,10 +53,23 @@ export default function TransactionHistory({ title = 'Recent Transactions', rows
                 </td>
                 <td className="whitespace-nowrap px-4 py-2.5 text-right font-semibold text-slate-900">{fmt(row.amount)}</td>
                 <td className="px-4 py-2.5"><Badge value={row.status} /></td>
+                <td className="whitespace-nowrap px-4 py-2.5">
+                  {row.company_receipt_url ? (
+                    <a
+                      href={row.company_receipt_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium hover:underline"
+                      style={{ color: 'var(--primary)' }}
+                    >
+                      Download
+                    </a>
+                  ) : <span className="text-slate-300">—</span>}
+                </td>
               </tr>
             ))}
             {!rows.length && (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-500">{emptyText || 'No transactions yet.'}</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">{emptyText || 'No transactions yet.'}</td></tr>
             )}
           </tbody>
         </table>

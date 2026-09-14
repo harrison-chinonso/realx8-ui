@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { listRealtorLevels } from '../../api/realtorLevelApi';
+import { numberOrUndefined } from '../../utils/numberField';
 import { Plus, Trash2 } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -336,7 +337,9 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
                 label="Cap (%)"
                 type="number" step="0.01" min="0"
                 value={config.pool?.percentage ?? ''}
-                onChange={(e) => patch({ pool: { ...config.pool, percentage: Number(e.target.value) } })}
+                onChange={(e) => patch({
+                  pool: { ...config.pool, percentage: numberOrUndefined(e.target.value) },
+                })}
                 disabled={disabled}
               />
             )}
@@ -518,7 +521,7 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
                 onChange={(e) => patch(withRule(config, 'DIRECT_SALE', {
                   ...direct,
                   id: 'direct', type: 'DIRECT_SALE', value_type: 'PERCENTAGE',
-                  value: e.target.value === '' ? undefined : Number(e.target.value),
+                  value: numberOrUndefined(e.target.value),
                 }))}
                 disabled={disabled}
               />
@@ -550,7 +553,9 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
                 label="Rate (%)"
                 type="number" step="0.01" min="0"
                 value={referral.value ?? ''}
-                onChange={(e) => patch(withRule(config, 'REFERRAL_BONUS', { ...referral, value: Number(e.target.value) }))}
+                onChange={(e) => patch(withRule(config, 'REFERRAL_BONUS', {
+                  ...referral, value: numberOrUndefined(e.target.value),
+                }))}
                 disabled={disabled}
               />
               <Field label="…of">
@@ -601,7 +606,7 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
                     label={index === 0 ? 'Rate (%)' : ''}
                     type="number" step="0.01" min="0"
                     value={tier.value ?? ''}
-                    onChange={(e) => setTier(index, { value: Number(e.target.value) })}
+                    onChange={(e) => setTier(index, { value: numberOrUndefined(e.target.value) })}
                     disabled={disabled}
                   />
                   <Field label={index === 0 ? '…of' : ''}>
