@@ -209,13 +209,23 @@ export default function CommissionPlansPage() {
   const columns = [
     { header: 'Plan', accessor: 'name', render: (row) => (
       <div className="min-w-0">
-        <div className="truncate font-medium text-slate-900">{row.name}</div>
+        <div className="truncate font-medium text-slate-900">
+          {row.name}
+          {/*
+            Only a platform admin sees plans from more than one company, and
+            only then is the owner worth the space. A company admin's list is
+            all their own, where the label would be noise on every row.
+          */}
+          {row.company_name && (
+            <span className="ml-2 text-xs font-normal text-slate-400">{row.company_name}</span>
+          )}
+        </div>
         <div className="text-xs text-slate-500">
           {row.is_default
             ? 'Company default — applies to every sale with no closer match'
             : row.scope_type
               ? `Assigned to ${row.scope_type} #${row.scope_id}`
-              : 'Not assigned — this plan pays nothing until it is'}
+              : 'Not assigned — assign it to a property or unit before it can pay'}
         </div>
       </div>
     ) },
