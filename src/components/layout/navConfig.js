@@ -144,32 +144,41 @@ export const NAV = [
       {
         label: 'Commission', icon: DollarSign,
         children: [
-          // The amounts owed to individual people — the flat-rate payable that
-          // predates the engine, and still what a company without a plan uses.
-          { to: '/commissions', label: 'Commissions', icon: DollarSign, permission: 'finance.commissions.view' },
           /**
-           * The commission ENGINE's configuration — what a sale pays and to
-           * whom. Distinct from Commissions above, and gated on the permission
-           * that governs changing them.
+           * The ENGINE comes first, because it is the system a company
+           * configures and the one that decides what a sale pays.
+           *
+           * Ordering matters more here than it looks. "Commissions" below is
+           * the LEGACY flat-rate payable list, and it used to sit at the top of
+           * this menu — where, being the first entry and named almost
+           * identically to "Commission Plans", it read as though it were the
+           * commission feature. It reads an entirely different table
+           * (`commissions`) from the engine (`commission_entitlements`), so a
+           * company on the engine sees it permanently empty and concludes the
+           * engine is not there.
            */
-          { to: '/finance/commission-plans', label: 'Commission Plans', icon: DollarSign, permission: 'finance.commissions.manage' },
+          { to: '/finance/commission-plans', label: 'Plans', icon: DollarSign, permission: 'finance.commissions.manage' },
           /**
            * Running a payout is what moves money, so it is gated on manage.
            * Reading what the engine has cost is not, which is why analytics
            * takes the view permission — an admin reviewing the bill should not
            * need the permission that changes what it will be.
            */
-          { to: '/finance/commission-payouts', label: 'Commission Payouts', icon: DollarSign, permission: 'finance.commissions.manage' },
-          { to: '/finance/commission-analytics', label: 'Commission Analytics', icon: DollarSign, permission: 'finance.commissions.view' },
+          { to: '/finance/commission-payouts', label: 'Payouts', icon: DollarSign, permission: 'finance.commissions.manage' },
+          { to: '/finance/commission-analytics', label: 'Analytics', icon: DollarSign, permission: 'finance.commissions.view' },
+          /**
+           * The older flat-rate payables, kept and labelled for what they are.
+           * A company that has never activated a plan is still paid this way,
+           * so removing it would take their only commission screen away.
+           */
+          { to: '/commissions', label: 'Payables (flat rate)', icon: DollarSign, permission: 'finance.commissions.view' },
           // The earner's own commissions, with the request-payment action.
           // Shown to realtors, who do not hold finance.commissions.view.
           { to: '/commissions/mine', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
           /**
            * The ENGINE's statement, which is a different thing from the list
            * above: it shows money accruing against buyers still paying, which
-           * the flat-rate commissions list has no concept of. A realtor on a
-           * company that has not activated a plan sees an empty one, which is
-           * the honest answer rather than a hidden menu item.
+           * the flat-rate list has no concept of.
            */
           { to: '/finance/my-commission', label: 'My Commission Statement', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
         ],
@@ -219,18 +228,7 @@ export const NAV = [
       { to: '/media/analytics',       label: 'Analytics',            icon: LineChart, permission: 'media.analytics.view' },
     ],
   },
-
-  // ── 8. Referral System ───────────────────────────────────────────────────
-  {
-    section: 'Referral System',
-    // Commission moved to Finance, where the rest of it is. What is left here
-    // is the referral programme itself — who introduced whom — which is a
-    // different subject from what that introduction earns.
-    items: [
-      { to: '/referral',     label: 'Referral Program', icon: Share2,     permission: 'finance.commissions.manage' },
-    ],
-  },
-
+  
   // ── 9. Realtor Hub ───────────────────────────────────────────────────────
   {
     section: 'Realtor Hub',
