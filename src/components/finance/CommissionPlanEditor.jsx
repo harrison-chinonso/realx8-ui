@@ -134,6 +134,43 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
    * nothing and the editor gave no hint why.
    */
   const [levels, setLevels] = useState(null);
+  const [showLevelRates, setShowLevelRates] = useState(false);
+
+  const direct = ruleOf(config, 'DIRECT_SALE');
+
+  const patch = useCallback((next) => onChange({ ...config, ...next }), [config, onChange]);
+
+  /** The rate this plan names for a level, or undefined if it names none. */
+  const levelRateFor = useCallback((levelId) => {
+    const entry = (direct?.level_rates || [])
+      .find((r) => Number(r.level_id) === Number(levelId));
+    return entry?.value;
+  }, [direct]);
+
+  /** What a blank box will actually resolve to, shown as its placeholder. */
+  const fallbackFor = useCallback((level) => {
+    if (direct?.value !== undefined && direct?.value !== null) return `flat ${direct.value}%`;
+    return `level ${Number(level.commission_percentage) || 0}%`;
+  }, [direct]);
+
+  /**
+   * Writing a level rate. Clearing the box REMOVES the entry rather than
+   * storing an empty one, so "not set" and "set to nothing" cannot both exist
+   * in a stored plan and mean different things to whoever reads it next.
+   */
+  const setLevelRate = useCallback((level, raw) => {
+    const rest = (direct?.level_rates || []).filter((r) => Number(r.level_id) !== Number(level.id));
+    const next = raw === '' || raw === null
+      ? rest
+      : [...rest, { level_id: Number(level.id), level_name: level.name, value: Number(raw) }];
+    patch(withRule(config, 'DIRECT_SALE', {
+      ...direct,
+      id: 'direct',
+      type: 'DIRECT_SALE',
+      value_type: 'PERCENTAGE',
+      level_rates: next.length ? next.sort((a, b) => a.level_id - b.level_id) : undefined,
+    }));
+  }, [config, direct, patch]);
 
   useEffect(() => {
     let alive = true;
@@ -143,12 +180,8 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
       .catch(() => { if (alive) setLevels([]); });
     return () => { alive = false; };
   }, []);
-
-  const direct = ruleOf(config, 'DIRECT_SALE');
   const referral = ruleOf(config, 'REFERRAL_BONUS');
   const generational = ruleOf(config, 'GENERATIONAL_OVERRIDE');
-
-  const patch = useCallback((next) => onChange({ ...config, ...next }), [config, onChange]);
 
   /**
    * The five settings live under one `policy` key rather than scattered across
@@ -384,45 +417,100 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
             * Realtor Levels screen defaults commission to 0%, so levels created
             * without setting it pay nothing.
             */}
-          {(direct?.value === undefined || direct?.value === null) && levels && (
-            levels.length ? (
-              <div className="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
-                  Each realtor earns their level&apos;s rate
+          {/*
+            * Three places a rate can come from, in the order the engine asks:
+            * a rate named for the realtor's level, the plan's flat rate, then
+            * the rate on the level itself. Shown as one block so the admin can
+            * see which one will actually answer, rather than inferring it.
+            */}
+          {levels && (
+            <div className="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
+              <div className="mb-2 flex items-baseline justify-between gap-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Rate per realtor level
                 </p>
-                <div className="flex flex-wrap gap-x-5 gap-y-1">
-                  {levels.map((level) => (
-                    <span key={level.id} className="text-sm">
-                      <span className="text-slate-600">{level.name}</span>
-                      <span className={`ml-1.5 font-semibold ${
-                        Number(level.commission_percentage) > 0 ? 'text-slate-900' : 'text-rose-600'
-                      }`}>
-                        {Number(level.commission_percentage) || 0}%
-                      </span>
-                    </span>
-                  ))}
-                </div>
-                {levels.every((level) => !Number(level.commission_percentage)) && (
-                  <p className="mt-2 text-xs text-rose-700">
-                    Every level is set to 0%, so this plan would pay the seller nothing. Set a rate
-                    on each level under Users → Realtor Levels, or type a fixed rate here instead.
-                  </p>
-                )}
+                <button
+                  type="button"
+                  className="text-xs font-medium hover:underline"
+                  style={{ color: 'var(--primary)' }}
+                  onClick={() => setShowLevelRates((open) => !open)}
+                  disabled={disabled}
+                >
+                  {showLevelRates ? 'Hide' : 'Set rates per level'}
+                </button>
               </div>
-            ) : (
-              <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                No realtor levels are configured, so a blank rate resolves to nothing. Add levels
-                under Users → Realtor Levels, or type a fixed rate here.
+
+              {showLevelRates ? (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {levels.map((level) => {
+                    const set = levelRateFor(level.id);
+                    return (
+                      <label key={level.id} className="flex items-center gap-2">
+                        <span className="w-32 shrink-0 truncate text-sm text-slate-700">{level.name}</span>
+                        <Input
+                          type="number" step="0.01" min="0"
+                          value={set ?? ''}
+                          placeholder={fallbackFor(level)}
+                          onChange={(e) => setLevelRate(level, e.target.value)}
+                          disabled={disabled}
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-x-5 gap-y-1">
+                  {levels.map((level) => {
+                    const set = levelRateFor(level.id);
+                    const effective = set ?? (direct?.value ?? null)
+                      ?? (Number(level.commission_percentage) || 0);
+                    return (
+                      <span key={level.id} className="text-sm">
+                        <span className="text-slate-600">{level.name}</span>
+                        <span className={`ml-1.5 font-semibold ${Number(effective) > 0 ? 'text-slate-900' : 'text-rose-600'}`}>
+                          {Number(effective) || 0}%
+                        </span>
+                        <span className="ml-1 text-[11px] text-slate-400">
+                          {set !== undefined && set !== null ? 'plan'
+                            : (direct?.value ?? null) !== null ? 'flat' : 'level'}
+                        </span>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              <p className="mt-2 text-xs text-slate-500">
+                A rate set here wins. Any level left blank uses the flat rate below; with no flat
+                rate either, it uses the rate on that level under Users → Realtor Levels — which is
+                usually what you want when the rates do not differ by plan.
               </p>
-            )
+
+              {levels.length > 0
+                && levels.every((level) => levelRateFor(level.id) === undefined || levelRateFor(level.id) === null)
+                && (direct?.value === undefined || direct?.value === null)
+                && levels.every((level) => !Number(level.commission_percentage)) && (
+                <p className="mt-1 text-xs text-rose-700">
+                  Nothing is set here, there is no flat rate, and every level is 0% under Users →
+                  Realtor Levels — so this plan would pay the seller nothing and cannot be activated.
+                </p>
+              )}
+            </div>
+          )}
+
+          {levels && levels.length === 0 && (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+              No realtor levels are configured, so a per-level rate is not available. Set a flat rate
+              below, or add levels under Users → Realtor Levels.
+            </p>
           )}
 
           <div className="grid gap-3 sm:grid-cols-3">
             <Field
-              label="Rate (%)"
+              label="Flat rate (%)"
               hint={direct?.value === undefined || direct?.value === null
-                ? 'Blank — each realtor earns the rate on their own level, shown below.'
-                : 'A fixed rate for every realtor. Their level is ignored.'}
+                ? 'Optional. Applies to any level with no rate of its own above.'
+                : 'Applies to every level with no rate of its own above.'}
             >
               <Input
                 type="number" step="0.01" min="0"

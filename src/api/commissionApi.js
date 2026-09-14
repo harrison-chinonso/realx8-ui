@@ -117,3 +117,11 @@ export const listCommissionFlags = (params) =>
 
 export const reviewCommissionFlag = (id, status, note) =>
   client.post(`/commission-reports/flags/${id}/review`, { status, note }).then((r) => r.data);
+
+/**
+ * Where a plan applies: a unit, a property, a project, a campaign, or the
+ * company as a whole. Separate from versions, because a plan's rules are frozen
+ * once active while what it covers is not.
+ */
+export const assignCommissionPlan = (id, assignment) =>
+  client.put(`/commission-plans/${id}/assignment`, assignment).then((r) => r.data);

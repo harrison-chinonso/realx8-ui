@@ -8,7 +8,10 @@ import CommissionPlanEditor, { BLANK_CONFIG } from '../../components/finance/Com
 import {
   listCommissionPlans, getCommissionPlan, createCommissionPlan,
   createPlanVersion, activatePlanVersion, archiveCommissionPlan,
+  assignCommissionPlan,
 } from '../../api/commissionApi';
+import { listProperties, listPropertyUnits } from '../../api/propertyApi';
+import Select from '../../components/ui/Select';
 
 /**
  * Commission plans — the configuration that decides what a sale pays.
@@ -51,6 +54,18 @@ export default function CommissionPlansPage() {
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
 
+  /**
+   * Assignment: the plan being pointed at something, and the inventory to
+   * choose from. A plan that is assigned to nothing pays nothing — it is not
+   * reached by any sale — so this is the step between writing a plan and it
+   * having any effect.
+   */
+  const [assigning, setAssigning] = useState(null);
+  const [scopeType, setScopeType] = useState('property');
+  const [scopeId, setScopeId] = useState('');
+  const [properties, setProperties] = useState([]);
+  const [units, setUnits] = useState([]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setFailed('');
@@ -65,6 +80,44 @@ export default function CommissionPlansPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // The inventory a plan can be pointed at. Loaded once, not per dialog.
+  useEffect(() => {
+    listProperties({ limit: 200 })
+      .then((res) => setProperties(res?.data ?? res ?? []))
+      .catch(() => setProperties([]));
+  }, []);
+
+  // Units are fetched for the chosen property only: a company's whole unit
+  // list can run to thousands, and all but one property's are irrelevant here.
+  useEffect(() => {
+    if (scopeType !== 'unit' || !assigning) { setUnits([]); return; }
+    listPropertyUnits({ limit: 500 })
+      .then((res) => setUnits(res?.data ?? res ?? []))
+      .catch(() => setUnits([]));
+  }, [scopeType, assigning]);
+
+  const openAssign = (plan) => {
+    setAssigning(plan);
+    setScopeType(plan.is_default ? 'company' : (plan.scope_type || 'property'));
+    setScopeId(plan.scope_id ? String(plan.scope_id) : '');
+  };
+
+  const saveAssignment = async () => {
+    setSaving(true);
+    try {
+      await assignCommissionPlan(assigning.id, scopeType === 'company'
+        ? { scope_type: null, is_default: true }
+        : { scope_type: scopeType, scope_id: Number(scopeId) });
+      setAssigning(null);
+      await load();
+      setFailed('');
+    } catch (error) {
+      setFailed(error?.response?.data?.message || 'That assignment could not be saved.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const openNew = () => {
     setDetail(null);
@@ -158,7 +211,11 @@ export default function CommissionPlansPage() {
       <div className="min-w-0">
         <div className="truncate font-medium text-slate-900">{row.name}</div>
         <div className="text-xs text-slate-500">
-          {row.is_default ? 'Company default' : row.scope_type ? `Scoped to a ${row.scope_type}` : 'Not assigned'}
+          {row.is_default
+            ? 'Company default — applies to every sale with no closer match'
+            : row.scope_type
+              ? `Assigned to ${row.scope_type} #${row.scope_id}`
+              : 'Not assigned — this plan pays nothing until it is'}
         </div>
       </div>
     ) },
@@ -198,12 +255,78 @@ export default function CommissionPlansPage() {
         renderActions={(row) => (
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" size="sm" onClick={() => openExisting(row)}>Open</Button>
+            <Button type="button" variant="secondary" size="sm" onClick={() => openAssign(row)}>Assign</Button>
             {row.status !== 'archived' && (
               <Button type="button" variant="danger" size="sm" onClick={() => archive(row)}>Archive</Button>
             )}
           </div>
         )}
       />
+
+      <Modal
+        open={assigning !== null}
+        onClose={() => !saving && setAssigning(null)}
+        title={assigning ? `Where does "${assigning.name}" apply?` : ''}
+        size="sm"
+      >
+        {assigning && (
+          <div className="space-y-4 text-sm">
+            <p className="text-slate-500">
+              A sale uses the closest match: a plan on the unit beats one on the property, which
+              beats the company default. A plan assigned to nothing is never reached.
+            </p>
+
+            <label className="block space-y-1">
+              <span className="text-sm font-medium text-slate-700">Applies to</span>
+              <Select value={scopeType} onChange={(e) => { setScopeType(e.target.value); setScopeId(''); }}>
+                <option value="unit">One unit</option>
+                <option value="property">A whole property</option>
+                <option value="company">Every sale — company default</option>
+              </Select>
+            </label>
+
+            {scopeType === 'property' && (
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-slate-700">Property</span>
+                <Select value={scopeId} onChange={(e) => setScopeId(e.target.value)}>
+                  <option value="">Choose a property…</option>
+                  {properties.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </Select>
+              </label>
+            )}
+
+            {scopeType === 'unit' && (
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-slate-700">Unit</span>
+                <Select value={scopeId} onChange={(e) => setScopeId(e.target.value)}>
+                  <option value="">Choose a unit…</option>
+                  {units.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.label || u.unit_label || `Unit ${u.id}`}
+                      {u.property_name ? ` — ${u.property_name}` : ''}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            )}
+
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+              <Button type="button" variant="secondary" onClick={() => setAssigning(null)} disabled={saving}>
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={saveAssignment}
+                disabled={saving || (scopeType !== 'company' && !scopeId)}
+              >
+                {saving ? 'Saving…' : 'Save assignment'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal
         open={editing !== null}

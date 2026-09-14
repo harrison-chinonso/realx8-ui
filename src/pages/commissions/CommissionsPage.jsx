@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { listRealtorLevels } from '../../api/realtorLevelApi';
 import {
   approveCommission,
   createCommission,
@@ -24,6 +25,7 @@ const EMPTY_COMMISSION_FORM = { employee_id: '', title: '', type: 'fixed', amoun
 const EMPTY_RULE_FORM = {
   product_type: 'any',
   realtor_category: 'any',
+  realtor_level_id: null,
   type: 'fixed',
   value: '',
   description: '',
@@ -45,6 +47,9 @@ export default function CommissionsPage() {
   const [detailRow, setDetailRow] = useState(null);
   const [commissionForm, setCommissionForm] = useState(EMPTY_COMMISSION_FORM);
   const [ruleForm, setRuleForm] = useState(EMPTY_RULE_FORM);
+  /** The company's realtor levels, so a rule can target any of them. */
+  const [levels, setLevels] = useState(null);
+
   const [message, setMessage] = useState(null);
 
   const setFeedback = (type, text) => {
@@ -80,6 +85,16 @@ export default function CommissionsPage() {
       setLoadingRules(false);
     }
   };
+
+  useEffect(() => {
+    let alive = true;
+    listRealtorLevels()
+      .then((res) => { if (alive) setLevels(res?.data ?? res ?? []); })
+      // Best effort: without it the picker offers only "Any level", which is
+      // what a company with no levels configured should see anyway.
+      .catch(() => { if (alive) setLevels([]); });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     loadCommissions();
@@ -154,6 +169,7 @@ export default function CommissionsPage() {
       await createCommissionRule({
         product_type: ruleForm.product_type,
         realtor_category: ruleForm.realtor_category,
+        realtor_level_id: ruleForm.realtor_level_id,
         type: ruleForm.type,
         value: Number(ruleForm.value),
         description: ruleForm.description.trim() || null,
@@ -203,7 +219,12 @@ export default function CommissionsPage() {
 
   const ruleColumns = [
     { key: 'product_type', label: 'Product Type', render: (row) => row.product_type || 'any' },
-    { key: 'realtor_category', label: 'Realtor Category', render: (row) => row.realtor_category || 'any' },
+    {
+      key: 'realtor_category',
+      label: 'Realtor Level',
+      render: (row) => (String(row.realtor_category || 'any').toLowerCase() === 'any'
+        ? 'Any level' : row.realtor_category),
+    },
     { key: 'type', label: 'Type', render: (row) => row.type || '—' },
     {
       key: 'value',
@@ -320,12 +341,31 @@ export default function CommissionsPage() {
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Realtor Category</span>
-                <Select className={INPUT_CLASS} value={ruleForm.realtor_category} onChange={(event) => setRuleForm((current) => ({ ...current, realtor_category: event.target.value }))}>
-                  <option value="premium">Premium</option>
-                  <option value="professional">Professional</option>
-                  <option value="basic">Basic</option>
-                  <option value="any">Any</option>
+                <span className="text-sm font-medium text-slate-700">Realtor Level</span>
+                {/*
+                  The company's OWN levels, not three fixed names. This was a
+                  hardcoded premium/professional/basic list matched against the
+                  level's name, so a rule could not be written for a level
+                  called Ambassador — or Gold, or Associate — at all. The value
+                  is the level id, so a rule follows a level through a rename.
+                */}
+                <Select
+                  className={INPUT_CLASS}
+                  value={ruleForm.realtor_level_id ?? 'any'}
+                  onChange={(event) => {
+                    const chosen = event.target.value;
+                    const level = (levels || []).find((l) => String(l.id) === chosen);
+                    setRuleForm((current) => ({
+                      ...current,
+                      realtor_level_id: level ? Number(level.id) : null,
+                      realtor_category: level ? level.name : 'any',
+                    }));
+                  }}
+                >
+                  <option value="any">Any level</option>
+                  {(levels || []).map((level) => (
+                    <option key={level.id} value={level.id}>{level.name}</option>
+                  ))}
                 </Select>
               </label>
 
