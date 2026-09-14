@@ -51,6 +51,15 @@ export default function CommissionAnalyticsPage() {
   const [liability, setLiability] = useState(null);
   const [gl, setGl] = useState(null);
   const [flags, setFlags] = useState([]);
+  /**
+   * Which panels actually loaded.
+   *
+   * Without this, a failed fetch leaves the panel's state null and it renders
+   * its empty copy — "Nothing has been forfeited in this period" when the truth
+   * is that we could not find out. On a screen about money that is not a
+   * cosmetic difference: it is a reassuring sentence with no evidence behind it.
+   */
+  const [loaded, setLoaded] = useState({});
 
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState('');
@@ -77,6 +86,15 @@ export default function CommissionAnalyticsPage() {
       setLiability(li.status === 'fulfilled' ? li.value : null);
       setGl(g.status === 'fulfilled' ? g.value : null);
       setFlags(f.status === 'fulfilled' ? f.value : []);
+      setLoaded({
+        summary: s.status === 'fulfilled',
+        breakage: b.status === 'fulfilled',
+        cost: c.status === 'fulfilled',
+        leaderboard: l.status === 'fulfilled',
+        liability: li.status === 'fulfilled',
+        gl: g.status === 'fulfilled',
+        flags: f.status === 'fulfilled',
+      });
 
       const broken = [s, b, c, l, li, g, f].filter((r) => r.status === 'rejected');
       if (broken.length) {
@@ -177,7 +195,11 @@ export default function CommissionAnalyticsPage() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-slate-400">Nothing has been forfeited in this period.</p>
+            <p className="text-sm text-slate-400">
+              {loaded.breakage
+                ? 'Nothing has been forfeited in this period.'
+                : 'This could not be loaded — it is not a statement that nothing was forfeited.'}
+            </p>
           )}
         </div>
 
@@ -201,12 +223,16 @@ export default function CommissionAnalyticsPage() {
               </div>
             </div>
           ) : (
-            <p className="text-sm text-slate-400">Nothing outstanding.</p>
+            <p className="text-sm text-slate-400">
+              {loaded.liability
+                ? 'Nothing outstanding.'
+                : 'This could not be loaded — it is not a statement that nothing is outstanding.'}
+            </p>
           )}
         </div>
       </div>
 
-      {gl && (
+      {loaded.gl && gl && (
         <div className={`rounded-lg px-4 py-2 text-sm ${gl.balanced ? 'bg-success-surface text-success' : 'bg-danger-surface text-danger'}`}>
           {gl.balanced
             ? `General ledger export balances — ${money(gl.debits_minor)} in debits against the same in credits, over ${gl.journal.length} journal line(s).`
@@ -274,7 +300,9 @@ export default function CommissionAnalyticsPage() {
           data={board}
           loading={loading}
           exportName="commission-leaderboard"
-          emptyMessage="Nobody has earned commission through the engine in this period."
+          emptyMessage={loaded.leaderboard
+            ? 'Nobody has earned commission through the engine in this period.'
+            : 'This could not be loaded, so the absence of names means nothing.'}
         />
       </div>
     </div>

@@ -151,7 +151,15 @@ export default function CommissionPayoutsPage() {
         data={payouts}
         loading={loading}
         exportName="commission-payouts"
-        emptyMessage="No payout runs yet. Build one once commission has been released."
+        /**
+         * "We looked and there is nothing" and "we could not look" are
+         * different answers, and an empty table shows them identically. A 403
+         * here used to read as "no payout runs yet" — which tells the reader
+         * the run is unnecessary rather than that they cannot see it.
+         */
+        emptyMessage={failed
+          ? 'Payout runs could not be loaded, so this list is not evidence there are none.'
+          : 'No payout runs yet. Build one once commission has been released.'}
         renderActions={(row) => (
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" size="sm" onClick={() => setViewing(row)}>
