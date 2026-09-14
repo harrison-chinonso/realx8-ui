@@ -68,7 +68,7 @@ export default function ReferralPage() {
             </label>
           </div>
           <div className="sm:col-span-2 lg:col-span-4">
-            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Settings'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Settings'}</Button>
           </div>
         </form>
       </div>

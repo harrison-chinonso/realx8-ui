@@ -266,7 +266,7 @@ export default function InvoiceDetailPage() {
                   */}
                 {invoice.status === 'draft' && (
                   <Button onClick={handleSendInvoice} disabled={sending}>
-                    {sending ? 'Sending...' : 'Mark as Sent'}
+                    {sending ? 'Sending…' : 'Mark as Sent'}
                   </Button>
                 )}
                 {/*
@@ -399,7 +399,7 @@ export default function InvoiceDetailPage() {
           <div>
             <h2 className="text-lg font-semibold">Payment Account</h2>
             <p className="text-sm text-slate-500">
-              Pin this invoice to one bank account. Leave it unset and the buyer sees every active company account.{' '}
+              Pin this invoice to one bank account, or leave it unset and the buyer sees every active one.{' '}
               <Link to="/finance/bank-accounts" className="font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
                 Manage bank accounts
               </Link>
@@ -591,7 +591,7 @@ export default function InvoiceDetailPage() {
               />
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="secondary" onClick={closeEditModal}>Cancel</Button>
-                <Button type="submit"  disabled={savingEdit}>{savingEdit ? 'Saving...' : 'Save'}</Button>
+                <Button type="submit"  disabled={savingEdit}>{savingEdit ? 'Saving…' : 'Save'}</Button>
               </div>
             </form>
           </div>
@@ -648,7 +648,7 @@ export default function InvoiceDetailPage() {
               </label>
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="secondary" onClick={closePaymentModal}>Cancel</Button>
-                <Button type="submit"  disabled={savingPayment}>{savingPayment ? 'Saving...' : 'Save'}</Button>
+                <Button type="submit"  disabled={savingPayment}>{savingPayment ? 'Saving…' : 'Save'}</Button>
               </div>
             </form>
           </div>

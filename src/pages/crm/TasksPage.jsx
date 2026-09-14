@@ -377,7 +377,7 @@ export default function TasksPage() {
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="secondary" onClick={closeModal} disabled={saving}>Cancel</Button>
-                <Button type="submit" disabled={saving}>{saving ? 'Saving...' : editingTask ? 'Save Changes' : 'Create Task'}</Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Saving…' : editingTask ? 'Save Changes' : 'Create Task'}</Button>
               </div>
             </form>
           </div>

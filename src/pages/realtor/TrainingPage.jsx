@@ -533,7 +533,7 @@ export default function TrainingPage() {
                 )}
 
                 <div className="flex gap-2 pt-2">
-                  <Button type="submit" disabled={saving}>{saving ? 'Saving...' : editingModule ? 'Save Changes' : 'Create Module'}</Button>
+                  <Button type="submit" disabled={saving}>{saving ? 'Saving…' : editingModule ? 'Save Changes' : 'Create Module'}</Button>
                   <Button type="button" variant="secondary" onClick={closeModal} disabled={saving}>Cancel</Button>
                 </div>
               </form>
@@ -692,7 +692,7 @@ export default function TrainingPage() {
                 </div>
               ))}
               <div className="flex gap-2 pt-2">
-                <Button type="submit" disabled={saving}>{saving ? 'Submitting...' : 'Submit Quiz'}</Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Submitting…' : 'Submit Quiz'}</Button>
                 <Button type="button" variant="secondary" onClick={() => setShowQuiz(false)} disabled={saving}>Cancel</Button>
               </div>
             </form>
@@ -709,7 +709,7 @@ export default function TrainingPage() {
               <p className="mt-2 text-sm text-slate-600">has successfully completed</p>
               <p className="mt-3 text-lg font-semibold text-slate-900">{certificate.module_title}</p>
               <p className="mt-3 text-sm text-slate-500">Completed on {formatDate(certificate.completed_at)}</p>
-              <p className="mt-5 text-xs text-slate-500">Placeholder certificate preview. A downloadable file can be connected later.</p>
+              <p className="mt-5 text-xs text-slate-500">A downloadable copy is not available yet.</p>
             </div>
             <div className="mt-4 flex justify-end">
               <Button type="button" variant="secondary" onClick={() => setCertificate(null)}>Close</Button>

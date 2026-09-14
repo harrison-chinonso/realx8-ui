@@ -146,7 +146,7 @@ export default function TransactionsPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-800">Payments</h1>
           <p className="text-sm text-slate-500">
-            Payments that have settled. Waiting to be approved?{' '}
+            Payments that have settled. Anything still awaiting a decision is in{' '}
             <Link to="/receipts" className="font-medium underline underline-offset-2">
               Payment Approvals
             </Link>
@@ -193,7 +193,7 @@ export default function TransactionsPage() {
           </label>
           <Input label="Reference" value={form.reference} onChange={handleChange('reference')} />
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
             <Button type="button" variant="secondary" onClick={closeModal} disabled={saving}>Cancel</Button>
           </div>
         </form>

@@ -156,7 +156,7 @@ export default function RecruitmentPage() {
       <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200 space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search recruits by name, email, phone, or referrer" className={`${INPUT_CLASS} max-w-xl`} />
-          <Button onClick={() => loadData(search)} disabled={loading}>{loading ? 'Loading...' : 'Search'}</Button>
+          <Button onClick={() => loadData(search)} disabled={loading}>{loading ? 'Loading…' : 'Search'}</Button>
         </div>
         {loading ? (
           <p className="py-8 text-center text-sm text-slate-500">Loading recruits...</p>
@@ -256,7 +256,7 @@ export default function RecruitmentPage() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" disabled={saving}>{saving ? 'Saving...' : editingRecruit ? 'Save Changes' : 'Add Recruit'}</Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Saving…' : editingRecruit ? 'Save Changes' : 'Add Recruit'}</Button>
                 <Button type="button" variant="secondary" onClick={closeModal} disabled={saving}>Cancel</Button>
               </div>
             </form>

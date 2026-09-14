@@ -20,7 +20,7 @@ export default function GoogleCallbackPage() {
     }
 
     if (!token || !refreshToken || !userParam) {
-      setMessage('Google sign-in response is incomplete. Redirecting...');
+      setMessage('Google sign-in response is incomplete. Redirecting…');
       navigate('/login?error=google_auth_failed', { replace: true });
       return;
     }

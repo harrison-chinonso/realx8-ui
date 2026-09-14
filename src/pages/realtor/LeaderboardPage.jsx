@@ -221,7 +221,7 @@ export default function LeaderboardPage() {
         </div>
 
         <div>
-          <Button onClick={handleApplyFilters} disabled={loading}>{loading ? 'Loading...' : 'Apply Filters'}</Button>
+          <Button onClick={handleApplyFilters} disabled={loading}>{loading ? 'Loading…' : 'Apply Filters'}</Button>
         </div>
       </div>
 
@@ -363,7 +363,7 @@ export default function LeaderboardPage() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" disabled={saving}>{saving ? 'Saving...' : form.id ? 'Save Changes' : 'Save Stat'}</Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Saving…' : form.id ? 'Save Changes' : 'Save Stat'}</Button>
                 <Button type="button" variant="secondary" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button>
               </div>
             </form>

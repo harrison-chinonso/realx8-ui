@@ -493,8 +493,8 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
                 && (direct?.value === undefined || direct?.value === null)
                 && levels.every((level) => !Number(level.commission_percentage)) && (
                 <p className="mt-1 text-xs text-rose-700">
-                  Nothing is set here, there is no flat rate, and every level is 0% under Users →
-                  Realtor Levels — so this plan would pay the seller nothing and cannot be activated.
+                  No rate is set here or below, and every level is 0%, so this plan would pay the
+                  seller nothing. It cannot be activated.
                 </p>
               )}
             </div>
@@ -677,7 +677,7 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
           {(policy.gate || 'ENFORCE') === 'ENFORCE' && (
             <Field
               label="…and what they lose"
-              hint="Losing only the instalment leaves something to resume if they return. Losing the balance ends it outright."
+              hint="Losing only the installment leaves something to resume if they return. Losing the balance ends it outright."
             >
               <Select
                 value={policy.lapse_scope || 'INCREMENT'}

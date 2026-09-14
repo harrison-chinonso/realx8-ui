@@ -187,7 +187,7 @@ export default function PaymentSchedulePanel({ invoiceId, onChanged }) {
                         onClick={() => waive(schedule)}
                         disabled={waiving === schedule.id}
                       >
-                        {waiving === schedule.id ? 'Waiving...' : 'Waive fee'}
+                        {waiving === schedule.id ? 'Waiving…' : 'Waive fee'}
                       </Button>
                     )}
                   </td>

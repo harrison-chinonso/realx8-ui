@@ -322,7 +322,7 @@ export default function LoginPage() {
           {authStep === '2fa'
             ? 'Enter the 6-digit code from your authenticator app.'
             : authStep === '2fa-setup'
-            ? 'Your organisation requires 2FA. Scan the QR code with your authenticator app.'
+            ? 'Your organization requires 2FA. Scan the QR code with your authenticator app.'
             : authStep === '2fa-setup-verify'
             ? 'Enter the 6-digit code from your authenticator app to confirm setup.'
             : 'Sign in to your account to continue.'}
@@ -477,7 +477,7 @@ export default function LoginPage() {
                 <img src={setupData.qrCodeUrl} alt="2FA QR code" className="h-44 w-44 rounded-lg bg-white p-2" />
               </div>
               <p className="text-xs text-white/35 text-center">
-                Can't scan? Use code: <span className="font-mono text-white/60">{setupData.secret}</span>
+                Can’t scan? Use code: <span className="font-mono text-white/60">{setupData.secret}</span>
               </p>
               {error && <p className="text-sm text-rose-400">{error}</p>}
               <button
@@ -486,7 +486,7 @@ export default function LoginPage() {
                 className="w-full h-11 rounded-lg text-sm font-semibold text-white transition-opacity"
                 style={{ backgroundColor: `var(--primary)` }}
               >
-                I've scanned the code
+                I’ve scanned the code
               </button>
               <button
                 type="button"
@@ -664,7 +664,7 @@ export default function LoginPage() {
               required
               autoComplete="email"
             />
-            <p className="text-xs text-slate-400">We'll send a 6-digit code to this email.</p>
+            <p className="text-xs text-slate-400">We’ll send a 6-digit code to this email.</p>
             <div className="flex gap-2">
               <button
                 type="submit"
@@ -727,7 +727,7 @@ export default function LoginPage() {
               }}
               className="w-full text-xs text-slate-400 hover:text-slate-600 disabled:opacity-50"
             >
-              Didn't receive it? Resend OTP
+              Didn’t receive it? Resend OTP
             </button>
           </form>
         )}

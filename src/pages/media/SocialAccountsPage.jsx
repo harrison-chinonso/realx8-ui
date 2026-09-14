@@ -80,7 +80,7 @@ const PLATFORM_CONFIG = {
         <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.75a4.85 4.85 0 01-1.01-.06z"/>
       </svg>
     ),
-    note: 'TikTok requires app review for publishing API access.',
+    note: 'TikTok reviews every app before it allows publishing.',
     fields: [
       { key: 'display_name', label: 'Display Name' },
       { key: 'tiktok_open_id', label: 'Open ID' },
@@ -261,7 +261,7 @@ export default function SocialAccountsPage() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button type="button" onClick={() => openEdit(platform)}>Edit Credentials</Button>
                   <Button type="button" variant="secondary" onClick={() => handleTest(platform)} disabled={!account.is_connected || testing === platform}>
-                    {testing === platform ? 'Testing...' : 'Test Connection'}
+                    {testing === platform ? 'Testing…' : 'Test Connection'}
                   </Button>
                   <Button type="button" variant="danger" onClick={() => handleDisconnect(platform)} disabled={!account.is_connected}>
                     Disconnect
@@ -296,7 +296,7 @@ export default function SocialAccountsPage() {
             )}
 
             <div className="flex gap-2 pt-2">
-              <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Credentials'}</Button>
+              <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Credentials'}</Button>
               <Button type="button" variant="secondary" onClick={closeModal} disabled={saving}>Cancel</Button>
             </div>
           </form>

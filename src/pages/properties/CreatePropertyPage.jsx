@@ -217,7 +217,7 @@ export default function CreatePropertyPage() {
         </div>
 
         <div className="flex gap-3 pt-2">
-          <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Create Property'}</Button>
+          <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Create Property'}</Button>
           <Button type="button" variant="secondary" onClick={() => navigate('/properties')}>Cancel</Button>
         </div>
       </form>

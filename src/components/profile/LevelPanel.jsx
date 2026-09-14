@@ -164,7 +164,7 @@ export default function LevelPanel() {
 
           <div className="flex justify-end border-t border-slate-100 pt-4">
             <Button type="submit" disabled={busy || !target}>
-              {busy ? 'Submitting...' : 'Submit Request'}
+              {busy ? 'Submitting…' : 'Submit Request'}
             </Button>
           </div>
         </form>

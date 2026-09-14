@@ -65,7 +65,7 @@ function PersonalDetailsTab() {
         <label className="mb-1 block text-sm font-medium">Phone</label>
         <Input name="phone" value={form.phone} onChange={handleChange} />
       </div>
-      <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</Button>
+      <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</Button>
     </form>
   );
 }
@@ -122,7 +122,7 @@ function SecurityTab() {
         <label className="mb-1 block text-sm font-medium">Confirm password</label>
         <Input type="password" name="confirm" value={form.confirm} onChange={handleChange} autoComplete="new-password" />
       </div>
-      <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Change password'}</Button>
+      <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Change password'}</Button>
     </form>
   );
 }

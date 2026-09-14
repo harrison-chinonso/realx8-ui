@@ -511,7 +511,7 @@ export default function ReceiptsPage() {
           </label>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={closeAddModal} disabled={saving}>Cancel</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Create Receipt'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Create Receipt'}</Button>
           </div>
         </form>
       </Modal>
@@ -618,7 +618,7 @@ export default function ReceiptsPage() {
                 disabled={saving || uploading || !reviewMethod || !reviewReference.trim()
                   || (receiptRequired && !companyReceipt)}
               >
-                {saving ? 'Recording...' : 'Confirm Payment'}
+                {saving ? 'Recording…' : 'Confirm Payment'}
               </Button>
             </div>
           </form>
@@ -648,7 +648,7 @@ export default function ReceiptsPage() {
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={closeRejectModal} disabled={saving}>Cancel</Button>
             <Button type="submit" variant="danger" disabled={saving || !rejectNotes.trim()}>
-              {saving ? 'Rejecting...' : 'Reject Receipt'}
+              {saving ? 'Rejecting…' : 'Reject Receipt'}
             </Button>
           </div>
         </form>

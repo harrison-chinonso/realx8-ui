@@ -332,7 +332,7 @@ export default function UsersPage() {
             className={INPUT_CLASS}
           />
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={saving}>{saving ? 'Creating...' : 'Create User'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create User'}</Button>
             <Button type="button" variant="secondary" onClick={() => setShowCreate(false)} disabled={saving}>Cancel</Button>
           </div>
         </form>
@@ -413,7 +413,7 @@ export default function UsersPage() {
 
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="secondary" onClick={closeEdit} disabled={saving}>Cancel</Button>
-              <Button type="button" onClick={handleUpdate} disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
+              <Button type="button" onClick={handleUpdate} disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</Button>
             </div>
           </div>
         )}

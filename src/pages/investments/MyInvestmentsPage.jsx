@@ -233,7 +233,7 @@ export default function MyInvestmentsPage() {
           <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
             <Button type="button" variant="secondary" onClick={() => setSubscribeFor(null)} disabled={saving}>Cancel</Button>
             <Button type="button" onClick={submit} disabled={saving || !(Number(amount) > 0)}>
-              {saving ? 'Submitting...' : 'Confirm Subscription'}
+              {saving ? 'Submitting…' : 'Confirm Subscription'}
             </Button>
           </div>
         </div>

@@ -26,7 +26,7 @@ const money = (minor) => (Number(minor || 0) / 100)
 
 const EXPLAIN = {
   ACCRUED: 'Earned on the sale. It becomes available as the buyer pays.',
-  PARTIALLY_RELEASED: 'Partly available — the rest follows the buyer’s remaining instalments.',
+  PARTIALLY_RELEASED: 'Partly available — the rest follows the buyer’s remaining installments.',
   RELEASED: 'Available, and included in the next payout run.',
   PAID: 'Paid out.',
   FORFEITED: 'Not paid — you were not active at a release checkpoint.',

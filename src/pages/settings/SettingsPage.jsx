@@ -500,7 +500,7 @@ function AppearanceTab() {
       <div className="space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <div>
           <label className="mb-1 block text-sm font-medium">App Name</label>
-          <Input value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} placeholder="Realto" className="max-w-xs" />
+          <Input value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} placeholder="Realx8" className="max-w-xs" />
           <p className="mt-1 text-xs text-slate-500">Shown in the sidebar and browser tab.</p>
         </div>
 
@@ -518,7 +518,7 @@ function AppearanceTab() {
               <Button type="button" variant="secondary" onClick={() => fileRef.current?.click()}>
                 {logoPreview ? 'Change logo' : 'Upload logo'}
               </Button>
-              <p className="mt-1 text-xs text-slate-500">PNG or SVG recommended. Uploaded to Cloudinary.</p>
+              <p className="mt-1 text-xs text-slate-500">PNG or SVG recommended.</p>
             </div>
           </div>
         </div>
@@ -666,7 +666,7 @@ function AppearanceTab() {
                 <h3 className="text-sm font-semibold text-slate-800">Dark Mode Colors</h3>
                 <p className="mt-0.5 text-xs text-slate-500">
                   These brighter colors replace your light-mode palette when dark mode is active.
-                  Auto-generated from your primary/secondary colors — customise freely.
+                  Auto-generated from your primary/secondary colors — customize freely.
                 </p>
               </div>
               <button
@@ -785,7 +785,7 @@ function AppearanceTab() {
         )}
 
         <Button onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving...' : 'Save & Apply'}
+          {saving ? 'Saving…' : 'Save & Apply'}
         </Button>
       </div>
     </div>
@@ -879,7 +879,7 @@ function SecurityTab() {
             </p>
           </div>
           {!isEnabled && (
-            <Button onClick={handleSetup} disabled={busy}>{busy ? 'Preparing...' : 'Enable 2FA'}</Button>
+            <Button onClick={handleSetup} disabled={busy}>{busy ? 'Preparing…' : 'Enable 2FA'}</Button>
           )}
         </div>
 
@@ -887,7 +887,7 @@ function SecurityTab() {
           <div className="space-y-4 rounded-lg border border-slate-200 p-4">
             <div>
               <p className="text-sm font-medium text-slate-900">1. Scan the QR code</p>
-              <p className="mt-1 text-xs text-slate-500">Use Google Authenticator, 1Password, Authy, or any TOTP app.</p>
+              <p className="mt-1 text-xs text-slate-500">Use Google Authenticator, 1Password, Authy, or any authenticator app.</p>
             </div>
             <img src={setupData.qrCodeUrl} alt="2FA QR code" className="h-48 w-48 rounded-lg border border-slate-200 bg-white p-2" />
             <div className="rounded-lg bg-slate-100 p-3 text-xs text-slate-700">
@@ -903,7 +903,7 @@ function SecurityTab() {
                 onChange={(e) => setVerifyCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                 required
               />
-              <Button type="submit" disabled={busy}>{busy ? 'Verifying...' : 'Verify & Enable'}</Button>
+              <Button type="submit" disabled={busy}>{busy ? 'Verifying…' : 'Verify & Enable'}</Button>
             </form>
           </div>
         )}
@@ -923,7 +923,7 @@ function SecurityTab() {
               onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               required
             />
-            <Button type="submit" variant="danger" disabled={busy}>{busy ? 'Disabling...' : 'Disable 2FA'}</Button>
+            <Button type="submit" variant="danger" disabled={busy}>{busy ? 'Disabling…' : 'Disable 2FA'}</Button>
           </form>
         )}
       </div>
@@ -1118,20 +1118,21 @@ function SystemConfigTab() {
       <div>
         <h1 className="text-xl font-semibold">System Configuration</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Google OAuth, JWT, and Cloudinary credentials. JWT and Cloudinary values are read
-          per use and apply straight away; <strong>Google OAuth is read once at startup, so
-          restart the API after changing it.</strong>
+          Google OAuth, JWT, and Cloudinary credentials. JWT and Cloudinary values apply
+          straight away; <strong>Google OAuth is only read when the server starts, so restart
+          it after changing these.</strong>
         </p>
       </div>
       {isSuperiorAdmin ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          ⚠ These values are stored in the database and override <code>cred.env</code>. Secrets are masked in the UI but stored securely.
+          ⚠ Anything set here overrides the server&apos;s own configuration file. Secrets are masked on screen and stored securely.
         </div>
       ) : (
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <span className="mt-0.5">🔒</span>
           <span>
-            <strong>Platform defaults are active.</strong> Your company hasn't configured custom system settings. Values you enter here will override the platform defaults for your company only — you will not see the platform-level credentials.
+            <strong>Platform defaults are active.</strong> Anything you set here applies to your
+            company only. The platform&apos;s own credentials stay hidden.
           </span>
         </div>
       )}
@@ -1286,7 +1287,7 @@ export default function SettingsPage() {
           <div>
             <span className="font-semibold">Global defaults mode.</span>{' '}
             Changes you make here become the platform-wide defaults applied to all companies
-            that haven't configured their own values.
+            that haven’t configured their own values.
           </div>
         </div>
       ) : (
@@ -1294,7 +1295,7 @@ export default function SettingsPage() {
           <span className="text-lg leading-none">🏢</span>
           <div>
             <span className="font-semibold">Company settings.</span>{' '}
-            Values shown are your company's configuration. Fields you haven't customised
+            Values shown are your company’s configuration. Fields you haven’t customized
             fall back to platform-wide defaults. Saving here only affects your company.
           </div>
         </div>
@@ -1370,7 +1371,7 @@ export default function SettingsPage() {
                 <div className="rounded-xl border border-slate-200 p-4 space-y-3">
                   <div>
                     <h2 className="text-base font-semibold text-slate-900">Payment Gateway Test</h2>
-                    <p className="text-sm text-slate-500">Run lightweight test calls against configured gateways.</p>
+                    <p className="text-sm text-slate-500">Send a test request to each configured gateway.</p>
                   </div>
 
                   {paymentTestMessage && (
@@ -1394,7 +1395,7 @@ export default function SettingsPage() {
               )}
 
               <Button onClick={() => handleSave(activeGroup)} disabled={saving}>
-                {saving ? 'Saving...' : 'Save settings'}
+                {saving ? 'Saving…' : 'Save settings'}
               </Button>
             </div>
           </div>

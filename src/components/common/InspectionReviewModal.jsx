@@ -108,7 +108,7 @@ export default function InspectionReviewModal({ open, inspection, decision, onCl
           <Button type="button" variant="secondary" onClick={onClose} disabled={busy}>Cancel</Button>
           <Button type="button" variant={declining ? 'danger' : 'success'} onClick={submit} disabled={busy}>
             {busy
-              ? (declining ? 'Declining...' : 'Approving...')
+              ? (declining ? 'Declining…' : 'Approving…')
               : (declining ? 'Decline Request' : 'Approve Request')}
           </Button>
         </div>

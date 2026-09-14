@@ -156,7 +156,7 @@ export default function SalesAnalyticsPage() {
         <section className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-slate-900">Budget Distribution</h2>
-            <p className="text-sm text-slate-500">Pie-like mix of lead budgets.</p>
+            <p className="text-sm text-slate-500">How lead budgets break down.</p>
           </div>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
             <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-full border-[14px] border-slate-200 bg-slate-50 text-center">

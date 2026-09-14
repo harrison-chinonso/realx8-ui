@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
+import { plural } from '../../utils/plural';
 import {
   listCommissionPayouts, buildCommissionPayouts,
   approveCommissionPayout, payCommissionPayout, cancelCommissionPayout,
@@ -72,10 +73,10 @@ export default function CommissionPayoutsPage() {
        */
       if (result?.skipped) {
         setMessage(result.skipped === 'nothing_matured'
-          ? `Nothing has matured yet${result.immature ? ` — ${result.immature} line(s) are still inside their cooling-off period.` : '.'}`
+          ? `Nothing has matured yet${result.immature ? ` — ${plural(result.immature, 'line is', 'lines are')} still inside the cooling-off period.` : '.'}`
           : 'Nothing is payable at the moment.');
       } else {
-        setMessage(`${result.payouts.length} draft payout(s) built. Review and approve them before paying.`);
+        setMessage(`${plural(result.payouts.length, 'draft payout')} built. Review and approve before paying.`);
       }
       await load();
     } catch (error) {

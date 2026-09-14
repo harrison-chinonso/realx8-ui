@@ -222,8 +222,8 @@ export default function RealtorLevelsPage() {
             ))}
             {!levels.length && (
               <p className="rounded-lg border border-dashed border-slate-200 p-4 text-sm text-slate-500">
-                No levels to show. If your account is not linked to a company, ask a platform
-                administrator to assign one — level ladders are managed per company.
+                No levels to show. Level ladders are managed per company, so ask a platform
+                administrator to link your account to one.
               </p>
             )}
           </div>
@@ -373,7 +373,7 @@ export default function RealtorLevelsPage() {
               onClick={submitReview}
               disabled={saving || (review?.decision === 'rejected' && !notes.trim())}
             >
-              {saving ? 'Saving...' : review?.decision === 'approved' ? 'Approve' : 'Decline'}
+              {saving ? 'Saving…' : review?.decision === 'approved' ? 'Approve' : 'Decline'}
             </Button>
           </div>
         </div>

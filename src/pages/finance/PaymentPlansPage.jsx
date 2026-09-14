@@ -172,7 +172,7 @@ export default function PaymentPlansPage() {
             />
           </label>
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
             <Button type="button" variant="secondary" onClick={closeModal} disabled={saving}>Cancel</Button>
           </div>
         </form>

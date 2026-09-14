@@ -785,7 +785,7 @@ export default function InvestmentsPage() {
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="secondary" onClick={closePlanModal}>Cancel</Button>
-                <Button type="submit">{saving ? 'Saving...' : editingPlan ? 'Save Changes' : 'Create Plan'}</Button>
+                <Button type="submit">{saving ? 'Saving…' : editingPlan ? 'Save Changes' : 'Create Plan'}</Button>
               </div>
             </form>
           </div>
@@ -843,7 +843,7 @@ export default function InvestmentsPage() {
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="secondary" onClick={closeInvestmentModal}>Cancel</Button>
-                <Button type="submit">{saving ? 'Saving...' : 'Create Investment'}</Button>
+                <Button type="submit">{saving ? 'Saving…' : 'Create Investment'}</Button>
               </div>
             </form>
           </div>
@@ -892,7 +892,7 @@ export default function InvestmentsPage() {
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="secondary" onClick={closePayoutModal}>Cancel</Button>
-                <Button type="submit">{saving ? 'Saving...' : 'Record Payout'}</Button>
+                <Button type="submit">{saving ? 'Saving…' : 'Record Payout'}</Button>
               </div>
             </form>
           </div>
@@ -913,7 +913,7 @@ export default function InvestmentsPage() {
           </label>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={closeCashOutModal} disabled={saving}>Cancel</Button>
-            <Button type="submit" variant="warning" disabled={saving}>{saving ? 'Submitting...' : 'Request Cash-Out'}</Button>
+            <Button type="submit" variant="warning" disabled={saving}>{saving ? 'Submitting…' : 'Request Cash-Out'}</Button>
           </div>
         </form>
       </Modal>

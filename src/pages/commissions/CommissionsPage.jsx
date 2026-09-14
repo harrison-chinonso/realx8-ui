@@ -397,7 +397,7 @@ export default function CommissionsPage() {
               </div>
 
               <div className="md:col-span-2 flex justify-end">
-                <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Add Rule'}</Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Add Rule'}</Button>
               </div>
             </form>
           </div>
@@ -435,7 +435,7 @@ export default function CommissionsPage() {
             required
           />
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={saving}>{saving ? 'Creating...' : 'Create'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create'}</Button>
             <Button type="button" variant="secondary" onClick={() => setShowCreate(false)} disabled={saving}>Cancel</Button>
           </div>
         </form>

@@ -174,7 +174,7 @@ export default function PropertiesPage() {
             ))}
           </div>
           <Button type="button" variant="secondary" onClick={handleExport} disabled={exporting}>
-            <Download size={15} /> {exporting ? 'Exporting...' : 'Export'}
+            <Download size={15} /> {exporting ? 'Exporting…' : 'Export'}
           </Button>
           <Button type="button" variant="secondary" onClick={() => setShowImport(true)}>
             <Upload size={15} /> Import
@@ -309,7 +309,7 @@ export default function PropertiesPage() {
               </label>
               <div className="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="secondary" onClick={closeEditModal}>Cancel</Button>
-                <Button type="submit"  disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
+                <Button type="submit"  disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
               </div>
             </form>
           </div>

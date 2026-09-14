@@ -167,7 +167,7 @@ export default function PropertyTypesPage() {
             />
           </label>
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : editingType ? 'Save Changes' : 'Create Property Type'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : editingType ? 'Save Changes' : 'Create Property Type'}</Button>
             <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
           </div>
         </form>

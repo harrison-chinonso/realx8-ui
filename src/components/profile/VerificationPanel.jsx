@@ -213,7 +213,7 @@ export default function VerificationPanel() {
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4">
             <p className="text-xs text-slate-400">Identification number and residential address are both required.</p>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Submitting...' : record ? 'Resubmit for Review' : 'Submit for Verification'}
+              {saving ? 'Submitting…' : record ? 'Resubmit for Review' : 'Submit for Verification'}
             </Button>
           </div>
         )}

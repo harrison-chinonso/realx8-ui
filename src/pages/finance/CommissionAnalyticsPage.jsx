@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import Table from '../../components/common/Table';
+import { plural } from '../../utils/plural';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/common/Badge';
@@ -148,7 +149,7 @@ export default function CommissionAnalyticsPage() {
           <Figure
             label="Entitled"
             value={money(summary.entitled_minor)}
-            note={`${summary.deals} deal(s), ${summary.earners} earner(s)`}
+            note={`${plural(summary.deals, 'deal')}, ${plural(summary.earners, 'earner')}`}
           />
           <Figure
             label="Accrued liability"
@@ -183,7 +184,7 @@ export default function CommissionAnalyticsPage() {
                 <div key={`${cause.cause}-${cause.role}`} className="flex justify-between py-1">
                   <span className="text-slate-600">
                     {cause.cause}
-                    <span className="text-slate-400"> · {cause.role} · {cause.lines} line(s)</span>
+                    <span className="text-slate-400"> · {cause.role} · {plural(cause.lines, 'line')}</span>
                   </span>
                   <span className="font-medium">{money(cause.amount_minor)}</span>
                 </div>
@@ -211,7 +212,7 @@ export default function CommissionAnalyticsPage() {
             <div className="space-y-1 text-sm">
               {liability.aged.map((bucket) => (
                 <div key={bucket.label} className="flex justify-between py-1">
-                  <span className="text-slate-600">{bucket.label} days <span className="text-slate-400">· {bucket.lines} line(s)</span></span>
+                  <span className="text-slate-600">{bucket.label} days <span className="text-slate-400">· {plural(bucket.lines, 'line')}</span></span>
                   <span className="font-medium">{money(bucket.amount_minor)}</span>
                 </div>
               ))}
@@ -233,7 +234,7 @@ export default function CommissionAnalyticsPage() {
       {loaded.gl && gl && (
         <div className={`rounded-lg px-4 py-2 text-sm ${gl.balanced ? 'bg-success-surface text-success' : 'bg-danger-surface text-danger'}`}>
           {gl.balanced
-            ? `General ledger export balances — ${money(gl.debits_minor)} in debits against the same in credits, over ${gl.journal.length} journal line(s).`
+            ? `General ledger export balances — ${money(gl.debits_minor)} in debits against the same in credits, over ${plural(gl.journal.length, 'journal line')}.`
             : `General ledger export does NOT balance: ${money(gl.debits_minor)} in debits against ${money(gl.credits_minor)} in credits.`}
           {gl.unmapped_entry_types?.length > 0 && (
             <span> Unmapped entry types: {gl.unmapped_entry_types.join(', ')} — these post nowhere and were left out.</span>
@@ -247,9 +248,8 @@ export default function CommissionAnalyticsPage() {
             {flags.length === 1 ? '1 pattern worth a look' : `${flags.length} patterns worth a look`}
           </h2>
           <p className="mb-3 text-xs text-amber-800">
-            Nothing here stopped a payment. These are patterns worth a human look — a buyer
-            earning on their own purchase, accounts sharing a phone number, a referral chain that
-            loops back on itself.
+            Nothing here stopped a payment — these are patterns worth a look, such as a buyer
+            earning on their own purchase or accounts sharing a phone number.
           </p>
           <div className="space-y-2">
             {flags.map((flag) => (

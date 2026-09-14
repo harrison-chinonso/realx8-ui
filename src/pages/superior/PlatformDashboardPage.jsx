@@ -50,7 +50,7 @@ export default function PlatformDashboardPage() {
           </div>
           <h1 className="text-2xl font-bold text-slate-900">Platform Overview</h1>
           <p className="mt-0.5 text-sm text-slate-500">
-            Cross-company statistics and health of the entire Realto platform.
+            Statistics and health across every company on the platform.
           </p>
         </div>
         <Link to="/superior/companies/new"

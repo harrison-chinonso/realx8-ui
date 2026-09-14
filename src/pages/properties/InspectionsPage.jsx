@@ -355,7 +355,7 @@ export default function InspectionsPage() {
                 <div className="flex justify-end">
                   {/* Not a nested <form> — this modal is already inside one */}
                   <Button type="button" size="sm" onClick={handleCreateLead} disabled={savingLead || !leadForm.name.trim()}>
-                    {savingLead ? 'Creating...' : 'Create Lead'}
+                    {savingLead ? 'Creating…' : 'Create Lead'}
                   </Button>
                 </div>
               </div>
@@ -427,7 +427,7 @@ export default function InspectionsPage() {
           </div>
 
           <div className="flex gap-2 pt-1">
-            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Schedule Inspection'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Schedule Inspection'}</Button>
             <Button type="button" variant="secondary" onClick={() => setShowSchedule(false)}>Cancel</Button>
           </div>
         </form>

@@ -556,7 +556,7 @@ function AppearanceTab({ companyId, company, onToast }) {
               <Button type="button" variant="secondary" onClick={() => fileRef.current?.click()}>
                 {logoPreview ? 'Change logo' : 'Upload logo'}
               </Button>
-              <p className="mt-1 text-xs text-slate-500">PNG or SVG recommended. Uploaded to Cloudinary.</p>
+              <p className="mt-1 text-xs text-slate-500">PNG or SVG recommended.</p>
             </div>
           </div>
         </div>
@@ -694,7 +694,7 @@ function AppearanceTab({ companyId, company, onToast }) {
                 <h3 className="text-sm font-semibold text-slate-800">Dark Mode Colors</h3>
                 <p className="mt-0.5 text-xs text-slate-500">
                   These brighter colors replace your light-mode palette when dark mode is active.
-                  Auto-generated from your primary/secondary colors — customise freely.
+                  Auto-generated from your primary/secondary colors — customize freely.
                 </p>
               </div>
               <button
@@ -810,7 +810,7 @@ function AppearanceTab({ companyId, company, onToast }) {
         )}
 
         <Button onClick={handleSave} disabled={saving}>
-          {saving ? 'Saving...' : 'Save & Apply'}
+          {saving ? 'Saving…' : 'Save & Apply'}
         </Button>
       </div>
     </div>
@@ -884,7 +884,7 @@ function FieldTab({ tabKey, companyId, onToast }) {
           )}
         </div>
       ))}
-      <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save settings'}</Button>
+      <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save settings'}</Button>
     </div>
   );
 }

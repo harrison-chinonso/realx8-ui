@@ -280,7 +280,7 @@ export default function AssistantWidget() {
             {!messages.length && (
               <div className="space-y-3">
                 <p className="rounded-xl bg-white px-3 py-2 text-sm text-slate-700 shadow-sm ring-1 ring-slate-200">
-                  Hi — I can help you find a property, work out what an instalment
+                  Hi — I can help you find a property, work out what an installment
                   would cost, or walk you through anything in {status.app_name}.
                 </p>
                 <div className="space-y-1.5">

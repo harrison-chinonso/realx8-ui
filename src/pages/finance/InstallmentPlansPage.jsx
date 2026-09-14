@@ -196,9 +196,8 @@ export default function InstallmentPlansPage() {
         <div>
           <h1 className="text-xl font-semibold text-slate-900">Installment Plans</h1>
           <p className="text-sm text-slate-500">
-            The arrangements buyers choose between when purchasing on installments. Assign each plan to
-            the specific property units it should be offered on — a unit with no plans can only be
-            bought outright.
+            What buyers choose between when paying in installments. Assign each plan to the units
+            it is offered on — a unit with no plan can only be bought outright.
           </p>
         </div>
         <Button type="button" onClick={openCreate}>New plan</Button>
@@ -353,7 +352,7 @@ export default function InstallmentPlansPage() {
               Cancel
             </Button>
             <Button type="button" onClick={save} disabled={saving || !valid}>
-              {saving ? 'Saving...' : editing ? 'Save changes' : 'Create plan'}
+              {saving ? 'Saving…' : editing ? 'Save changes' : 'Create plan'}
             </Button>
           </div>
         </div>
@@ -479,7 +478,7 @@ function UnitAssignmentModal({ plan, onClose, onChanged }) {
                     onClick={() => toggle(unit)}
                     disabled={busy === unit.id}
                   >
-                    {busy === unit.id ? 'Saving...' : isAssigned ? 'Remove' : 'Assign'}
+                    {busy === unit.id ? 'Saving…' : isAssigned ? 'Remove' : 'Assign'}
                   </Button>
                 </div>
               );

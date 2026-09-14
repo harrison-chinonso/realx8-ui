@@ -352,12 +352,12 @@ export default function BlogPage() {
               value={form.content}
               onChange={(event) => setForm((current) => ({ ...current, content: event.target.value }))}
               className={`${INPUT_CLASS} min-h-40`}
-              placeholder="Rich text editor placeholder — use this area for article content."
+              placeholder="Write the article here."
             />
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={saving || uploading}>{saving ? 'Saving...' : editingArticle ? 'Save Changes' : 'Create Article'}</Button>
+            <Button type="submit" disabled={saving || uploading}>{saving ? 'Saving…' : editingArticle ? 'Save Changes' : 'Create Article'}</Button>
             <Button type="button" variant="secondary" onClick={closeModal} disabled={saving || uploading}>Cancel</Button>
           </div>
         </form>

@@ -172,7 +172,7 @@ export default function ClientsPage() {
           {!realtors.length && <p className="text-xs text-amber-600">No realtors found. Add realtors under Users first.</p>}
           <div className="flex justify-end">
             <Button type="button" variant="secondary" onClick={() => setAssigning(null)} disabled={savingAssign}>
-              {savingAssign ? 'Saving...' : 'Close'}
+              {savingAssign ? 'Saving…' : 'Close'}
             </Button>
           </div>
         </div>

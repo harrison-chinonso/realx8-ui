@@ -7,6 +7,7 @@ import Badge from '../common/Badge';
 import Modal from '../common/Modal';
 import Select from '../ui/Select';
 import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentMethods';
+import { enumLabel } from '../../utils/enumLabel';
 import { uploadMediaFiles } from '../../api/mediaApi';
 
 /**
@@ -215,8 +216,13 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
       {settled ? (
         closed && money.balance > 0 ? (
           <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            This invoice is {money.status} with {fmt(money.balance)} outstanding. No further payment
-            can be recorded against it.
+            {/*
+              The status is its own clause rather than dropped into the middle
+              of a sentence: the raw values read as "is expired with…" and "is
+              cancelled with…", which are not sentences anybody writes.
+            */}
+            This invoice is closed ({enumLabel(money.status)}) and {fmt(money.balance)} is still
+            outstanding. No further payment can be recorded against it.
           </p>
         ) : (
           <p className="rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">This invoice is fully settled.</p>

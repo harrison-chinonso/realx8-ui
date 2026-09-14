@@ -550,7 +550,7 @@ export default function MediaPostsPage() {
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={saving || uploading}>{saving ? 'Saving...' : editingPost ? 'Save Changes' : 'Create Post'}</Button>
+            <Button type="submit" disabled={saving || uploading}>{saving ? 'Saving…' : editingPost ? 'Save Changes' : 'Create Post'}</Button>
             <Button type="button" variant="secondary" onClick={closeModal} disabled={saving || uploading}>Cancel</Button>
           </div>
         </form>
@@ -603,7 +603,7 @@ export default function MediaPostsPage() {
           )}
 
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Confirm'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Confirm'}</Button>
             <Button type="button" variant="secondary" disabled={saving} onClick={() => setWorkflowModal({ type: '', post: null, scheduled_at: '', rejection_reason: '' })}>Cancel</Button>
           </div>
         </form>

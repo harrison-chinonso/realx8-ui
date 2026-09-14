@@ -599,7 +599,7 @@ export default function PropertyDetailPage() {
                 <form onSubmit={handleAddUnit} className="space-y-3">
                   <PropertyUnitFields value={unitForm} onChange={setUnitForm} />
                   <div className="flex justify-end">
-                    <Button type="submit" disabled={savingUnit}>{savingUnit ? 'Saving...' : 'Add Configuration'}</Button>
+                    <Button type="submit" disabled={savingUnit}>{savingUnit ? 'Saving…' : 'Add Configuration'}</Button>
                   </div>
                 </form>
               </div>
@@ -799,7 +799,7 @@ export default function PropertyDetailPage() {
                   </span>
                 </label>
                 <div className="md:col-span-2 flex justify-end">
-                  <Button type="submit" disabled={savingDocument}>{savingDocument ? 'Saving...' : 'Add Document'}</Button>
+                  <Button type="submit" disabled={savingDocument}>{savingDocument ? 'Saving…' : 'Add Document'}</Button>
                 </div>
               </form>
             </div>
@@ -821,7 +821,7 @@ export default function PropertyDetailPage() {
             onChange={(event) => setAmenityForm((current) => ({ ...current, description: event.target.value }))}
           />
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={savingAmenity}>{savingAmenity ? 'Saving...' : 'Add Amenity'}</Button>
+            <Button type="submit" disabled={savingAmenity}>{savingAmenity ? 'Saving…' : 'Add Amenity'}</Button>
             <Button type="button" variant="secondary" onClick={closeAmenityModal}>Cancel</Button>
           </div>
         </form>

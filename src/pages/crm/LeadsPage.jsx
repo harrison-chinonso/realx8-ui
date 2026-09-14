@@ -859,7 +859,7 @@ export default function LeadsPage() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" disabled={saving}>{saving ? 'Saving...' : editingLead ? 'Save Changes' : 'Create Lead'}</Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Saving…' : editingLead ? 'Save Changes' : 'Create Lead'}</Button>
                 <Button type="button" variant="secondary" onClick={closeModal} disabled={saving}>Cancel</Button>
               </div>
             </form>
@@ -927,7 +927,7 @@ export default function LeadsPage() {
               />
             </label>
             <div className="flex gap-2 pt-2">
-              <Button type="submit" disabled={activitySaving}>{activitySaving ? 'Saving...' : 'Log Activity'}</Button>
+              <Button type="submit" disabled={activitySaving}>{activitySaving ? 'Saving…' : 'Log Activity'}</Button>
               <Button type="button" variant="secondary" onClick={() => closeActivitiesModal()} disabled={activitySaving}>Close</Button>
             </div>
           </form>
@@ -1087,7 +1087,7 @@ export default function LeadsPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button type="submit" disabled={objectionSaving}>{objectionSaving ? 'Saving...' : 'Save Objection'}</Button>
+                  <Button type="submit" disabled={objectionSaving}>{objectionSaving ? 'Saving…' : 'Save Objection'}</Button>
                   <Button type="button" variant="secondary" onClick={() => setShowObjectionForm(false)} disabled={objectionSaving}>Cancel</Button>
                 </div>
               </form>

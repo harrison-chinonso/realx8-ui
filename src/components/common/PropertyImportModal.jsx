@@ -69,7 +69,7 @@ export default function PropertyImportModal({ open, onClose, onImported }) {
           <li className="flex flex-wrap items-center gap-3">
             <span className="font-medium">1. Download the template</span>
             <Button type="button" variant="secondary" size="sm" onClick={handleTemplate} disabled={downloading}>
-              {downloading ? 'Preparing...' : '⬇ Download Template'}
+              {downloading ? 'Preparing…' : '⬇ Download Template'}
             </Button>
           </li>
           <li>
@@ -130,7 +130,7 @@ export default function PropertyImportModal({ open, onClose, onImported }) {
             {result ? 'Done' : 'Cancel'}
           </Button>
           <Button type="button" onClick={handleUpload} disabled={!file || busy}>
-            {busy ? 'Importing...' : 'Import Properties'}
+            {busy ? 'Importing…' : 'Import Properties'}
           </Button>
         </div>
       </div>

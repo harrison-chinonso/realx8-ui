@@ -169,7 +169,7 @@ export default function RealtorVerificationsPage() {
               onClick={submit}
               disabled={saving || (review?.decision === 'rejected' && !notes.trim())}
             >
-              {saving ? 'Saving...' : review?.decision === 'approved' ? 'Approve' : 'Reject'}
+              {saving ? 'Saving…' : review?.decision === 'approved' ? 'Approve' : 'Reject'}
             </Button>
           </div>
         </div>

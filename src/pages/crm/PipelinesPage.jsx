@@ -400,7 +400,7 @@ export default function PipelinesPage() {
             required
           />
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={savingPipeline}>{savingPipeline ? 'Saving...' : 'Create pipeline'}</Button>
+            <Button type="submit" disabled={savingPipeline}>{savingPipeline ? 'Saving…' : 'Create pipeline'}</Button>
             <Button type="button" variant="secondary" onClick={closePipelineModal}>Cancel</Button>
           </div>
         </form>
@@ -427,7 +427,7 @@ export default function PipelinesPage() {
           </label>
 
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={savingStage}>{savingStage ? 'Saving...' : editingStage ? 'Save changes' : 'Create stage'}</Button>
+            <Button type="submit" disabled={savingStage}>{savingStage ? 'Saving…' : editingStage ? 'Save changes' : 'Create stage'}</Button>
             <Button type="button" variant="secondary" onClick={() => closeStageModal()}>Cancel</Button>
           </div>
         </form>
@@ -443,7 +443,7 @@ export default function PipelinesPage() {
             required
           />
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={savingLeadStage}>{savingLeadStage ? 'Saving...' : 'Create stage'}</Button>
+            <Button type="submit" disabled={savingLeadStage}>{savingLeadStage ? 'Saving…' : 'Create stage'}</Button>
             <Button type="button" variant="secondary" onClick={closeLeadStageModal}>Cancel</Button>
           </div>
         </form>

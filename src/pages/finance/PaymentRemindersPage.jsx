@@ -158,7 +158,7 @@ export default function PaymentRemindersPage() {
             </Select>
           </label>
           <div className="flex gap-2 pt-2">
-            <Button type="submit" className="flex-1" disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
+            <Button type="submit" className="flex-1" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
             <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
           </div>
         </form>

@@ -411,7 +411,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
         </div>
 
         <Button onClick={handleSend} disabled={sending}>
-          {sending ? 'Sending...' : 'Send Notification'}
+          {sending ? 'Sending…' : 'Send Notification'}
         </Button>
       </div>
 
@@ -507,7 +507,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
             </>
           )}
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={singleSending}>{singleSending ? 'Sending...' : singleForm.mode === 'email' ? 'Send Email' : 'Send Single'}</Button>
+            <Button type="submit" disabled={singleSending}>{singleSending ? 'Sending…' : singleForm.mode === 'email' ? 'Send Email' : 'Send Single'}</Button>
             <Button type="button" variant="secondary" onClick={closeSingleModal} disabled={singleSending}>Cancel</Button>
           </div>
         </form>
@@ -694,7 +694,7 @@ function TemplatesPanel() {
             />
           </label>
           <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={saving}>{saving ? 'Saving...' : editingTemplate ? 'Save Changes' : 'Create Template'}</Button>
+            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : editingTemplate ? 'Save Changes' : 'Create Template'}</Button>
             <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
           </div>
         </form>

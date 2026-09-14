@@ -87,7 +87,7 @@ export default function MediaAnalyticsPage() {
         {canSync && (
           <div className="flex flex-col items-end gap-1">
             <Button onClick={handleSyncNow} disabled={syncing} size="sm">
-              {syncing ? 'Syncing...' : '↻ Sync Impressions Now'}
+              {syncing ? 'Syncing…' : '↻ Sync Impressions Now'}
             </Button>
             {syncMsg && <p className="text-xs text-slate-500">{syncMsg}</p>}
           </div>
@@ -104,7 +104,7 @@ export default function MediaAnalyticsPage() {
       <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">Channel Impressions</h2>
-          <p className="text-sm text-slate-500">Placeholder bars summarising current impressions by social platform.</p>
+          <p className="text-sm text-slate-500">Impressions by social platform.</p>
         </div>
 
         <div className="space-y-4">

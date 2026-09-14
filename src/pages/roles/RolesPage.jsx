@@ -193,7 +193,7 @@ export default function RolesPage() {
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold">Roles & Permissions</h1>
-          <p className="text-sm text-slate-500">Manage database-driven RBAC across roles, permissions, and user assignments.</p>
+          <p className="text-sm text-slate-500">Manage roles, the permissions each one carries, and who holds them.</p>
         </div>
       </div>
 
@@ -342,7 +342,7 @@ export default function RolesPage() {
                   </div>
 
                   <div className="flex justify-end">
-                    <Button onClick={saveUserRoleAssignments} disabled={savingUserRoles || selectedUserRoles.length === 0}>{savingUserRoles ? 'Saving...' : 'Save'}</Button>
+                    <Button onClick={saveUserRoleAssignments} disabled={savingUserRoles || selectedUserRoles.length === 0}>{savingUserRoles ? 'Saving…' : 'Save'}</Button>
                   </div>
                 </div>
               )}
