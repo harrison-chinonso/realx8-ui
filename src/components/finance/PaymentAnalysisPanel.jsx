@@ -194,6 +194,7 @@ export default function PaymentAnalysisPanel({
                 <th className="px-4 py-3 text-left font-semibold text-slate-600">Method</th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-600">Status</th>
                 <th className="px-4 py-3 text-left font-semibold text-slate-600">Note</th>
+                <th className="px-4 py-3 text-left font-semibold text-slate-600">Receipt</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -205,10 +206,29 @@ export default function PaymentAnalysisPanel({
                   <td className="px-4 py-3 capitalize text-slate-600">{String(row.payment_method || '').replace(/_/g, ' ')}</td>
                   <td className="px-4 py-3"><Badge value={row.status} /></td>
                   <td className="px-4 py-3 text-slate-500">{row.note || '—'}</td>
+                  {/*
+                    The receipt the company issued, where one was attached. Not
+                    every payment has one — a company may not require them, and
+                    nothing issued before this existed has one — so the column
+                    is quiet rather than apologetic when it is empty.
+                  */}
+                  <td className="px-4 py-3">
+                    {row.company_receipt_url ? (
+                      <a
+                        href={row.company_receipt_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm font-medium hover:underline"
+                        style={{ color: 'var(--primary)' }}
+                      >
+                        Download
+                      </a>
+                    ) : <span className="text-slate-400">—</span>}
+                  </td>
                 </tr>
               ))}
               {!(data.payments || []).length && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">No payments recorded yet.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-500">No payments recorded yet.</td></tr>
               )}
             </tbody>
           </table>

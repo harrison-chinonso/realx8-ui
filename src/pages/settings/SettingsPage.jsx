@@ -87,6 +87,20 @@ const SETTING_GROUPS = [
     group: 'payment',
     label: 'Payment Gateways',
     fields: [
+      /**
+       * Off unless switched on, and blank means off.
+       *
+       * With it on, an admin cannot approve a payment without attaching the
+       * company's own receipt — enforced on the server, not only by the button
+       * on the approvals screen. It applies from the moment it is switched on;
+       * payments already approved are not reopened.
+       */
+      {
+        key: 'require_company_receipt',
+        label: 'Require a company receipt when approving a payment',
+        type: 'select',
+        options: [{ value: 'off', label: 'Optional' }, { value: 'on', label: 'Required' }],
+      },
       { key: 'paystack_public_key', label: 'Paystack public key', type: 'text' },
       { key: 'paystack_secret_key', label: 'Paystack secret key', type: 'password' },
       { key: 'flutterwave_public_key', label: 'Flutterwave public key', type: 'text' },

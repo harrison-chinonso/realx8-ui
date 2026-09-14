@@ -214,11 +214,25 @@ export default function MyPropertiesPage() {
                               <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${state.tone}`}>{state.label}</span>
                               <span className="text-xs text-slate-500">{formatDate(proof.created_at)}</span>
                             </span>
-                            {proof.document_url && (
-                              <a href={proof.document_url} target="_blank" rel="noreferrer" className="text-xs font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
-                                View proof
-                              </a>
-                            )}
+                            <span className="flex items-center gap-3">
+                              {proof.document_url && (
+                                <a href={proof.document_url} target="_blank" rel="noreferrer" className="text-xs font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
+                                  View proof
+                                </a>
+                              )}
+                              {/*
+                                The company's receipt, which is the thing the
+                                buyer actually wants to keep — their proof is
+                                what they already had. Labelled distinctly for
+                                that reason: two links both called "receipt"
+                                would be worse than one.
+                              */}
+                              {proof.company_receipt_url && (
+                                <a href={proof.company_receipt_url} target="_blank" rel="noreferrer" className="text-xs font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
+                                  Download receipt
+                                </a>
+                              )}
+                            </span>
                           </div>
                           {/* The reason is the instruction — shown, not hidden. */}
                           {proof.status === 'rejected' && proof.rejection_reason && (

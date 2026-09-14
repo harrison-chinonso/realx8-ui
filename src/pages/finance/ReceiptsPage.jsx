@@ -17,6 +17,7 @@ import Select from '../../components/ui/Select';
 import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentMethods';
 import { enumLabel } from '../../utils/enumLabel';
 import useNavBadgeStore from '../../store/navBadgeStore';
+import { uploadMediaFiles } from '../../api/mediaApi';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const EMPTY_FORM = { amount: '', payment_method: '', invoice_id: '', notes: '' };
@@ -61,6 +62,11 @@ export default function ReceiptsPage() {
   const [reviewMethod, setReviewMethod] = useState('');
   const [reviewReference, setReviewReference] = useState('');
   const [reviewMethods, setReviewMethods] = useState(CONFIRMABLE_METHOD_FALLBACK);
+  /** The company's own receipt, attached during review. */
+  const [companyReceipt, setCompanyReceipt] = useState(null);
+  const [receiptRequired, setReceiptRequired] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   const [creditAmount, setCreditAmount] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
   const [rejectNotes, setRejectNotes] = useState('');
@@ -135,6 +141,9 @@ export default function ReceiptsPage() {
 
   const openReview = (receipt) => {
     setReviewing(receipt);
+    setCompanyReceipt(null);
+    setReceiptRequired(false);
+    setUploadError('');
     setCreditAmount(String(receipt.amount ?? ''));
     // Method starts EMPTY: it is the admin's reading of the proof, not the
     // buyer's claim, so it has to be chosen rather than accepted by default.
@@ -151,8 +160,34 @@ export default function ReceiptsPage() {
         .then((res) => {
           const served = res?.data?.confirmable_payment_methods;
           if (Array.isArray(served) && served.length) setReviewMethods(served);
+          // Whether this company insists on its own receipt. The server enforces
+          // it regardless; this is so the screen can say so before the admin
+          // fills the rest of the form in and is refused at the end.
+          setReceiptRequired(Boolean(res?.data?.requires_company_receipt));
         })
         .catch(() => {});
+    }
+  };
+
+  const handleCompanyReceiptUpload = async (event) => {
+    const file = event.target.files?.[0];
+    // Clearing the picker must not clear an already-attached receipt: the
+    // browser fires change with no file when a dialog is cancelled.
+    if (!file) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const uploaded = await uploadMediaFiles([file]);
+      const first = uploaded?.files?.[0] ?? uploaded?.[0];
+      if (!first?.url) throw new Error('The upload returned no file.');
+      setCompanyReceipt({ url: first.url, public_id: first.public_id, name: first.name || file.name });
+    } catch (error) {
+      console.error(error);
+      setUploadError(getErrorMessage(error, 'That file could not be uploaded.'));
+    } finally {
+      setUploading(false);
+      // Reset the input so re-picking the SAME file fires change again.
+      event.target.value = '';
     }
   };
 
@@ -167,6 +202,15 @@ export default function ReceiptsPage() {
         amount: Number(creditAmount) || undefined,
         payment_method: reviewMethod,
         reference: reviewReference.trim(),
+        /**
+         * Sent whenever one was attached, not only when the company demands it.
+         * An admin who uploads a receipt on a company with the rule switched off
+         * still means the buyer to receive it.
+         */
+        ...(companyReceipt ? {
+          company_receipt_url: companyReceipt.url,
+          company_receipt_public_id: companyReceipt.public_id,
+        } : {}),
       });
       const invoice = result?.data?.invoice;
       const credited = result?.data?.payment?.amount;
@@ -362,6 +406,44 @@ export default function ReceiptsPage() {
               <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">No proof was attached to this receipt.</p>
             )}
 
+            {/*
+              The company's receipt, which is the opposite direction of travel
+              from the proof above: that is the buyer evidencing payment, this
+              is the company acknowledging it. Kept adjacent so an admin
+              reviewing one is looking at the other.
+            */}
+            <div className="space-y-1">
+              <span className="text-sm font-medium text-slate-700">
+                Company receipt{receiptRequired && <span className="text-rose-600"> *</span>}
+              </span>
+
+              {companyReceipt ? (
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2">
+                  <a href={companyReceipt.url} target="_blank" rel="noreferrer"
+                     className="truncate text-sm font-medium" style={{ color: 'var(--primary)' }}>
+                    {companyReceipt.name || 'Attached receipt'}
+                  </a>
+                  <Button type="button" variant="secondary" size="sm"
+                          onClick={() => setCompanyReceipt(null)} disabled={saving}>
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <label className={`block cursor-pointer rounded-lg border border-dashed px-3 py-3 text-center text-sm font-medium hover:border-slate-400 ${receiptRequired ? 'border-rose-300 text-rose-700' : 'border-slate-300 text-slate-600'}`}>
+                  {uploading ? 'Uploading…' : 'Attach the receipt you are issuing'}
+                  <input type="file" accept="image/*,application/pdf" className="hidden"
+                         onChange={handleCompanyReceiptUpload} disabled={uploading || saving} />
+                </label>
+              )}
+
+              <span className="block text-xs text-slate-500">
+                {receiptRequired
+                  ? 'This company requires a receipt before a payment can be approved. The buyer will be able to download it.'
+                  : 'Optional. If you attach one, the buyer will be able to download it from their payment.'}
+              </span>
+              {uploadError && <span className="block text-xs text-rose-600">{uploadError}</span>}
+            </div>
+
             <label className="block space-y-1">
               <span className="text-sm font-medium text-slate-700">How was it paid?</span>
               <Select value={reviewMethod} onChange={(event) => setReviewMethod(event.target.value)}>
@@ -399,7 +481,11 @@ export default function ReceiptsPage() {
 
             <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
               <Button type="button" variant="secondary" onClick={() => setReviewing(null)} disabled={saving}>Cancel</Button>
-              <Button type="submit" disabled={saving || !reviewMethod || !reviewReference.trim()}>
+              <Button
+                type="submit"
+                disabled={saving || uploading || !reviewMethod || !reviewReference.trim()
+                  || (receiptRequired && !companyReceipt)}
+              >
                 {saving ? 'Recording...' : 'Confirm Payment'}
               </Button>
             </div>

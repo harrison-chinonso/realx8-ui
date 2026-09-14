@@ -7,6 +7,7 @@ import Badge from '../common/Badge';
 import Modal from '../common/Modal';
 import Select from '../ui/Select';
 import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentMethods';
+import { uploadMediaFiles } from '../../api/mediaApi';
 
 /**
  * Staff-side settlement for one invoice: review the buyer's proof of payment,
@@ -33,6 +34,33 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
   // Confirming a payment: the admin reads these off the proof of payment.
   const [confirming, setConfirming] = useState(false);
   const [confirmMethod, setConfirmMethod] = useState('');
+  /**
+   * The company's own receipt. Kept in step with the Payment Approvals screen —
+   * the same approval exists in two places, and a rule enforced in one of them
+   * is an admin discovering it depends which screen they happened to use.
+   */
+  const [companyReceipt, setCompanyReceipt] = useState(null);
+  const [receiptRequired, setReceiptRequired] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
+  const attachReceipt = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const uploaded = await uploadMediaFiles([file]);
+      const first = uploaded?.files?.[0] ?? uploaded?.[0];
+      if (!first?.url) throw new Error('The upload returned no file.');
+      setCompanyReceipt({ url: first.url, public_id: first.public_id, name: first.name || file.name });
+    } catch (error) {
+      setUploadError(error?.userMessage || 'That file could not be uploaded.');
+    } finally {
+      setUploading(false);
+      event.target.value = '';
+    }
+  };
   const [confirmReference, setConfirmReference] = useState('');
   const [confirmAmount, setConfirmAmount] = useState('');
   // Served by the API from the same constant its validation uses.
@@ -53,6 +81,8 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
       const served = options.status === 'fulfilled'
         ? options.value?.data?.confirmable_payment_methods : null;
       if (Array.isArray(served) && served.length) setMethods(served);
+      setReceiptRequired(options.status === 'fulfilled'
+        && Boolean(options.value?.data?.requires_company_receipt));
       // The pending receipt for THIS invoice, if the buyer submitted one.
       const rows = receipts.status === 'fulfilled' ? (receipts.value?.data ?? []) : [];
       /**
@@ -283,13 +313,44 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
             a different figure — the corrected amount is what gets allocated.
           </p>
 
+          <div className="space-y-1">
+            <span className="text-sm font-medium text-slate-700">
+              Company receipt{receiptRequired && <span className="text-rose-600"> *</span>}
+            </span>
+            {companyReceipt ? (
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2">
+                <a href={companyReceipt.url} target="_blank" rel="noreferrer"
+                   className="truncate text-sm font-medium" style={{ color: 'var(--primary)' }}>
+                  {companyReceipt.name || 'Attached receipt'}
+                </a>
+                <Button type="button" variant="secondary" size="sm"
+                        onClick={() => setCompanyReceipt(null)} disabled={busy}>
+                  Remove
+                </Button>
+              </div>
+            ) : (
+              <label className={`block cursor-pointer rounded-lg border border-dashed px-3 py-3 text-center text-sm font-medium hover:border-slate-400 ${receiptRequired ? 'border-rose-300 text-rose-700' : 'border-slate-300 text-slate-600'}`}>
+                {uploading ? 'Uploading…' : 'Attach the receipt you are issuing'}
+                <input type="file" accept="image/*,application/pdf" className="hidden"
+                       onChange={attachReceipt} disabled={uploading || busy} />
+              </label>
+            )}
+            <span className="block text-xs text-slate-500">
+              {receiptRequired
+                ? 'This company requires a receipt before a payment can be approved.'
+                : 'Optional. The buyer will be able to download whatever you attach.'}
+            </span>
+            {uploadError && <span className="block text-xs text-rose-600">{uploadError}</span>}
+          </div>
+
           <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
             <Button type="button" variant="secondary" onClick={() => setConfirming(false)} disabled={busy}>
               Cancel
             </Button>
             <Button
               type="button"
-              disabled={busy || !confirmMethod || !confirmReference.trim() || !Number(confirmAmount)}
+              disabled={busy || uploading || !confirmMethod || !confirmReference.trim()
+                || !Number(confirmAmount) || (receiptRequired && !companyReceipt)}
               onClick={() => {
                 setConfirming(false);
                 run(
@@ -297,6 +358,10 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
                     amount: Number(confirmAmount),
                     payment_method: confirmMethod,
                     reference: confirmReference.trim(),
+                    ...(companyReceipt ? {
+                      company_receipt_url: companyReceipt.url,
+                      company_receipt_public_id: companyReceipt.public_id,
+                    } : {}),
                   }),
                   `Approved — ${fmt(Number(confirmAmount))} credited.`,
                 );
