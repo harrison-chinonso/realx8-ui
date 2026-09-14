@@ -184,8 +184,15 @@ export default function CommissionPayoutsPage() {
         onClose={() => { setViewing(null); setReference(''); }}
         title={viewing ? `Payout advice — ${viewing.batch_ref}` : ''}
       >
-        {advice && (
+        {viewing && (
           <div className="space-y-4 text-sm">
+            {!advice && (
+              <p className="text-slate-500">
+                No advice was stored for this batch, so the breakdown cannot be shown.
+              </p>
+            )}
+            {advice && (
+              <>
             <div className="flex justify-between border-b border-slate-200 pb-2">
               <span>Gross commission</span>
               <span className="font-medium">{money(advice.gross_minor)}</span>
@@ -232,6 +239,9 @@ export default function CommissionPayoutsPage() {
                   </div>
                 ))}
               </div>
+            )}
+
+              </>
             )}
 
             {viewing?.status === 'APPROVED' && (
