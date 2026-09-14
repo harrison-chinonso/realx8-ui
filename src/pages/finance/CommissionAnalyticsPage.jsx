@@ -129,7 +129,7 @@ export default function CommissionAnalyticsPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-800">Commission Analytics</h1>
           <p className="text-sm text-slate-500">
-            What the engine has paid, what it still owes, and where money went that nobody received.
+            What commission has cost, what is still owed, and what was never paid out.
           </p>
         </div>
         <div className="flex items-end gap-2">
@@ -175,8 +175,7 @@ export default function CommissionAnalyticsPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-slate-800">Breakage, by cause</h2>
           <p className="mb-3 text-xs text-slate-500">
-            Value that was entitled and never paid. The cause is what a company can act on; the
-            total on its own is not.
+            Commission that was earned but never paid, and why.
           </p>
           {breakage?.causes?.length ? (
             <div className="space-y-1 text-sm">
@@ -198,7 +197,7 @@ export default function CommissionAnalyticsPage() {
             <p className="text-sm text-slate-400">
               {loaded.breakage
                 ? 'Nothing has been forfeited in this period.'
-                : 'This could not be loaded — it is not a statement that nothing was forfeited.'}
+                : 'Could not be loaded — this does not mean nothing was forfeited.'}
             </p>
           )}
         </div>
@@ -206,8 +205,7 @@ export default function CommissionAnalyticsPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="text-sm font-semibold text-slate-800">Outstanding, by age</h2>
           <p className="mb-3 text-xs text-slate-500">
-            Aged from when each deal was attributed, not from when it was accrued — an obligation
-            was incurred when the sale was made.
+            Aged from the date of each sale.
           </p>
           {liability?.aged?.length ? (
             <div className="space-y-1 text-sm">
@@ -226,7 +224,7 @@ export default function CommissionAnalyticsPage() {
             <p className="text-sm text-slate-400">
               {loaded.liability
                 ? 'Nothing outstanding.'
-                : 'This could not be loaded — it is not a statement that nothing is outstanding.'}
+                : 'Could not be loaded — this does not mean nothing is outstanding.'}
             </p>
           )}
         </div>
@@ -246,12 +244,12 @@ export default function CommissionAnalyticsPage() {
       {flags.length > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
           <h2 className="text-sm font-semibold text-amber-900">
-            {flags.length} pattern(s) worth a look
+            {flags.length === 1 ? '1 pattern worth a look' : `${flags.length} patterns worth a look`}
           </h2>
           <p className="mb-3 text-xs text-amber-800">
-            None of these stopped anything being paid. They are shapes in the data — a buyer
-            earning on their own purchase, accounts sharing a phone number, a genealogy that
-            loops — that a person should judge.
+            Nothing here stopped a payment. These are patterns worth a human look — a buyer
+            earning on their own purchase, accounts sharing a phone number, a referral chain that
+            loops back on itself.
           </p>
           <div className="space-y-2">
             {flags.map((flag) => (
@@ -301,8 +299,8 @@ export default function CommissionAnalyticsPage() {
           loading={loading}
           exportName="commission-leaderboard"
           emptyMessage={loaded.leaderboard
-            ? 'Nobody has earned commission through the engine in this period.'
-            : 'This could not be loaded, so the absence of names means nothing.'}
+            ? 'No commission was earned in this period.'
+            : 'Could not be loaded — this list is not evidence that nobody earned.'}
         />
       </div>
     </div>

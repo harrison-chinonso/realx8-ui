@@ -139,8 +139,8 @@ export default function CommissionPayoutsPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-800">Commission Payouts</h1>
           <p className="text-sm text-slate-500">
-            Everything released, matured and unpaid, batched one payment per realtor. Building a run
-            writes drafts only — nothing moves until a batch is approved and paid.
+            Commission that is due, batched one payment per realtor. Building a run creates drafts —
+            nothing moves until a batch is approved and paid.
           </p>
         </div>
         <Button onClick={build} disabled={busy}>{busy ? 'Working…' : 'Build payout run'}</Button>
@@ -161,7 +161,7 @@ export default function CommissionPayoutsPage() {
          * the run is unnecessary rather than that they cannot see it.
          */
         emptyMessage={failed
-          ? 'Payout runs could not be loaded, so this list is not evidence there are none.'
+          ? 'Could not be loaded — this list is not evidence that there are none.'
           : 'No payout runs yet. Build one once commission has been released.'}
         renderActions={(row) => (
           <div className="flex justify-end gap-2">

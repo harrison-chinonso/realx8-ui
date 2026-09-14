@@ -90,7 +90,7 @@ export default function MyCommissionStatementPage() {
       <div>
         <h1 className="text-xl font-bold text-slate-800">My Commission</h1>
         <p className="text-sm text-slate-500">
-          Everything you have earned, and where each part of it has got to.
+          What you have earned, and where each part of it has got to.
         </p>
       </div>
 
@@ -170,8 +170,8 @@ export default function MyCommissionStatementPage() {
         <div>
           <h2 className="mb-2 text-sm font-semibold text-slate-800">Flat-rate commissions</h2>
           <p className="mb-2 text-xs text-slate-500">
-            Earned under your company&apos;s flat commission rate rather than a commission plan.
-            These are paid on request rather than through a payout run.
+            Earned at your company&apos;s flat rate rather than under a commission plan. Ask for
+            payment when you are ready.
           </p>
           <Table
             columns={[

@@ -374,7 +374,7 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
           {poolMode !== 'UNCAPPED' && (
             <Field
               label="When claims exceed the pool"
-              hint="Every fully-populated deal hits this if the rates add up to more than the cap."
+              hint="Applies when the rates add up to more than the cap."
             >
               <Select
                 value={config.resolution || 'PRORATE'}
@@ -391,7 +391,7 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
           {isFlatPool && (
             <Field
               label="When nobody claims all of it"
-              hint="Happens whenever the genealogy is shallower than the tiers — a missing Gen 3, say."
+              hint="Happens when the referral chain is shorter than the tiers — no Gen 3, for example."
             >
               <Select
                 value={config.surplus || 'BREAKAGE'}
@@ -481,9 +481,8 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
               )}
 
               <p className="mt-2 text-xs text-slate-500">
-                A rate set here wins. Any level left blank uses the flat rate below; with no flat
-                rate either, it uses the rate on that level under Users → Realtor Levels — which is
-                usually what you want when the rates do not differ by plan.
+                A rate set here wins. Levels left blank use the flat rate below; with no flat rate,
+                they use the rate set under Users → Realtor Levels.
               </p>
 
               {levels.length > 0
@@ -634,7 +633,7 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
           {tiers.length > 0 && (
             <Field
               label="If someone in the chain does not qualify, who earns their tier?"
-              hint="A genealogy is not a payment ladder — it is full of people who have stopped selling."
+              hint="Referral chains include people who have stopped selling."
             >
               <Select
                 value={generational?.compression || 'NONE'}
@@ -654,11 +653,11 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
       <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
         <Section
           title="Policy"
-          description="Five places the specification says two things. Every default here is what the engine did before these were settable, so leaving them alone changes nothing."
+          description="Five choices companies make differently. The defaults match how commission already works, so leaving them alone changes nothing."
         >
           <Field
             label="A realtor who is inactive when commission falls due"
-            hint="The status check runs and is recorded on the entitlement either way. This decides whether it withholds anything."
+            hint="The check runs and is recorded either way. This decides whether it withholds payment."
           >
             <Select
               value={policy.gate || 'ENFORCE'}
@@ -673,7 +672,7 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
           {(policy.gate || 'ENFORCE') === 'ENFORCE' && (
             <Field
               label="…and what they lose"
-              hint="Forfeiting only the instalment leaves something for a reinstatement to resume. Forfeiting the balance means one missed checkpoint ends the entitlement."
+              hint="Losing only the instalment leaves something to resume if they return. Losing the balance ends it outright."
             >
               <Select
                 value={policy.lapse_scope || 'INCREMENT'}
@@ -688,7 +687,7 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
 
           <Field
             label="When commission becomes payable"
-            hint="A plan scoped to a property or project that leaves this unset follows the company's default plan."
+            hint="A plan for one property or unit that leaves this blank follows the company default."
           >
             <Select
               value={config.vesting?.release_trigger || ''}
@@ -710,21 +709,21 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
 
           <Field
             label="Part-payable commission"
-            hint="Forbidding it suits accounting that cannot represent a part-paid commission. It cannot be combined with a trigger that only ever releases part of one — the plan will not activate."
+            hint="Suits accounting that cannot record a part-paid commission. Cannot be combined with a trigger that only ever pays in parts."
           >
             <Select
               value={policy.partial_release || 'ALLOW'}
               onChange={(e) => setPolicy({ partial_release: e.target.value })}
               disabled={disabled}
             >
-              <option value="ALLOW">An entitlement may become payable in parts</option>
-              <option value="FORBID">Payable whole, or not at all</option>
+              <option value="ALLOW">Commission may be paid in parts</option>
+              <option value="FORBID">Paid in full, or not at all</option>
             </Select>
           </Field>
 
           <Field
             label="Cancellation penalties"
-            hint="A penalty is a charge for a sale that did not happen. Include it where realtors are expected to chase and recover it."
+            hint="A penalty is charged when a sale falls through. Include it if realtors are expected to recover it."
           >
             <Select
               value={policy.penalties_commissionable ? 'true' : 'false'}
