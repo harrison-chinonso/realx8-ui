@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  createReceipt,
   listReceipts,
   rejectReceipt,
   verifyReceipt,
@@ -19,7 +18,6 @@ import useNavBadgeStore from '../../store/navBadgeStore';
 import { uploadMediaFiles } from '../../api/mediaApi';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
-const EMPTY_FORM = { amount: '', payment_method: '', invoice_id: '', notes: '' };
 
 const getItems = (response) => response?.data ?? response ?? [];
 const getErrorMessage = (error, fallback) => error?.userMessage || fallback;
@@ -53,7 +51,6 @@ export default function ReceiptsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [rejectingReceipt, setRejectingReceipt] = useState(null);
   // Reviewing opens the proof and lets the admin credit a different figure —
   // a part payment against a larger invoice.
@@ -73,7 +70,6 @@ export default function ReceiptsPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [creditAmount, setCreditAmount] = useState('');
-  const [form, setForm] = useState(EMPTY_FORM);
   const [rejectNotes, setRejectNotes] = useState('');
   const [message, setMessage] = useState(null);
 
@@ -126,89 +122,10 @@ export default function ReceiptsPage() {
     load();
   }, []);
 
-  const closeAddModal = (force = false) => {
-    if (saving && !force) return;
-    setShowAddModal(false);
-    setForm(EMPTY_FORM);
-  };
-
   const closeRejectModal = (force = false) => {
     if (saving && !force) return;
     setRejectingReceipt(null);
     setRejectNotes('');
-  };
-
-  const handleAddReceipt = async (event) => {
-    event.preventDefault();
-    setSaving(true);
-    try {
-      await createReceipt({
-        amount: Number(form.amount),
-        payment_method: form.payment_method.trim(),
-        ...(form.invoice_id ? { invoice_id: Number(form.invoice_id) } : {}),
-        ...(form.notes.trim() ? { notes: form.notes.trim() } : {}),
-      });
-      closeAddModal(true);
-      await load();
-      setFeedback('success', 'Receipt created successfully.');
-    } catch (error) {
-      console.error(error);
-      setFeedback('error', getErrorMessage(error, 'Failed to create receipt.'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const openReview = (receipt) => {
-    setReviewing(receipt);
-    setCompanyReceipt(null);
-    setReceiptRequired(false);
-    setUploadError('');
-    setCreditAmount(String(receipt.amount ?? ''));
-    // Method starts EMPTY: it is the admin's reading of the proof, not the
-    // buyer's claim, so it has to be chosen rather than accepted by default.
-    setReviewMethod('');
-    // The reference is seeded from what the buyer gave, as a starting point the
-    // admin corrects against the document.
-    setReviewReference(receipt.reference || '');
-    setReviewMethods(CONFIRMABLE_METHOD_FALLBACK);
-    // Served from the same constant the validation uses, so the picker cannot
-    // offer a method the server will refuse. Best effort — the fallback above
-    // stands if this receipt has no invoice or the call fails.
-    if (receipt.invoice_id) {
-      getPaymentOptions(receipt.invoice_id)
-        .then((res) => {
-          const served = res?.data?.confirmable_payment_methods;
-          if (Array.isArray(served) && served.length) setReviewMethods(served);
-          // Whether this company insists on its own receipt. The server enforces
-          // it regardless; this is so the screen can say so before the admin
-          // fills the rest of the form in and is refused at the end.
-          setReceiptRequired(Boolean(res?.data?.requires_company_receipt));
-        })
-        .catch(() => {});
-    }
-  };
-
-  const handleCompanyReceiptUpload = async (event) => {
-    const file = event.target.files?.[0];
-    // Clearing the picker must not clear an already-attached receipt: the
-    // browser fires change with no file when a dialog is cancelled.
-    if (!file) return;
-    setUploading(true);
-    setUploadError('');
-    try {
-      const uploaded = await uploadMediaFiles([file]);
-      const first = uploaded?.files?.[0] ?? uploaded?.[0];
-      if (!first?.url) throw new Error('The upload returned no file.');
-      setCompanyReceipt({ url: first.url, public_id: first.public_id, name: first.name || file.name });
-    } catch (error) {
-      console.error(error);
-      setUploadError(getErrorMessage(error, 'That file could not be uploaded.'));
-    } finally {
-      setUploading(false);
-      // Reset the input so re-picking the SAME file fires change again.
-      event.target.value = '';
-    }
   };
 
   const handleVerify = async (event) => {
@@ -422,7 +339,6 @@ export default function ReceiptsPage() {
             Payments buyers have submitted for review, and what was decided about them.
           </p>
         </div>
-        <Button type="button" onClick={() => setShowAddModal(true)}>+ Add Receipt</Button>
       </div>
 
       {message && (
@@ -478,43 +394,6 @@ export default function ReceiptsPage() {
           )}
         />
       )}
-
-      <Modal open={showAddModal} onClose={closeAddModal} title="Add Receipt" size="sm">
-        <form onSubmit={handleAddReceipt} className="space-y-4">
-          <MoneyInput
-            label="Amount"
-            value={form.amount}
-            onChange={(amount) => setForm((current) => ({ ...current, amount }))}
-          />
-          <Input
-            label="Payment Method"
-            value={form.payment_method}
-            onChange={(event) => setForm((current) => ({ ...current, payment_method: event.target.value }))}
-            required
-          />
-          <Input
-            label="Invoice ID"
-            type="number"
-            min="1"
-            value={form.invoice_id}
-            onChange={(event) => setForm((current) => ({ ...current, invoice_id: event.target.value }))}
-          />
-          <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Notes</span>
-            <textarea
-              rows={3}
-              value={form.notes}
-              onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
-              className={`${INPUT_CLASS} resize-none`}
-              placeholder="Optional notes"
-            />
-          </label>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={closeAddModal} disabled={saving}>Cancel</Button>
-            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Create Receipt'}</Button>
-          </div>
-        </form>
-      </Modal>
 
       <Modal open={Boolean(reviewing)} onClose={() => !saving && setReviewing(null)} title="Review Payment" size="sm">
         {reviewing && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createPaymentPlan, listPaymentPlans, updatePaymentPlan } from '../../api/financeApi';
+import { listPaymentPlans, updatePaymentPlan } from '../../api/financeApi';
 import Table from '../../components/common/Table';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
@@ -7,12 +7,10 @@ import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
 import Badge from '../../components/common/Badge';
 import { useCurrency } from '../../context/useAppearance';
-import CompanySelect from '../../components/common/CompanySelect';
-import useAuthStore from '../../store/authStore';
 import Select from '../../components/ui/Select';
 import { enumLabel } from '../../utils/enumLabel';
 
-const EMPTY_FORM = { name: '', total_amount: '', installments: '', frequency: 'monthly', description: '', company_id: '' };
+const EMPTY_FORM = { name: '', total_amount: '', installments: '', frequency: 'monthly', description: '' };
 const getItems = (response) => response?.data ?? response ?? [];
 const getPlanMeta = (row) => (row?.features && typeof row.features === 'object' ? row.features : {});
 const getStatus = (row) => row?.status || (row?.is_active === false ? 'inactive' : 'active');
@@ -62,7 +60,6 @@ const toApiPayload = (form, current) => {
 
 export default function PaymentPlansPage() {
   const formatCurrency = useCurrency();
-  const isSuperiorAdmin = useAuthStore((state) => state.isSuperiorAdmin);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
@@ -80,11 +77,6 @@ export default function PaymentPlansPage() {
   };
 
   useEffect(() => { load(); }, []);
-
-  const openCreate = () => {
-    setEditing({});
-    setForm({ ...EMPTY_FORM });
-  };
 
   const openEdit = (row) => {
     setEditing(row);
@@ -104,9 +96,8 @@ export default function PaymentPlansPage() {
     event.preventDefault();
     setSaving(true);
     try {
-      const payload = toApiPayload(form, editing);
-      if (editing?.id) await updatePaymentPlan(editing.id, payload);
-      else await createPaymentPlan({ ...payload, status: 'active', is_active: true });
+      // Only editing reaches this now; the modal is never opened empty.
+      await updatePaymentPlan(editing.id, toApiPayload(form, editing));
       await load();
       closeModal();
     } catch {
@@ -132,7 +123,6 @@ export default function PaymentPlansPage() {
           <h1 className="text-xl font-bold text-slate-800">Payment Plans</h1>
           <p className="text-sm text-slate-500">Create and manage installment-based payment plans.</p>
         </div>
-        <Button onClick={openCreate}>+ New Payment Plan</Button>
       </div>
 
       <Table
@@ -146,11 +136,8 @@ export default function PaymentPlansPage() {
         )}
       />
 
-      <Modal open={editing !== null} onClose={closeModal} title={`${editing?.id ? 'Edit' : 'New'} Payment Plan`}>
+      <Modal open={editing !== null} onClose={closeModal} title="Edit Payment Plan">
         <form onSubmit={handleSave} className="space-y-3">
-          {!editing?.id && isSuperiorAdmin && (
-            <CompanySelect value={form.company_id} onChange={handleChange('company_id')} />
-          )}
           <Input label="Name" value={form.name} onChange={handleChange('name')} required />
           <MoneyInput label="Total Amount" value={form.total_amount} onChange={(total_amount) => setForm((current) => ({ ...current, total_amount }))} required />
           <Input label="Installments" type="number" min="1" value={form.installments} onChange={handleChange('installments')} required />
