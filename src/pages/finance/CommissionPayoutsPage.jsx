@@ -6,7 +6,7 @@ import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import {
   listCommissionPayouts, buildCommissionPayouts,
-  approveCommissionPayout, payCommissionPayout,
+  approveCommissionPayout, payCommissionPayout, cancelCommissionPayout,
 } from '../../api/commissionApi';
 
 /**
@@ -90,7 +90,10 @@ export default function CommissionPayoutsPage() {
     setMessage('');
     setFailed('');
     try {
-      if (action === 'approve') {
+      if (action === 'cancel') {
+        await cancelCommissionPayout(row.id);
+        setMessage(`Batch ${row.batch_ref} cancelled. Its commission is available to batch again.`);
+      } else if (action === 'approve') {
         await approveCommissionPayout(row.id);
         setMessage(`Batch ${row.batch_ref} approved. It is now ready to pay.`);
       } else {
@@ -168,6 +171,11 @@ export default function CommissionPayoutsPage() {
             {row.status === 'DRAFT' && (
               <Button type="button" size="sm" disabled={busy} onClick={() => act(row, 'approve')}>
                 Approve
+              </Button>
+            )}
+            {(row.status === 'DRAFT' || row.status === 'APPROVED') && (
+              <Button type="button" variant="danger" size="sm" disabled={busy} onClick={() => act(row, 'cancel')}>
+                Cancel
               </Button>
             )}
             {row.status === 'APPROVED' && (

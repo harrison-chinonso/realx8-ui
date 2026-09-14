@@ -125,3 +125,7 @@ export const reviewCommissionFlag = (id, status, note) =>
  */
 export const assignCommissionPlan = (id, assignment) =>
   client.put(`/commission-plans/${id}/assignment`, assignment).then((r) => r.data);
+
+/** Discard a draft or approved batch, releasing its lines back to the next run. */
+export const cancelCommissionPayout = (id) =>
+  client.post(`/commission-payouts/${id}/cancel`).then((r) => r.data);
