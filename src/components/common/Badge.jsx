@@ -69,6 +69,11 @@ const colors = {
   recovered: TONES.positive,
   written_off: TONES.neutral,
 
+  // Screening severities.
+  high: TONES.negative,
+  medium: TONES.caution,
+  low: TONES.neutral,
+
   default: TONES.neutral,
 };
 

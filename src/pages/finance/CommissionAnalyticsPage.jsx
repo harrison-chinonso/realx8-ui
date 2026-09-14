@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import Table from '../../components/common/Table';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Badge from '../../components/common/Badge';
 import {
   commissionSummary, commissionBreakage, commissionCostOfSale,
   commissionLeaderboard, commissionLiability, commissionGlExport,
+  listCommissionFlags, reviewCommissionFlag,
 } from '../../api/commissionApi';
 
 /**
@@ -48,6 +50,7 @@ export default function CommissionAnalyticsPage() {
   const [board, setBoard] = useState([]);
   const [liability, setLiability] = useState(null);
   const [gl, setGl] = useState(null);
+  const [flags, setFlags] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState('');
@@ -62,9 +65,10 @@ export default function CommissionAnalyticsPage() {
        * malformed trace on one deal, say — must not blank the whole screen;
        * the panels that loaded are still the answer to their own question.
        */
-      const [s, b, c, l, li, g] = await Promise.allSettled([
+      const [s, b, c, l, li, g, f] = await Promise.allSettled([
         commissionSummary(params), commissionBreakage(params), commissionCostOfSale(params),
         commissionLeaderboard(params), commissionLiability(params), commissionGlExport(params),
+        listCommissionFlags(),
       ]);
       setSummary(s.status === 'fulfilled' ? s.value : null);
       setBreakage(b.status === 'fulfilled' ? b.value : null);
@@ -72,8 +76,9 @@ export default function CommissionAnalyticsPage() {
       setBoard(l.status === 'fulfilled' ? l.value : []);
       setLiability(li.status === 'fulfilled' ? li.value : null);
       setGl(g.status === 'fulfilled' ? g.value : null);
+      setFlags(f.status === 'fulfilled' ? f.value : []);
 
-      const broken = [s, b, c, l, li, g].filter((r) => r.status === 'rejected');
+      const broken = [s, b, c, l, li, g, f].filter((r) => r.status === 'rejected');
       if (broken.length) {
         setFailed(broken[0].reason?.response?.data?.message
           || `${broken.length} report(s) could not be loaded.`);
@@ -84,6 +89,21 @@ export default function CommissionAnalyticsPage() {
   }, [from, to]);
 
   useEffect(() => { load(); }, [load]);
+
+  /**
+   * A verdict removes the flag from the list immediately rather than after a
+   * reload. Dismissing something and watching it sit there for a second reads
+   * as the action not having worked, and invites a second click.
+   */
+  const review = async (flag, status) => {
+    setFlags((current) => current.filter((item) => item.id !== flag.id));
+    try {
+      await reviewCommissionFlag(flag.id, status);
+    } catch (error) {
+      setFlags((current) => [flag, ...current]);
+      setFailed(error?.response?.data?.message || 'That verdict could not be recorded.');
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -194,6 +214,46 @@ export default function CommissionAnalyticsPage() {
           {gl.unmapped_entry_types?.length > 0 && (
             <span> Unmapped entry types: {gl.unmapped_entry_types.join(', ')} — these post nowhere and were left out.</span>
           )}
+        </div>
+      )}
+
+      {flags.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <h2 className="text-sm font-semibold text-amber-900">
+            {flags.length} pattern(s) worth a look
+          </h2>
+          <p className="mb-3 text-xs text-amber-800">
+            None of these stopped anything being paid. They are shapes in the data — a buyer
+            earning on their own purchase, accounts sharing a phone number, a genealogy that
+            loops — that a person should judge.
+          </p>
+          <div className="space-y-2">
+            {flags.map((flag) => (
+              <div key={flag.id} className="flex items-start justify-between gap-3 rounded-lg bg-white p-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Badge value={flag.severity} />
+                    <span className="text-xs font-medium text-slate-500">{flag.code}</span>
+                    {flag.deal_ref && <span className="text-xs text-slate-400">· {flag.deal_ref}</span>}
+                  </div>
+                  <p className="mt-1 text-sm text-slate-700">{flag.summary}</p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => review(flag, 'DISMISSED')}
+                  >
+                    Dismiss
+                  </Button>
+                  <Button type="button" size="sm" onClick={() => review(flag, 'CONFIRMED')}>
+                    Confirm
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

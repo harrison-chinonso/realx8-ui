@@ -105,3 +105,15 @@ export const myCommissionStatement = (params) =>
 
 export const commissionStatementFor = (realtorId, params) =>
   client.get(`/commission-statements/${realtorId}`, { params }).then((r) => r.data?.data);
+
+/**
+ * Screening flags — patterns the engine noticed and a human should judge.
+ *
+ * Nothing here blocked anything. A flag is a reason to look, and the verdict is
+ * what closes it.
+ */
+export const listCommissionFlags = (params) =>
+  client.get('/commission-reports/flags', { params }).then((r) => r.data?.data ?? []);
+
+export const reviewCommissionFlag = (id, status, note) =>
+  client.post(`/commission-reports/flags/${id}/review`, { status, note }).then((r) => r.data);
