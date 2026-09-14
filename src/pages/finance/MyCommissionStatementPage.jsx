@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
+import Button from '../../components/ui/Button';
+import Modal from '../../components/common/Modal';
 import { myCommissionStatement } from '../../api/commissionApi';
+import { requestCommissionPayout } from '../../api/financeApi';
 
 /**
  * A realtor's own statement: what they have earned and where it has got to.
@@ -45,6 +48,12 @@ export default function MyCommissionStatementPage() {
   const [statement, setStatement] = useState(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState('');
+  /**
+   * The flat-rate commissions, which carry an action the engine's lines do not:
+   * the realtor asks for payment, rather than waiting for a payout run.
+   */
+  const [requesting, setRequesting] = useState(null);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,6 +69,19 @@ export default function MyCommissionStatementPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const submitRequest = async () => {
+    setBusy(true);
+    try {
+      await requestCommissionPayout(requesting.id);
+      setRequesting(null);
+      await load();
+    } catch (error) {
+      setFailed(error?.response?.data?.message || 'That request could not be sent.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const wallet = statement?.wallet;
 
@@ -138,9 +160,59 @@ export default function MyCommissionStatementPage() {
           data={statement?.entitlements ?? []}
           loading={loading}
           exportName="my-commission"
-          emptyMessage="You have not earned commission through the commission engine yet."
+          emptyMessage={statement?.legacy?.length
+            ? 'Nothing here yet — your commission so far is on the flat rate, below.'
+            : 'You have not earned commission yet.'}
         />
       </div>
+
+      {statement?.legacy?.length > 0 && (
+        <div>
+          <h2 className="mb-2 text-sm font-semibold text-slate-800">Flat-rate commissions</h2>
+          <p className="mb-2 text-xs text-slate-500">
+            Earned under your company&apos;s flat commission rate rather than a commission plan.
+            These are paid on request rather than through a payout run.
+          </p>
+          <Table
+            columns={[
+              { key: 'title', label: 'What for', render: (row) => row.title || '—' },
+              { key: 'amount', label: 'Amount', render: (row) => money(Number(row.amount || 0) * 100) },
+              { key: 'status', label: 'Status', render: (row) => <Badge value={row.status} /> },
+              {
+                key: 'created_at',
+                label: 'Earned',
+                render: (row) => (row.created_at ? new Date(row.created_at).toLocaleDateString() : '—'),
+              },
+            ]}
+            data={statement.legacy}
+            loading={false}
+            exportName="my-flat-rate-commissions"
+            emptyMessage="Nothing here."
+            renderActions={(row) => (row.status === 'created' ? (
+              <Button type="button" size="sm" onClick={() => setRequesting(row)}>Request payment</Button>
+            ) : null)}
+          />
+        </div>
+      )}
+
+      <Modal open={requesting !== null} onClose={() => !busy && setRequesting(null)} title="Request payment" size="sm">
+        {requesting && (
+          <div className="space-y-4 text-sm">
+            <p>
+              Request payment of <strong>{money(Number(requesting.amount || 0) * 100)}</strong> for
+              {' '}&ldquo;{requesting.title}&rdquo;?
+            </p>
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+              <Button type="button" variant="secondary" onClick={() => setRequesting(null)} disabled={busy}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={submitRequest} disabled={busy}>
+                {busy ? 'Requesting…' : 'Request payment'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {statement?.payouts?.length > 0 && (
         <div>

@@ -172,15 +172,21 @@ export const NAV = [
            * so removing it would take their only commission screen away.
            */
           { to: '/commissions', label: 'Payables (flat rate)', icon: DollarSign, permission: 'finance.commissions.view' },
-          // The earner's own commissions, with the request-payment action.
-          // Shown to realtors, who do not hold finance.commissions.view.
-          { to: '/commissions/mine', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
           /**
-           * The ENGINE's statement, which is a different thing from the list
-           * above: it shows money accruing against buyers still paying, which
-           * the flat-rate list has no concept of.
+           * ONE entry for the earner, not two.
+           *
+           * There used to be "My Commissions" (the flat-rate list) and "My
+           * Commission Statement" (the engine's). Exactly one system pays a
+           * given sale, so whichever menu item a realtor picked, there was a
+           * good chance of landing on the empty one and concluding their
+           * commission had gone missing — which is exactly what happened.
+           *
+           * The statement now carries both, including the request-payment
+           * action the flat-rate list had. /commissions/mine still works if
+           * linked to directly; it simply is not somewhere the menu sends
+           * anybody.
            */
-          { to: '/finance/my-commission', label: 'My Commission Statement', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
+          { to: '/finance/my-commission', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
         ],
       },
       { to: '/finance/credit-notes',      label: 'Credit Note',       icon: FileMinus,    permission: 'finance.credit-notes.manage' },
