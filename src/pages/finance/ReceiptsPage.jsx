@@ -11,7 +11,6 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
-import ActionsMenu from '../../components/common/ActionsMenu';
 import { useCurrency, useAppearance } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
 import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentMethods';
@@ -372,10 +371,15 @@ export default function ReceiptsPage() {
   };
 
   const TABS = [
-    { key: 'pending', label: 'Awaiting approval' },
-    { key: 'verified', label: 'Approved' },
-    { key: 'rejected', label: 'Rejected' },
-    { key: 'all', label: 'All' },
+    /**
+     * Each tab says what an EMPTY one means. The table's default is "No data
+     * available.", which on a queue reads as though something failed to load
+     * rather than as the good news that there is nothing to do.
+     */
+    { key: 'pending', label: 'Awaiting approval', empty: 'Nothing is waiting for approval.' },
+    { key: 'verified', label: 'Approved', empty: 'No payments have been approved yet.' },
+    { key: 'rejected', label: 'Rejected', empty: 'No payments have been rejected.' },
+    { key: 'all', label: 'All', empty: 'No payments have been submitted yet.' },
   ];
 
   /**
@@ -451,6 +455,7 @@ export default function ReceiptsPage() {
         <Table
           columns={columns}
           rows={visible}
+          emptyMessage={TABS.find((t) => t.key === tab)?.empty}
           renderActions={(row) => (
             <div className="flex items-center justify-end gap-2">
               {row.status === 'pending' ? (
@@ -463,10 +468,6 @@ export default function ReceiptsPage() {
                     */}
                   <Button type="button" variant="success" size="sm" onClick={() => openReview(row)}>Review</Button>
                   <Button type="button" variant="danger" size="sm" onClick={() => setRejectingReceipt(row)}>Reject</Button>
-                  <ActionsMenu items={[{
-                    label: row.company_receipt_url ? '📄 Open receipt' : '🖨 Print',
-                    onClick: () => printReceipt(row),
-                  }]} />
                 </>
               ) : (
                 <Button type="button" variant="secondary" size="sm" onClick={() => printReceipt(row)}>

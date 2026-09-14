@@ -138,11 +138,19 @@ export const NAV = [
           { to: '/finance/bank-accounts', label: 'Bank Accounts',     icon: Landmark,   permission: 'finance.bank-accounts.manage' },
           { to: '/finance/payment-plans', label: 'Payment Plans',     icon: CalendarDays, permission: 'finance.invoices.view' },
           { to: '/finance/installment-plans', label: 'Installment Plans',  icon: CalendarDays, permission: 'finance.installment-plans.view' },
+          { to: '/finance/payment-reminders', label: 'Payment Reminders',  icon: Bell,         permission: 'finance.payment-reminders.manage' },
+        ],
+      },
+      {
+        label: 'Commission', icon: DollarSign,
+        children: [
+          // The amounts owed to individual people — the flat-rate payable that
+          // predates the engine, and still what a company without a plan uses.
+          { to: '/commissions', label: 'Commissions', icon: DollarSign, permission: 'finance.commissions.view' },
           /**
            * The commission ENGINE's configuration — what a sale pays and to
-           * whom. Distinct from Commissions, which is the list of amounts
-           * owed to individual people, and gated on the same permission that
-           * governs changing them.
+           * whom. Distinct from Commissions above, and gated on the permission
+           * that governs changing them.
            */
           { to: '/finance/commission-plans', label: 'Commission Plans', icon: DollarSign, permission: 'finance.commissions.manage' },
           /**
@@ -153,7 +161,17 @@ export const NAV = [
            */
           { to: '/finance/commission-payouts', label: 'Commission Payouts', icon: DollarSign, permission: 'finance.commissions.manage' },
           { to: '/finance/commission-analytics', label: 'Commission Analytics', icon: DollarSign, permission: 'finance.commissions.view' },
-          { to: '/finance/payment-reminders', label: 'Payment Reminders',  icon: Bell,         permission: 'finance.payment-reminders.manage' },
+          // The earner's own commissions, with the request-payment action.
+          // Shown to realtors, who do not hold finance.commissions.view.
+          { to: '/commissions/mine', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
+          /**
+           * The ENGINE's statement, which is a different thing from the list
+           * above: it shows money accruing against buyers still paying, which
+           * the flat-rate commissions list has no concept of. A realtor on a
+           * company that has not activated a plan sees an empty one, which is
+           * the honest answer rather than a hidden menu item.
+           */
+          { to: '/finance/my-commission', label: 'My Commission Statement', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
         ],
       },
       { to: '/finance/credit-notes',      label: 'Credit Note',       icon: FileMinus,    permission: 'finance.credit-notes.manage' },
@@ -205,19 +223,10 @@ export const NAV = [
   // ── 8. Referral System ───────────────────────────────────────────────────
   {
     section: 'Referral System',
+    // Commission moved to Finance, where the rest of it is. What is left here
+    // is the referral programme itself — who introduced whom — which is a
+    // different subject from what that introduction earns.
     items: [
-      { to: '/commissions',  label: 'Commissions',      icon: DollarSign, permission: 'finance.commissions.view' },
-      // The earner's own commissions, with the request-payment action.
-      // Shown to realtors, who do not hold finance.commissions.view.
-      { to: '/commissions/mine', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
-      /**
-       * The ENGINE's statement, which is a different thing from the list above:
-       * it shows money that is accruing against buyers still paying, which the
-       * flat-rate commissions list has no concept of. A realtor on a company
-       * that has not activated a plan sees an empty one, which is the honest
-       * answer rather than a hidden menu item.
-       */
-      { to: '/finance/my-commission', label: 'My Commission Statement', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
       { to: '/referral',     label: 'Referral Program', icon: Share2,     permission: 'finance.commissions.manage' },
     ],
   },
