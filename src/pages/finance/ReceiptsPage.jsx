@@ -12,7 +12,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
 import ActionsMenu from '../../components/common/ActionsMenu';
-import { useCurrency } from '../../context/useAppearance';
+import { useCurrency, useAppearance } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
 import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentMethods';
 import { enumLabel } from '../../utils/enumLabel';
@@ -45,6 +45,12 @@ function StatusBadge({ status }) {
 
 export default function ReceiptsPage() {
   const fmt = useCurrency();
+  /**
+   * The company's own name, logo and colour — the same customisation the rest
+   * of the app is themed with, so a generated receipt looks like it came from
+   * the company rather than from the software.
+   */
+  const appearance = useAppearance();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -77,6 +83,21 @@ export default function ReceiptsPage() {
   const setFeedback = (type, text) => {
     setMessage({ type, text });
   };
+
+  /**
+   * Which slice of the queue is on screen.
+   *
+   * Defaults to what needs a decision. The page is called Payment Approvals and
+   * is reached from a sidebar badge counting things awaiting approval — opening
+   * it to a list dominated by payments already settled buries the work it
+   * exists for, and made it look as though approved payments were somehow still
+   * outstanding.
+   *
+   * The rest stays one click away rather than being removed: an admin looking
+   * for a payment they approved last week is a real thing to be doing, and this
+   * is the only screen that lists receipts at all.
+   */
+  const [tab, setTab] = useState('pending');
 
   const load = async () => {
     setLoading(true);
@@ -245,33 +266,99 @@ export default function ReceiptsPage() {
     }
   };
 
+  /**
+   * The company's own receipt wins over anything this page can draw.
+   *
+   * Where an admin attached one at approval, THAT is the receipt — it is what
+   * the buyer can already download, and it is very likely the one their
+   * accounts department has. Generating a second document from these columns
+   * would put two different receipts in circulation for the same payment, with
+   * different layouts and possibly different numbers, which is the confusion
+   * attaching a real one was meant to end.
+   *
+   * It opens in a tab rather than going straight to the print dialog: the file
+   * is a PDF or an image served from storage, and the browser's own viewer is
+   * better at printing those than a popup this page controls.
+   */
   const printReceipt = (receipt) => {
+    if (receipt.company_receipt_url) {
+      window.open(receipt.company_receipt_url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     const win = window.open('', '_blank', 'width=900,height=700');
     if (!win) return;
 
     const receiptNumber = receipt.receipt_number || receipt.number || `RCPT-${receipt.id}`;
+    const company = escapeHtml(appearance?.app_name || 'Receipt');
+    const logo = appearance?.app_logo ? escapeHtml(appearance.app_logo) : null;
+    const brand = escapeHtml(appearance?.primary_color || '#0f172a');
+
+    /**
+     * Rows are built from what this receipt actually has.
+     *
+     * A printed receipt full of "—" reads as a broken document rather than a
+     * complete one that happens to carry no note, and a buyer handed it has no
+     * way to tell which. Empty fields are left out instead.
+     */
+    const line = (label, value) => (value
+      ? `<tr><td class="label">${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`
+      : '');
+
     const html = `
       <html>
         <head>
           <title>Receipt ${escapeHtml(receiptNumber)}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 32px; color: #0f172a; }
-            h1 { color: var(--primary, #2563eb); margin-bottom: 24px; }
-            .row { margin-bottom: 12px; }
-            .label { font-weight: 700; display: inline-block; min-width: 160px; }
-            .card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; }
+            @page { margin: 18mm; }
+            body { font-family: -apple-system, Segoe UI, Arial, sans-serif; color: #0f172a; margin: 0; }
+            .head { display: flex; align-items: center; gap: 16px;
+                    border-bottom: 3px solid ${brand}; padding-bottom: 16px; margin-bottom: 28px; }
+            .head img { max-height: 56px; max-width: 200px; object-fit: contain; }
+            .company { font-size: 20px; font-weight: 700; color: ${brand}; }
+            .title { margin-left: auto; text-align: right; }
+            .title .word { font-size: 24px; font-weight: 700; letter-spacing: 0.08em;
+                           text-transform: uppercase; color: ${brand}; }
+            .title .num { font-size: 12px; color: #64748b; margin-top: 2px; }
+            table { width: 100%; border-collapse: collapse; }
+            td { padding: 9px 0; border-bottom: 1px solid #e2e8f0; font-size: 14px; vertical-align: top; }
+            td.label { color: #64748b; width: 190px; }
+            .total { margin-top: 28px; padding: 18px 20px; border-radius: 10px;
+                     background: ${brand}; color: #fff; display: flex; justify-content: space-between;
+                     align-items: center; }
+            .total .amt { font-size: 24px; font-weight: 700; }
+            .foot { margin-top: 32px; font-size: 11px; color: #94a3b8; line-height: 1.6; }
+            @media print { .foot { position: fixed; bottom: 0; } }
           </style>
         </head>
         <body>
-          <div class="card">
-            <h1>Receipt</h1>
-            <div class="row"><span class="label">Receipt Number:</span> ${escapeHtml(receiptNumber)}</div>
-            <div class="row"><span class="label">Amount:</span> ${escapeHtml(fmt(receipt.amount || 0))}</div>
-            <div class="row"><span class="label">Payment Method:</span> ${escapeHtml(receipt.payment_method || '—')}</div>
-            <div class="row"><span class="label">Status:</span> ${escapeHtml(receipt.status || 'pending')}</div>
-            <div class="row"><span class="label">Date:</span> ${escapeHtml(formatDate(receipt.date || receipt.created_at || receipt.createdAt))}</div>
-            <div class="row"><span class="label">Invoice ID:</span> ${escapeHtml(receipt.invoice_id || '—')}</div>
-            <div class="row"><span class="label">Notes:</span> ${escapeHtml(receipt.notes || '—')}</div>
+          <div class="head">
+            ${logo ? `<img src="${logo}" alt="${company}" />` : ''}
+            <div class="company">${company}</div>
+            <div class="title">
+              <div class="word">Receipt</div>
+              <div class="num">${escapeHtml(receiptNumber)}</div>
+            </div>
+          </div>
+
+          <table>
+            ${line('Date', formatDate(receipt.date || receipt.created_at || receipt.createdAt))}
+            ${line('Received from', receipt.client_name || receipt.client?.name)}
+            ${line('Invoice', receipt.invoice_id)}
+            ${line('Payment method', receipt.payment_method)}
+            ${line('Reference', receipt.reference)}
+            ${line('Status', receipt.status)}
+            ${line('Note', receipt.notes)}
+          </table>
+
+          <div class="total">
+            <span>Amount received</span>
+            <span class="amt">${escapeHtml(fmt(receipt.amount || 0))}</span>
+          </div>
+
+          <div class="foot">
+            ${company} &middot; Receipt ${escapeHtml(receiptNumber)}<br />
+            Generated by ${company}. Keep this for your records.
           </div>
         </body>
       </html>
@@ -283,6 +370,25 @@ export default function ReceiptsPage() {
     win.focus();
     win.print();
   };
+
+  const TABS = [
+    { key: 'pending', label: 'Awaiting approval' },
+    { key: 'verified', label: 'Approved' },
+    { key: 'rejected', label: 'Rejected' },
+    { key: 'all', label: 'All' },
+  ];
+
+  /**
+   * Filtered here rather than by re-fetching per tab: the list is already
+   * loaded, the counts on the tabs have to come from the whole set anyway, and
+   * a round trip per click would make the badge and the tab disagree while it
+   * was in flight.
+   */
+  const visible = useMemo(
+    () => (tab === 'all' ? items : items.filter((row) => row.status === tab)),
+    [items, tab],
+  );
+  const countOf = (key) => (key === 'all' ? items.length : items.filter((r) => r.status === key).length);
 
   const columns = useMemo(() => [
     {
@@ -307,8 +413,10 @@ export default function ReceiptsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Receipts</h1>
-          <p className="text-sm text-slate-500">Track submitted receipts and approval status.</p>
+          <h1 className="text-xl font-semibold text-slate-900">Payment Approvals</h1>
+          <p className="text-sm text-slate-500">
+            Payments buyers have submitted for review, and what was decided about them.
+          </p>
         </div>
         <Button type="button" onClick={() => setShowAddModal(true)}>+ Add Receipt</Button>
       </div>
@@ -319,12 +427,30 @@ export default function ReceiptsPage() {
         </div>
       )}
 
+      {!loading && (
+        <div className="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1">
+          {TABS.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              onClick={() => setTab(option.key)}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                tab === option.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {option.label}
+              <span className="ml-1.5 text-xs text-slate-400">{countOf(option.key)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {loading ? (
         <div className="rounded-xl bg-white p-6 text-sm text-slate-500 shadow-sm ring-1 ring-slate-200">Loading receipts...</div>
       ) : (
         <Table
           columns={columns}
-          rows={items}
+          rows={visible}
           renderActions={(row) => (
             <div className="flex items-center justify-end gap-2">
               {row.status === 'pending' ? (
@@ -337,10 +463,15 @@ export default function ReceiptsPage() {
                     */}
                   <Button type="button" variant="success" size="sm" onClick={() => openReview(row)}>Review</Button>
                   <Button type="button" variant="danger" size="sm" onClick={() => setRejectingReceipt(row)}>Reject</Button>
-                  <ActionsMenu items={[{ label: '🖨 Print', onClick: () => printReceipt(row) }]} />
+                  <ActionsMenu items={[{
+                    label: row.company_receipt_url ? '📄 Open receipt' : '🖨 Print',
+                    onClick: () => printReceipt(row),
+                  }]} />
                 </>
               ) : (
-                <Button type="button" variant="secondary" size="sm" onClick={() => printReceipt(row)}>Print</Button>
+                <Button type="button" variant="secondary" size="sm" onClick={() => printReceipt(row)}>
+                  {row.company_receipt_url ? 'Receipt' : 'Print'}
+                </Button>
               )}
             </div>
           )}
