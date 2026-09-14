@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { listRealtorLevels } from '../../api/realtorLevelApi';
 import { Plus, Trash2 } from 'lucide-react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
@@ -123,6 +124,25 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
   const [simLevelRate, setSimLevelRate] = useState('6');
   const [busy, setBusy] = useState(false);
   const [previewError, setPreviewError] = useState(null);
+  /**
+   * The company's realtor levels, purely to SHOW what a blank rate resolves to.
+   *
+   * "Leave blank to use the realtor's own level rate" is true and was already
+   * written on the field, but it asks the reader to hold a number they cannot
+   * see — and if every level is set to 0%, which is the default when the field
+   * is left empty on the Realtor Levels screen, a plan built that way pays
+   * nothing and the editor gave no hint why.
+   */
+  const [levels, setLevels] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    listRealtorLevels()
+      .then((res) => { if (alive) setLevels(res?.data ?? res ?? []); })
+      // Best effort: the rate field works without this, it just explains less.
+      .catch(() => { if (alive) setLevels([]); });
+    return () => { alive = false; };
+  }, []);
 
   const direct = ruleOf(config, 'DIRECT_SALE');
   const referral = ruleOf(config, 'REFERRAL_BONUS');
@@ -354,8 +374,56 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
         </Section>
 
         <Section title="The selling realtor" description="What the person who made the sale earns.">
+          {/*
+            * What a blank rate actually resolves to, per level.
+            *
+            * The rate field says "leave blank to use the realtor's level rate",
+            * which is accurate and useless on its own — the reader has to know
+            * numbers held on another screen. Shown here, a plan built on levels
+            * is legible, and the common misconfiguration becomes obvious: the
+            * Realtor Levels screen defaults commission to 0%, so levels created
+            * without setting it pay nothing.
+            */}
+          {(direct?.value === undefined || direct?.value === null) && levels && (
+            levels.length ? (
+              <div className="rounded-lg bg-slate-50 p-3 ring-1 ring-slate-200">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Each realtor earns their level&apos;s rate
+                </p>
+                <div className="flex flex-wrap gap-x-5 gap-y-1">
+                  {levels.map((level) => (
+                    <span key={level.id} className="text-sm">
+                      <span className="text-slate-600">{level.name}</span>
+                      <span className={`ml-1.5 font-semibold ${
+                        Number(level.commission_percentage) > 0 ? 'text-slate-900' : 'text-rose-600'
+                      }`}>
+                        {Number(level.commission_percentage) || 0}%
+                      </span>
+                    </span>
+                  ))}
+                </div>
+                {levels.every((level) => !Number(level.commission_percentage)) && (
+                  <p className="mt-2 text-xs text-rose-700">
+                    Every level is set to 0%, so this plan would pay the seller nothing. Set a rate
+                    on each level under Users → Realtor Levels, or type a fixed rate here instead.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                No realtor levels are configured, so a blank rate resolves to nothing. Add levels
+                under Users → Realtor Levels, or type a fixed rate here.
+              </p>
+            )
+          )}
+
           <div className="grid gap-3 sm:grid-cols-3">
-            <Field label="Rate (%)" hint="Leave blank to use the realtor's own level rate.">
+            <Field
+              label="Rate (%)"
+              hint={direct?.value === undefined || direct?.value === null
+                ? 'Blank — each realtor earns the rate on their own level, shown below.'
+                : 'A fixed rate for every realtor. Their level is ignored.'}
+            >
               <Input
                 type="number" step="0.01" min="0"
                 value={direct?.value ?? ''}
