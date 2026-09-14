@@ -153,6 +153,7 @@ export default function PaymentSchedulePanel({ invoiceId, onChanged }) {
               <th className="px-3 py-2 text-left font-semibold text-slate-600">#</th>
               <th className="px-3 py-2 text-left font-semibold text-slate-600">Due date</th>
               <th className="px-3 py-2 text-right font-semibold text-slate-600">Amount</th>
+              <th className="px-3 py-2 text-right font-semibold text-slate-600">Discount</th>
               <th className="px-3 py-2 text-right font-semibold text-slate-600">Late fee</th>
               <th className="px-3 py-2 text-right font-semibold text-slate-600">Still payable</th>
               <th className="px-3 py-2 text-left font-semibold text-slate-600">Timing</th>
@@ -166,6 +167,16 @@ export default function PaymentSchedulePanel({ invoiceId, onChanged }) {
                 <td className="px-3 py-2">{schedule.sequence}</td>
                 <td className="px-3 py-2">{formatDate(schedule.due_date)}</td>
                 <td className="px-3 py-2 text-right">{fmt(schedule.principal)}</td>
+                {/*
+                  Shown beside the amount rather than folded into it, so the
+                  installment still states what it was agreed at. A number that
+                  quietly went down is one a buyer has to take on trust.
+                */}
+                <td className="px-3 py-2 text-right">
+                  {Number(schedule.discount) > 0
+                    ? <span className="text-emerald-600">−{fmt(schedule.discount)}</span>
+                    : '—'}
+                </td>
                 <td className="px-3 py-2 text-right">
                   {Number(schedule.fee_accrued) > 0 ? (
                     <span className={Number(schedule.fee_outstanding) > 0 ? 'font-medium text-red-600' : ''}>
@@ -203,6 +214,11 @@ export default function PaymentSchedulePanel({ invoiceId, onChanged }) {
                     sits on the final installment rather than being spread. */}
                 <td className="px-3 py-2 text-right">
                   {fmt(schedules.reduce((sum, s) => sum + Number(s.principal || 0), 0))}
+                </td>
+                <td className="px-3 py-2 text-right text-emerald-600">
+                  {schedules.some((s) => Number(s.discount) > 0)
+                    ? `−${fmt(schedules.reduce((sum, s) => sum + Number(s.discount || 0), 0))}`
+                    : '—'}
                 </td>
                 <td className="px-3 py-2 text-right">{feesOutstanding > 0 ? fmt(feesOutstanding) : '—'}</td>
                 <td className="px-3 py-2 text-right">
