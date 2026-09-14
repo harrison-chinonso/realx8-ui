@@ -16,7 +16,7 @@ export default function TransactionHistory({ title = 'Recent Transactions', rows
           <thead className="bg-slate-50">
             <tr>
               <th className="px-4 py-2.5 text-left font-semibold text-slate-600">Date</th>
-              <th className="px-4 py-2.5 text-left font-semibold text-slate-600">Description</th>
+              <th className="px-4 py-2.5 text-left font-semibold text-slate-600">What for</th>
               <th className="px-4 py-2.5 text-right font-semibold text-slate-600">Amount</th>
               <th className="px-4 py-2.5 text-left font-semibold text-slate-600">Status</th>
             </tr>
@@ -25,7 +25,31 @@ export default function TransactionHistory({ title = 'Recent Transactions', rows
             {rows.map((row) => (
               <tr key={row.id} className="hover:bg-slate-50">
                 <td className="whitespace-nowrap px-4 py-2.5 text-slate-500">{formatDate(row.date)}</td>
-                <td className="max-w-xs truncate px-4 py-2.5 text-slate-700" title={row.title}>{row.title}</td>
+                {/*
+                  The property and unit, not the invoice reference.
+                  A buyer recognises what they bought by the estate and the
+                  plot; the reference is the company's own paperwork, and
+                  asking somebody to match a code they never memorised is work
+                  the table should be doing for them. It is still shown
+                  underneath, smaller, for anyone quoting it to support.
+                */}
+                <td className="max-w-xs px-4 py-2.5 text-slate-700">
+                  <div className="truncate" title={row.property_name || row.title}>
+                    {row.property_name
+                      ? (
+                        <>
+                          {row.property_name}
+                          {row.unit_name && <span className="text-slate-500"> · {row.unit_name}</span>}
+                        </>
+                      )
+                      : row.title}
+                  </div>
+                  {(row.reference || row.invoice_ref) && (
+                    <div className="truncate text-xs text-slate-400">
+                      {row.reference || row.invoice_ref}
+                    </div>
+                  )}
+                </td>
                 <td className="whitespace-nowrap px-4 py-2.5 text-right font-semibold text-slate-900">{fmt(row.amount)}</td>
                 <td className="px-4 py-2.5"><Badge value={row.status} /></td>
               </tr>

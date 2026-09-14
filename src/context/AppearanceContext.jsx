@@ -5,6 +5,7 @@ import { fetchPlatformName } from '../api/userApi';
 import { FONT_CATALOGUE, fontStack } from '../config/fonts';
 import { brightenForDark } from '../utils/colorUtils';
 import { AppearanceContext } from './appearanceContextRef';
+import useAuthStore from '../store/authStore';
 
 const DEFAULTS = {
   app_name: '',
@@ -97,8 +98,24 @@ export function AppearanceProvider({ children }) {
    */
   const brandLocked = useRef(false);
 
-  const load = (data) => {
-    if (brandLocked.current) return;
+  /**
+   * Which appearance load is the current one.
+   *
+   * Two fetches are in flight at any interesting moment — the unauthenticated
+   * one from mount, and the authenticated one that follows a sign-in — and they
+   * resolve in whatever order the network decides. Without a sequence the
+   * SLOWER one wins, so a user from a branded company would sign in, see their
+   * colours appear, and watch the platform defaults paint over them a moment
+   * later. That is the bug this counter exists for: a response is applied only
+   * if no newer request has been started since.
+   */
+  const loadSeq = useRef(0);
+
+  const load = (data, { seq, force = false } = {}) => {
+    // A response from a superseded request describes a state we have moved on
+    // from. Dropping it is the whole point.
+    if (seq !== undefined && seq !== loadSeq.current) return;
+    if (brandLocked.current && !force) return;
     const merged = { ...DEFAULTS, ...data };
     setAppearance(merged);
     applyTheme(merged);
@@ -122,9 +139,12 @@ export function AppearanceProvider({ children }) {
   }, []);
 
   useEffect(() => {
+    const seq = (loadSeq.current += 1);
+
     // 1️⃣ Fast call: just the name + logo — runs immediately, no auth needed
     fetchPlatformName()
       .then(({ name, logo, primary_color }) => {
+        if (seq !== loadSeq.current) { setNameLoaded(true); return; }
         if (brandLocked.current) { setNameLoaded(true); return; }
         setAppearance((prev) => ({ ...prev, app_name: name || prev.app_name, app_logo: logo || prev.app_logo }));
         if (name) document.title = name;
@@ -138,12 +158,53 @@ export function AppearanceProvider({ children }) {
 
     // 2️⃣ Full appearance load (fonts, colors, dark mode, etc.) — runs in parallel
     client.get('/settings/appearance')
-      .then((res) => load(res.data?.data || {}))
-      .catch(() => { if (!brandLocked.current) applyTheme(DEFAULTS); });
+      .then((res) => load(res.data?.data || {}, { seq }))
+      .catch(() => { if (!brandLocked.current && seq === loadSeq.current) applyTheme(DEFAULTS); });
   }, []);
 
-  const refresh = () =>
-    client.get('/settings/appearance').then((res) => load(res.data?.data || {}));
+  /**
+   * Re-read the appearance, as whoever is signed in NOW.
+   *
+   * `force` overrides brandLocked, and that is deliberate: the lock exists so a
+   * shared link's branding is not repainted by the platform defaults loading
+   * behind it, which is right for a prospect with no account. Once somebody
+   * signs in, their own company's configuration is the more specific answer and
+   * has to win — otherwise a realtor who followed a colleague's share link and
+   * then logged in would keep wearing the wrong company's colours for the rest
+   * of the session.
+   */
+  const refresh = useCallback(() => {
+    const seq = (loadSeq.current += 1);
+    brandLocked.current = false;
+    return client.get('/settings/appearance')
+      .then((res) => load(res.data?.data || {}, { seq, force: true }))
+      .catch(() => {});
+  }, []);
+
+  /**
+   * Whoever is signed in decides what the application looks like — so the
+   * appearance is re-read whenever that changes.
+   *
+   * Driven from the session rather than from the login screen. There are five
+   * ways into a session (password, two-factor, forced enrolment, passcode,
+   * Google) and two that change WHICH company is in scope (switching profile,
+   * enabling a second one), and a refresh call at each is a list somebody
+   * eventually adds to without noticing. Watching the token and the company is
+   * one rule that covers all of them, including the next one.
+   *
+   * `company_id` is in the key because a platform administrator moving between
+   * companies keeps the same token while the branding that applies changes.
+   */
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const companyId = useAuthStore((state) => state.user?.company_id ?? null);
+  const firstRun = useRef(true);
+
+  useEffect(() => {
+    // The mount-time load above already covers the first pass; refreshing again
+    // here would be a second identical request on every page load.
+    if (firstRun.current) { firstRun.current = false; return; }
+    refresh();
+  }, [accessToken, companyId, refresh]);
 
   /**
    * Money display: thousands-separated with the company's currency SIGN

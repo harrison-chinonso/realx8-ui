@@ -38,8 +38,6 @@ export default function PayInvoiceModal({ invoiceId, open, onClose, onSubmitted 
         if (cancelled) return;
         const data = res?.data ?? null;
         setOptions(data);
-        // Default to paying the whole outstanding balance.
-        setForm((f) => ({ ...f, amount: String(data?.invoice?.balance ?? '') }));
       })
       .catch((err) => {
         if (!cancelled) setError(err?.response?.data?.message || err?.userMessage || 'Could not load payment options.');
@@ -217,12 +215,25 @@ export default function PayInvoiceModal({ invoiceId, open, onClose, onSubmitted 
                   currency sign. It hands back a raw string, so Number() still
                   works — but it is a text input, so the max has to be checked
                   here rather than by the browser. */}
-              <MoneyInput
-                label="Amount paid"
-                value={form.amount}
-                onChange={(amount) => setForm((f) => ({ ...f, amount }))}
-                error={amountError}
-              />
+              <div>
+                <MoneyInput
+                  label="Amount paid"
+                  value={form.amount}
+                  onChange={(amount) => setForm((f) => ({ ...f, amount }))}
+                  error={amountError}
+                />
+                {/* The outstanding figure, offered rather than assumed. */}
+                {invoice?.balance > 0 && !form.amount && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, amount: String(invoice.balance) }))}
+                    className="mt-1 text-xs font-medium underline underline-offset-2"
+                    style={{ color: 'var(--primary)' }}
+                  >
+                    Paying it all? Use {fmt(invoice.balance)}
+                  </button>
+                )}
+              </div>
               <Input
                 label="Payment reference"
                 value={form.reference}

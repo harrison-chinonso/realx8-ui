@@ -18,7 +18,17 @@ import ProfileToggle from '../common/ProfileToggle';
 import NavBadge from './NavBadge';
 
 // Only these sections get their own nav-bar dropdown; everything else → More
-const PRIMARY_SECTION_NAMES = ['Property', 'CRM', 'Finance', 'Media', 'Users'];
+/**
+ * Which sections sit in the top bar is declared BY THE SECTION, in navConfig.
+ *
+ * This was a list of names here, and two of them had been renamed in navConfig
+ * — so 'CRM' and 'Users' matched nothing and User Management and Leads & Deals
+ * silently fell into "More" on this template alone. Nothing errored; the menu
+ * was just different here than everywhere else. Reading a flag off the section
+ * means a rename cannot break the reference, because there is no longer a
+ * reference to break.
+ */
+const isPrimarySection = (section) => section?.primary === true;
 
 const dropdownLinkClass = ({ isActive }) =>
   `flex items-center gap-2.5 px-4 py-2 text-sm transition-colors ${
@@ -95,13 +105,13 @@ function TopNav({ onMobileMenuOpen }) {
 
   // Primary sections shown in nav bar
   const primarySections = activeNAV
-    .filter((s) => s.section && PRIMARY_SECTION_NAMES.includes(s.section))
+    .filter((s) => s.section && isPrimarySection(s))
     .map((s) => ({ ...s, items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType }) }))
     .filter((s) => s.items.length > 0);
 
   // Secondary sections collapsed into "More"
   const secondarySections = activeNAV
-    .filter((s) => s.section && !PRIMARY_SECTION_NAMES.includes(s.section) && s.section !== 'Account')
+    .filter((s) => s.section && !isPrimarySection(s) && s.section !== 'Account')
     .map((s) => ({ ...s, items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType }) }))
     .filter((s) => s.items.length > 0);
 

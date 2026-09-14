@@ -36,6 +36,17 @@ export const SUPERIOR_ADMIN_NAV = [
   },
 ];
 
+/**
+ * `primary: true` puts a section in ModernLayout's top bar; everything else is
+ * folded into "More".
+ *
+ * Declared on the section rather than listed by name in the layout. It used to
+ * be a list of names over there, and two of them — 'CRM' and 'Users' — had been
+ * renamed here to 'Leads & Deals' and 'User Management'. Nothing failed: the
+ * names simply stopped matching, and those two sections quietly dropped out of
+ * the top bar on that one template while every other template still showed
+ * them. A flag on the section cannot come adrift from the section's name.
+ */
 export const NAV = [
   // ── Dashboard ──────────────────────────────────────────────────────────────
   {
@@ -46,6 +57,7 @@ export const NAV = [
   // ── 2. User Management ────────────────────────────────────────────────────
   {
     section: 'User Management',
+    primary: true,
     items: [
       { to: '/users/employees', label: 'Staff',               icon: UserCheck,  permission: 'users.manage' },
       { to: '/users/clients',   label: 'Clients',             icon: Briefcase,  permission: 'users.manage' },
@@ -70,6 +82,7 @@ export const NAV = [
   // ── 3. Property ───────────────────────────────────────────────────────────
   {
     section: 'Property',
+    primary: true,
     items: [
       { to: '/properties',             label: 'Property Listing',   icon: Building2,     permission: 'properties.view', hideForTypes: ['realtor', 'client'] },
       { to: '/properties/types',       label: 'Property Setup',     icon: Wrench,        permission: 'properties.manage' },
@@ -87,6 +100,7 @@ export const NAV = [
   // Finance → Invoicing → All Invoices.
   {
     section: 'Finance',
+    primary: true,
     items: [
       {
         label: 'Invoicing', icon: FileText,
@@ -124,6 +138,13 @@ export const NAV = [
           { to: '/finance/bank-accounts', label: 'Bank Accounts',     icon: Landmark,   permission: 'finance.bank-accounts.manage' },
           { to: '/finance/payment-plans', label: 'Payment Plans',     icon: CalendarDays, permission: 'finance.invoices.view' },
           { to: '/finance/installment-plans', label: 'Installment Plans',  icon: CalendarDays, permission: 'finance.installment-plans.view' },
+          /**
+           * The commission ENGINE's configuration — what a sale pays and to
+           * whom. Distinct from Commissions, which is the list of amounts
+           * owed to individual people, and gated on the same permission that
+           * governs changing them.
+           */
+          { to: '/finance/commission-plans', label: 'Commission Plans', icon: DollarSign, permission: 'finance.commissions.manage' },
           { to: '/finance/payment-reminders', label: 'Payment Reminders',  icon: Bell,         permission: 'finance.payment-reminders.manage' },
         ],
       },
@@ -148,6 +169,7 @@ export const NAV = [
   // ── 6. Leads & Deals ──────────────────────────────────────────────────────
   {
     section: 'Leads & Deals',
+    primary: true,
     items: [
       { to: '/crm/leads',           label: 'Manage Leads',      icon: Target,     permission: 'crm.leads.view' },
       { to: '/crm/deals',           label: 'Manage Deals',      icon: Handshake,  permission: 'crm.deals.view' },
@@ -163,6 +185,7 @@ export const NAV = [
   // ── 7. Media ──────────────────────────────────────────────────────────────
   {
     section: 'Media',
+    primary: true,
     items: [
       { to: '/media/posts',           label: 'Content Posts',        icon: FileEdit,  permission: 'media.view' },
       { to: '/media/blog',            label: 'Blog',                 icon: Newspaper, permission: 'media.blog.manage' },
