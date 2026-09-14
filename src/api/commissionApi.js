@@ -48,3 +48,60 @@ export const validateCommissionPlan = (config, guardrail) =>
  */
 export const simulateCommissionPlan = (payload) =>
   client.post('/commission-plans/simulate', payload).then((r) => r.data);
+
+/**
+ * ── Reporting and payouts ───────────────────────────────────────────────────
+ *
+ * Every report is scoped to the caller's own company by the server, not by
+ * anything sent from here. A `company_id` in these params is honoured only for
+ * a platform admin, who has no company of their own; for everybody else it is
+ * ignored, which is the only arrangement where the browser cannot widen its own
+ * scope.
+ */
+
+export const commissionSummary = (params) =>
+  client.get('/commission-reports/summary', { params }).then((r) => r.data?.data);
+
+export const commissionBreakage = (params) =>
+  client.get('/commission-reports/breakage', { params }).then((r) => r.data?.data);
+
+export const commissionCostOfSale = (params) =>
+  client.get('/commission-reports/cost-of-sale', { params }).then((r) => r.data?.data);
+
+export const commissionLeaderboard = (params) =>
+  client.get('/commission-reports/leaderboard', { params }).then((r) => r.data?.data ?? []);
+
+export const commissionLiability = (params) =>
+  client.get('/commission-reports/liability', { params }).then((r) => r.data?.data);
+
+export const commissionGlExport = (params) =>
+  client.get('/commission-reports/gl-export', { params }).then((r) => r.data?.data);
+
+/**
+ * What a candidate plan WOULD have cost over deals already closed.
+ *
+ * A POST because the plan is a document, not because anything is written — the
+ * backtest writes nothing at all.
+ */
+export const backtestCommissionPlan = (plan, params) =>
+  client.post('/commission-reports/backtest', { plan, ...params }).then((r) => r.data?.data);
+
+export const listCommissionPayouts = (params) =>
+  client.get('/commission-payouts', { params }).then((r) => r.data?.data ?? []);
+
+/** Builds DRAFT payouts. Nothing is transferred until one is approved and paid. */
+export const buildCommissionPayouts = (payload) =>
+  client.post('/commission-payouts/build', payload).then((r) => r.data?.data);
+
+export const approveCommissionPayout = (id) =>
+  client.post(`/commission-payouts/${id}/approve`).then((r) => r.data);
+
+export const payCommissionPayout = (id, reference) =>
+  client.post(`/commission-payouts/${id}/pay`, { reference }).then((r) => r.data);
+
+/** The signed-in realtor's own statement. The id comes from the session. */
+export const myCommissionStatement = (params) =>
+  client.get('/commission-statements/mine', { params }).then((r) => r.data?.data);
+
+export const commissionStatementFor = (realtorId, params) =>
+  client.get(`/commission-statements/${realtorId}`, { params }).then((r) => r.data?.data);

@@ -50,6 +50,9 @@ import ClientsPage from './pages/users/ClientsPage';
 import RealtorsPage from './pages/users/RealtorsPage';
 import RolesPage from './pages/roles/RolesPage';
 import CommissionPlansPage from './pages/finance/CommissionPlansPage';
+import CommissionPayoutsPage from './pages/finance/CommissionPayoutsPage';
+import CommissionAnalyticsPage from './pages/finance/CommissionAnalyticsPage';
+import MyCommissionStatementPage from './pages/finance/MyCommissionStatementPage';
 import AuditLogPage from './pages/audit/AuditLogPage';
 import CommissionsPage from './pages/commissions/CommissionsPage';
 import MyCommissionsPage from './pages/realtor/MyCommissionsPage';
@@ -263,6 +266,9 @@ export default function App() {
               /finance/payment-plans, which is the subscription price list. */}
           <Route path="/finance/installment-plans" element={<InstallmentPlansPage />} />
           <Route path="/finance/commission-plans" element={<CommissionPlansPage />} />
+          <Route path="/finance/commission-payouts" element={<CommissionPayoutsPage />} />
+          <Route path="/finance/commission-analytics" element={<CommissionAnalyticsPage />} />
+          <Route path="/finance/my-commission" element={<MyCommissionStatementPage />} />
           <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
           <Route path="/finance/taxes" element={<TaxesPage />} />
           <Route path="/finance/bank-accounts" element={<BankAccountsPage />} />

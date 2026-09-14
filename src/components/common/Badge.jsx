@@ -52,6 +52,23 @@ const colors = {
   in_default: TONES.negative,
   expired: TONES.neutral,
 
+  /**
+   * The commission engine's entitlement and payout statuses.
+   *
+   * ACCRUED is deliberately NEUTRAL rather than cautionary. It is the ordinary
+   * state of money earned on a sale the buyer is still paying for — the
+   * overwhelmingly common case — and colouring it as a warning would tell every
+   * realtor that most of what they have earned is in trouble.
+   */
+  accrued: TONES.neutral,
+  partially_released: TONES.caution,
+  released: TONES.info,
+  forfeited: TONES.negative,
+  held: TONES.caution,
+  reversed: TONES.negative,
+  recovered: TONES.positive,
+  written_off: TONES.neutral,
+
   default: TONES.neutral,
 };
 

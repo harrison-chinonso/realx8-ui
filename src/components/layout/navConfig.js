@@ -145,6 +145,14 @@ export const NAV = [
            * governs changing them.
            */
           { to: '/finance/commission-plans', label: 'Commission Plans', icon: DollarSign, permission: 'finance.commissions.manage' },
+          /**
+           * Running a payout is what moves money, so it is gated on manage.
+           * Reading what the engine has cost is not, which is why analytics
+           * takes the view permission — an admin reviewing the bill should not
+           * need the permission that changes what it will be.
+           */
+          { to: '/finance/commission-payouts', label: 'Commission Payouts', icon: DollarSign, permission: 'finance.commissions.manage' },
+          { to: '/finance/commission-analytics', label: 'Commission Analytics', icon: DollarSign, permission: 'finance.commissions.view' },
           { to: '/finance/payment-reminders', label: 'Payment Reminders',  icon: Bell,         permission: 'finance.payment-reminders.manage' },
         ],
       },
@@ -202,6 +210,14 @@ export const NAV = [
       // The earner's own commissions, with the request-payment action.
       // Shown to realtors, who do not hold finance.commissions.view.
       { to: '/commissions/mine', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
+      /**
+       * The ENGINE's statement, which is a different thing from the list above:
+       * it shows money that is accruing against buyers still paying, which the
+       * flat-rate commissions list has no concept of. A realtor on a company
+       * that has not activated a plan sees an empty one, which is the honest
+       * answer rather than a hidden menu item.
+       */
+      { to: '/finance/my-commission', label: 'My Commission Statement', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
       { to: '/referral',     label: 'Referral Program', icon: Share2,     permission: 'finance.commissions.manage' },
     ],
   },
