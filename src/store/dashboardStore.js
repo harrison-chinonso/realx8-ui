@@ -120,7 +120,29 @@ const useDashboardStore = create(
 
       resetWidgets: () => set({ widgets: { ...DEFAULT_WIDGETS } }),
     }),
-    { name: 'realto-dashboard-v1' }
+    {
+      name: 'realto-dashboard-v1',
+      /**
+       * Saved widget choices are layered OVER the current defaults, not
+       * substituted for them.
+       *
+       * zustand's default merge is shallow, so `widgets` — one top-level key —
+       * was replaced wholesale by whatever the browser had saved. A widget
+       * added to DEFAULT_WIDGETS after a person's browser saved its object was
+       * therefore missing from the saved copy, `widgets.topPerformers` read as
+       * undefined, and `<Section visible={undefined}>` rendered nothing. The
+       * card had not been removed; it was invisible on that browser only, for
+       * good, and looked exactly like a deletion.
+       *
+       * Layering means an unknown widget takes the default — visible — while
+       * anything the person has deliberately switched off stays off.
+       */
+      merge: (persisted, current) => ({
+        ...current,
+        ...persisted,
+        widgets: { ...DEFAULT_WIDGETS, ...(persisted?.widgets || {}) },
+      }),
+    }
   )
 );
 
