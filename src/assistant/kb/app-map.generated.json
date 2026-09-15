@@ -7,6 +7,10 @@
     "permissions": [
       "dashboard.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -17,6 +21,10 @@
     "permissions": [
       "audit.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -27,6 +35,10 @@
     "permissions": [
       "care.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -37,6 +49,10 @@
     "permissions": [
       "care.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -47,6 +63,10 @@
     "permissions": [
       "care.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -55,6 +75,10 @@
     "section": null,
     "trail": "Commissions",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "superiorAdminOnly": false,
+    "unverified": true,
     "source": "route"
   },
   {
@@ -63,6 +87,10 @@
     "section": null,
     "trail": "Mine",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "superiorAdminOnly": false,
+    "unverified": true,
     "source": "route"
   },
   {
@@ -73,6 +101,10 @@
     "permissions": [
       "crm.analytics.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -83,6 +115,10 @@
     "permissions": [
       "crm.analytics.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -93,6 +129,10 @@
     "permissions": [
       "crm.deals.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -103,6 +143,10 @@
     "permissions": [
       "crm.leads.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -113,6 +157,10 @@
     "permissions": [
       "crm.pipelines.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -123,6 +171,10 @@
     "permissions": [
       "crm.leads.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -133,6 +185,10 @@
     "permissions": [
       "crm.tasks.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -143,6 +199,10 @@
     "permissions": [
       "finance.bank-accounts.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -153,6 +213,10 @@
     "permissions": [
       "finance.commissions.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -163,6 +227,10 @@
     "permissions": [
       "finance.commissions.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -173,6 +241,10 @@
     "permissions": [
       "finance.commissions.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -180,7 +252,13 @@
     "label": "Credit Note",
     "section": "Finance",
     "trail": "Finance → Commission → Credit Note",
-    "permissions": [],
+    "permissions": [
+      "finance.credit-notes.manage"
+    ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -188,7 +266,13 @@
     "label": "Debit Note",
     "section": "Finance",
     "trail": "Finance → Commission → Debit Note",
-    "permissions": [],
+    "permissions": [
+      "finance.debit-notes.manage"
+    ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -199,6 +283,10 @@
     "permissions": [
       "finance.installment-plans.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -209,14 +297,24 @@
     "permissions": [
       "finance.invoices.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
     "route": "/finance/invoices/create",
     "label": "Create",
-    "section": null,
-    "trail": "Create",
-    "permissions": [],
+    "section": "Finance",
+    "trail": "Finance → Invoicing → All Invoices → Create",
+    "permissions": [
+      "finance.invoices.view"
+    ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "superiorAdminOnly": false,
+    "unverified": false,
     "source": "route"
   },
   {
@@ -227,6 +325,10 @@
     "permissions": [
       "finance.invoices.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -235,6 +337,12 @@
     "section": "Finance",
     "trail": "Finance → Commission → My Commissions",
     "permissions": [],
+    "showForTypes": [
+      "realtor"
+    ],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -243,6 +351,12 @@
     "section": "My Portfolio",
     "trail": "My Portfolio → My Invoices",
     "permissions": [],
+    "showForTypes": [
+      "client"
+    ],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -251,6 +365,12 @@
     "section": "My Portfolio",
     "trail": "My Portfolio → My Payments",
     "permissions": [],
+    "showForTypes": [
+      "client"
+    ],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -259,6 +379,12 @@
     "section": "My Portfolio",
     "trail": "My Portfolio → My Properties",
     "permissions": [],
+    "showForTypes": [
+      "client"
+    ],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -269,6 +395,10 @@
     "permissions": [
       "finance.invoices.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -279,6 +409,10 @@
     "permissions": [
       "finance.payment-reminders.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -289,6 +423,10 @@
     "permissions": [
       "finance.reports.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -299,6 +437,10 @@
     "permissions": [
       "finance.taxes.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -309,14 +451,24 @@
     "permissions": [
       "finance.invoices.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
     "route": "/finance/transactions/pending",
     "label": "Pending",
-    "section": null,
-    "trail": "Pending",
-    "permissions": [],
+    "section": "Finance",
+    "trail": "Finance → Payments → All Payments → Pending",
+    "permissions": [
+      "finance.invoices.view"
+    ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "superiorAdminOnly": false,
+    "unverified": false,
     "source": "route"
   },
   {
@@ -327,6 +479,10 @@
     "permissions": [
       "frontdesk.visitors.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -337,6 +493,10 @@
     "permissions": [
       "investments.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -347,6 +507,12 @@
     "permissions": [
       "investments.own.view"
     ],
+    "showForTypes": [
+      "realtor"
+    ],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -357,6 +523,12 @@
     "permissions": [
       "investments.own.view"
     ],
+    "showForTypes": [
+      "client"
+    ],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -367,6 +539,10 @@
     "permissions": [
       "investments.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -377,6 +553,10 @@
     "permissions": [
       "media.analytics.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -387,6 +567,10 @@
     "permissions": [
       "media.blog.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -397,6 +581,10 @@
     "permissions": [
       "media.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -407,6 +595,10 @@
     "permissions": [
       "media.schedule"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -417,6 +609,10 @@
     "permissions": [
       "notifications.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -425,6 +621,10 @@
     "section": null,
     "trail": "Profile",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "superiorAdminOnly": false,
+    "unverified": true,
     "source": "route"
   },
   {
@@ -435,6 +635,10 @@
     "permissions": [
       "promotions.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -445,14 +649,30 @@
     "permissions": [
       "properties.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [
+      "realtor",
+      "client"
+    ],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
     "route": "/properties/create",
     "label": "Create",
-    "section": null,
-    "trail": "Create",
-    "permissions": [],
+    "section": "Property",
+    "trail": "Property → Property Listing → Create",
+    "permissions": [
+      "properties.view"
+    ],
+    "showForTypes": [],
+    "hideForTypes": [
+      "realtor",
+      "client"
+    ],
+    "superiorAdminOnly": false,
+    "unverified": false,
     "source": "route"
   },
   {
@@ -463,6 +683,10 @@
     "permissions": [
       "properties.inspections.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -471,6 +695,13 @@
     "section": "Property",
     "trail": "Property → Listed Properties",
     "permissions": [],
+    "showForTypes": [
+      "realtor",
+      "client"
+    ],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -481,6 +712,10 @@
     "permissions": [
       "properties.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -489,6 +724,12 @@
     "section": "User Management",
     "trail": "User Management → My Clients",
     "permissions": [],
+    "showForTypes": [
+      "realtor"
+    ],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -499,6 +740,10 @@
     "permissions": [
       "realtors.leaderboard.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -509,6 +754,10 @@
     "permissions": [
       "users.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -519,6 +768,10 @@
     "permissions": [
       "realtors.recruitment.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -527,6 +780,12 @@
     "section": "User Management",
     "trail": "User Management → My Referrals",
     "permissions": [],
+    "showForTypes": [
+      "realtor"
+    ],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -537,6 +796,10 @@
     "permissions": [
       "realtors.training.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -545,6 +808,10 @@
     "section": null,
     "trail": "Verification",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "superiorAdminOnly": false,
+    "unverified": true,
     "source": "route"
   },
   {
@@ -552,7 +819,13 @@
     "label": "Payment Approvals",
     "section": "Finance",
     "trail": "Finance → Payments → Payment Approvals",
-    "permissions": [],
+    "permissions": [
+      "finance.commissions.view"
+    ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -561,6 +834,10 @@
     "section": null,
     "trail": "Referral",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "superiorAdminOnly": false,
+    "unverified": true,
     "source": "route"
   },
   {
@@ -571,6 +848,10 @@
     "permissions": [
       "roles.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -579,6 +860,10 @@
     "section": null,
     "trail": "Settings",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "superiorAdminOnly": false,
+    "unverified": true,
     "source": "route"
   },
   {
@@ -589,6 +874,10 @@
     "permissions": [
       "finance.purchase-notifications.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -597,14 +886,22 @@
     "section": "Platform Admin",
     "trail": "Platform Admin → Companies",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": true,
     "source": "nav"
   },
   {
     "route": "/superior/companies/new",
     "label": "New",
-    "section": null,
-    "trail": "New",
+    "section": "Platform Admin",
+    "trail": "Platform Admin → Companies → New",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "superiorAdminOnly": true,
+    "unverified": false,
     "source": "route"
   },
   {
@@ -613,6 +910,10 @@
     "section": "Platform Admin",
     "trail": "Platform Admin → Platform Dashboard",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": true,
     "source": "nav"
   },
   {
@@ -621,6 +922,10 @@
     "section": null,
     "trail": "Settings",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "superiorAdminOnly": false,
+    "unverified": true,
     "source": "route"
   },
   {
@@ -629,6 +934,10 @@
     "section": "Platform Admin",
     "trail": "Platform Admin → All Users",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": true,
     "source": "nav"
   },
   {
@@ -639,6 +948,10 @@
     "permissions": [
       "support.view"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -647,6 +960,10 @@
     "section": null,
     "trail": "Users",
     "permissions": [],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "superiorAdminOnly": false,
+    "unverified": true,
     "source": "route"
   },
   {
@@ -657,6 +974,10 @@
     "permissions": [
       "users.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -667,6 +988,10 @@
     "permissions": [
       "users.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -677,6 +1002,10 @@
     "permissions": [
       "users.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
     "source": "nav"
   },
   {
@@ -687,6 +1016,10 @@
     "permissions": [
       "users.manage"
     ],
+    "showForTypes": [],
+    "hideForTypes": [],
+    "hideForSuperior": true,
+    "superiorAdminOnly": false,
     "source": "nav"
   }
 ]

@@ -155,7 +155,15 @@ export const actions = [
     summary: 'Opens the approvals queue on the tab that needs you.',
     route: '/receipts',
     trail: 'Finance → Payments → Payment Approvals',
-    permissions: ['finance.commissions.view'],
+    /*
+     * Gated by ROLE on the server — `staffOnly` in the finance routes — not by
+     * a named permission. It used to declare finance.commissions.view, which is
+     * about commissions and has nothing to do with crediting a buyer's payment;
+     * anyone holding it was waved through and anyone without it was refused,
+     * both for the wrong reason.
+     */
+    permissions: [],
+    staffOnly: true,
     kind: 'read',
     keywords: [
       'payments waiting', 'what needs approving', 'pending payments',

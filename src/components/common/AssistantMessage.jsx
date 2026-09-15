@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, AlertCircle, Check } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 
 /**
  * One reply, with whatever the assistant attached to it.
@@ -27,7 +27,7 @@ const emphasise = (text) => String(text ?? '').split(/(\*\*[^*]+\*\*)/g).map((pa
 
 export default function AssistantMessage({ message, onOption, onNavigate }) {
   const {
-    content, steps, trail, links, options, filled, remaining, denied, note, hint,
+    content, steps, trail, links, options, filled, remaining, note, hint,
   } = message;
 
   return (
@@ -73,13 +73,6 @@ export default function AssistantMessage({ message, onOption, onNavigate }) {
         {remaining?.length > 0 && (
           <p className="text-[11px] text-slate-400">
             Still yours to do: {remaining.join(' · ')}
-          </p>
-        )}
-
-        {denied && (
-          <p className="flex items-start gap-1.5 rounded-lg bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800">
-            <AlertCircle size={12} className="mt-0.5 shrink-0" />
-            <span>{denied}</span>
           </p>
         )}
 

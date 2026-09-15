@@ -19,7 +19,29 @@ const check = (label, ok, detail = '') => {
 };
 
 const engine = buildEngine({ appMap, recipes, actions });
-const answer = (q, context = {}) => ask(engine, q, context);
+
+/**
+ * A fully-permissioned administrator — every grant the application mentions,
+ * and the role that goes with it.
+ *
+ * Deliberately NOT a wildcard. A wildcard is treated as unrestricted and skips
+ * the role checks, which would let the buyer-only walkthroughs compete for
+ * staff phrasing: "what needs approving" is the approvals queue when staff ask
+ * it and a buyer's own payment when a buyer does, and only the role separates
+ * them. Holding every permission does not make somebody a buyer.
+ *
+ * Built from the app map and the knowledge base, so a new permission cannot
+ * quietly leave this fixture behind.
+ */
+const ADMIN = {
+  permissions: [...new Set([
+    ...appMap.flatMap((entry) => entry.permissions || []),
+    ...recipes.flatMap((recipe) => recipe.permissions || []),
+    ...actions.flatMap((action) => action.permissions || []),
+  ])],
+  role: 'admin',
+};
+const answer = (q, context = ADMIN) => ask(engine, q, context);
 const idOf = (a) => a.action?.id || a.recipe?.id || a.entry?.route || null;
 
 console.log('\n── It finds the right thing for a plain question ────────────────');

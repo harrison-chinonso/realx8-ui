@@ -3,6 +3,7 @@ import { financeRecipes } from './recipes/finance.js';
 import { commissionRecipes } from './recipes/commission.js';
 import { propertyRecipes } from './recipes/property.js';
 import { peopleRecipes } from './recipes/people.js';
+import { buyerRecipes } from './recipes/buyer.js';
 
 /**
  * Everything the assistant knows, in one place.
@@ -17,6 +18,7 @@ export const recipes = [
   ...commissionRecipes,
   ...propertyRecipes,
   ...peopleRecipes,
+  ...buyerRecipes,
 ];
 
 export { appMap };

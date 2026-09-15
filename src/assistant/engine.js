@@ -78,6 +78,14 @@ const NAV_INTENT_BOOST = 1.6;
  */
 const DO_INTENT_BOOST = 1.5;
 
+/**
+ * How close a permitted answer must be to the best overall before it is offered
+ * in place of one the person may not have. Two thirds: near-synonyms like
+ * "invoices" and "my invoices" clear it comfortably, while an unrelated screen
+ * that merely happens to be allowed does not.
+ */
+const PERMITTED_RELEVANCE = 0.66;
+
 const TITLE_COVERAGE_BOOST = 0.55;
 
 /** Below this, the engine says it does not know rather than guessing. */
@@ -130,15 +138,103 @@ export const buildEngine = ({ appMap = [], recipes = [], actions = [] }) => {
     },
   })), ACTION_WEIGHTS);
 
-  return { navIndex, recipeIndex, actionIndex, appMap, recipes, actions };
+  /*
+   * Screen permissions by route. Recipes and actions point at a screen, and
+   * reaching that screen is a precondition for the task — so the requirement is
+   * looked up here rather than restated (and eventually mis-stated) on each
+   * recipe.
+   */
+  const screens = new Map(appMap.map((entry) => [entry.route, entry]));
+
+  return { navIndex, recipeIndex, actionIndex, appMap, recipes, actions, screens };
 };
 
-/** Whether this person could actually do the thing, given their permissions. */
-const isAccessible = (needed = [], held) => {
-  if (!needed.length) return true;
-  if (!held) return true;     // unknown permissions: do not pretend to know
-  return needed.every((name) => held.has(name));
+/**
+ * Whether this person could actually do the thing.
+ *
+ * ── Permission is checked BEFORE anything is explained ──────────────────────
+ *
+ * The assistant used to describe a task to anybody who asked and attach a note
+ * saying they could not perform it. That is the wrong way round: it walks
+ * somebody through a process they will be refused at, and it discloses screens,
+ * routes and procedures that the menu deliberately hides from them. Guidance is
+ * now withheld unless the permission is confirmed first.
+ *
+ * ── What "the permission" means ─────────────────────────────────────────────
+ *
+ * Two things, and BOTH have to hold:
+ *
+ *   * whatever the SCREEN requires — taken from the generated app map, so it is
+ *     the same test navConfig uses to show or hide the menu entry, and the
+ *     assistant can never offer a door the menu has already closed;
+ *   * whatever the TASK requires on top — viewing the invoice list needs
+ *     `finance.invoices.view`, raising one needs `finance.invoices.create`, and
+ *     a walkthrough for raising one must demand the second as well as the first.
+ *
+ * Some things are gated by ROLE rather than by a named permission — approving a
+ * payment is `staffOnly` on the server, with no permission attached — so that
+ * is expressible too, and checked the same way the API checks it.
+ */
+const isAccessible = (requirement, context) => {
+  const {
+    permissions = [], staffOnly = false, showForTypes = [], hideForTypes = [],
+    unverified = false, superiorAdminOnly = false,
+  } = requirement || {};
+
+  /*
+   * Platform-owner screens, before the unrestricted shortcut below — because
+   * being unrestricted is exactly what this asks about. A company's own
+   * administrator holds every permission there is and still must not be walked
+   * through onboarding a new tenant.
+   */
+  if (superiorAdminOnly && !context.unrestricted) return false;
+
+  // An unrestricted account (superior admin, or a wildcard grant) passes
+  // everything, exactly as authStore.hasPermission treats it.
+  if (context.unrestricted) return true;
+
+  /*
+   * A screen whose rules could not be established at all — a top-level path
+   * with no menu entry to inherit from. There is nothing to check, so there is
+   * nothing to confirm, and an unconfirmed screen is not described.
+   */
+  if (unverified) return false;
+
+  /*
+   * The role limits the MENU itself applies. A permission name does not
+   * express "buyers only" or "not for realtors", and navConfig says both — so
+   * the same two lists are honoured here, and the assistant can never offer a
+   * screen the menu withholds, nor withhold one the menu offers.
+   */
+  const role = context.role;
+  if (role && hideForTypes.includes(role)) return false;
+  if (showForTypes.length && !showForTypes.includes(role)) return false;
+
+  if (staffOnly && ['client', 'realtor'].includes(role)) return false;
+
+  if (!permissions.length) return true;
+
+  /*
+   * No permission list supplied means nothing can be confirmed, and an
+   * unconfirmed permission is a refusal. This used to return true — "do not
+   * pretend to know" — which in practice meant every caller that forgot to pass
+   * permissions got full guidance.
+   */
+  const held = context.held;
+  if (!held) return false;
+
+  return permissions.every((name) => held.has(name));
 };
+
+/** What a screen, recipe or action demands: the screen's rules plus its own. */
+const requirementOf = (item, screen = {}) => ({
+  permissions: [...new Set([...(screen.permissions || []), ...(item.permissions || [])])],
+  staffOnly: item.staffOnly === true,
+  showForTypes: screen.showForTypes || [],
+  hideForTypes: screen.hideForTypes || [],
+  unverified: screen.unverified === true,
+  superiorAdminOnly: screen.superiorAdminOnly === true,
+});
 
 /**
  * Answer a question.
@@ -148,8 +244,20 @@ const isAccessible = (needed = [], held) => {
  */
 export const ask = (engine, question, context = {}) => {
   const terms = tokenizeQuery(question);
-  const held = context.permissions ? new Set(context.permissions) : null;
   const here = context.route || null;
+
+  const permissions = context.permissions;
+  const access = {
+    held: Array.isArray(permissions) ? new Set(permissions) : null,
+    // A wildcard grant is unrestricted whichever way it arrives.
+    unrestricted: Boolean(context.unrestricted)
+      || (Array.isArray(permissions) && permissions.includes('*')),
+    role: context.role || null,
+  };
+  const permitted = (item, route) => isAccessible(
+    requirementOf(item, engine.screens?.get(route ?? item.route) || {}),
+    access,
+  );
 
   if (!terms.length) {
     return { kind: 'unknown', confidence: 'none', alternatives: [] };
@@ -181,7 +289,7 @@ export const ask = (engine, question, context = {}) => {
     kind: 'action',
     action: hit.document.action,
     score: withCoverage(hit, hit.document.fields.title) * (doIntent ? DO_INTENT_BOOST : 1),
-    accessible: isAccessible(hit.document.action.permissions, held),
+    accessible: permitted(hit.document.action),
   }));
 
   const recipeHits = engine.recipeIndex.search(terms).map((hit) => {
@@ -195,7 +303,7 @@ export const ask = (engine, question, context = {}) => {
       kind: 'recipe',
       recipe,
       score,
-      accessible: isAccessible(recipe.permissions, held),
+      accessible: permitted(recipe),
     };
   });
 
@@ -209,10 +317,60 @@ export const ask = (engine, question, context = {}) => {
      * walkthrough.
      */
     score: hit.score * (navIntent ? NAV_INTENT_BOOST : 0.8),
-    accessible: isAccessible(hit.document.entry.permissions, held),
+    accessible: permitted(hit.document.entry, hit.document.entry.route),
   }));
 
-  const ranked = [...actionHits, ...recipeHits, ...navHits].sort((a, b) => b.score - a.score);
+  const scored = [...actionHits, ...recipeHits, ...navHits].sort((a, b) => b.score - a.score);
+
+  /*
+   * What this person CAN do is answered first.
+   *
+   * "Where are my invoices", asked by a buyer, matched the staff invoice list
+   * more strongly than the buyer's own My Invoices — so a strict gate turned a
+   * perfectly answerable question into a refusal, with the right answer sitting
+   * second. Refusing is only correct when there is nothing they may be told.
+   *
+   * So the permitted hits are ranked on their own, and the full list is kept
+   * only to recognise a question whose every answer is out of bounds — which is
+   * a refusal, and is not the same as not understanding.
+   */
+  const permittedHits = scored.filter((hit) => hit.accessible);
+
+  /*
+   * ...but only when the permitted answer is genuinely close to what was asked.
+   *
+   * Without this, a buyer typing "create a user" got "did you mean: Pay an
+   * invoice?" — the strongest thing they were allowed, which had almost nothing
+   * to do with the question. When the best permitted hit is far weaker than the
+   * best overall, the question really is about the forbidden thing, and the
+   * honest reply is that they cannot do it rather than a suggestion they did
+   * not ask for.
+   */
+  const usePermitted = permittedHits.length
+    && permittedHits[0].score >= FLOOR
+    && permittedHits[0].score >= scored[0].score * PERMITTED_RELEVANCE;
+
+  let ranked = usePermitted ? permittedHits : scored;
+
+  /*
+   * "Where is X" asked for a PAGE, so a page is what it gets.
+   *
+   * A weight alone was not enough to settle this. Adding five recipes shifted
+   * the IDF across the whole recipe corpus, the promotions walkthrough drifted
+   * past the Promotions screen, and "where is the promotions page" started
+   * offering a choice between an article and the page itself. Which KIND of
+   * answer was asked for is not a matter of degree, so it is not decided by
+   * scores that move whenever the corpus does — a screen that is a credible
+   * match simply wins.
+   */
+  if (navIntent) {
+    const screens = ranked.filter((hit) => hit.kind === 'navigation');
+    if (screens.length && screens[0].score >= FLOOR
+      && screens[0].score >= ranked[0].score * PERMITTED_RELEVANCE) {
+      ranked = [...screens, ...ranked.filter((hit) => hit.kind !== 'navigation')];
+    }
+  }
+
   if (!ranked.length || ranked[0].score < FLOOR) {
     return {
       kind: 'unknown',

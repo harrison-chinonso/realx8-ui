@@ -75,6 +75,12 @@ const nearest = (result) => [
   ...(result.kind === 'unknown' ? [] : [result]),
   ...(result.alternatives || []),
 ]
+  /*
+   * ...but only the ones this person may actually use. A "did you mean" list is
+   * guidance like any other, and offering Payment Approvals to a buyer tells
+   * them it exists and invites a click that ends in a refusal.
+   */
+  .filter((alt) => alt.accessible)
   .map((alt) => {
     if (alt.kind === 'action') return { label: alt.action.title, query: alt.action.title };
     if (alt.kind === 'recipe') return { label: alt.recipe.title, query: alt.recipe.title };
@@ -117,24 +123,36 @@ const fromResolution = (resolution) => {
   };
 };
 
-const fromRecipe = (recipe, accessible) => ({
+const fromRecipe = (recipe) => ({
   messages: [say(recipe.summary, {
     steps: recipe.steps,
     trail: recipe.trail,
     links: recipe.route ? [{ label: `Go to ${recipe.title}`, href: recipe.route }] : [],
-    denied: accessible ? null : notAllowed(recipe.permissions),
   })],
   pending: null,
 });
 
+/** The one reply anybody without the permission gets, whatever they asked. */
+const refuse = () => ({ messages: [say(notAllowed())], pending: null, defer: false });
+
 /**
- * Said, not hidden.
+ * Refused, and refused without a lesson attached.
  *
- * Filtering out what somebody cannot do makes the feature look missing, and
- * they ask support where it went. Telling them it exists and who can grant it
- * turns a dead end into one message to their administrator.
+ * ── Why no steps, no screen name, and no link ───────────────────────────────
+ *
+ * An earlier version explained the task anyway and appended a note saying the
+ * person could not perform it. Two things were wrong with that. It walked
+ * somebody all the way through a process that would refuse them at the end,
+ * which wastes their time and reads as a fault in the software. And it
+ * disclosed the shape of the application — which screens exist, where they sit,
+ * what the procedure is — to people the menu deliberately hides it from.
+ *
+ * So the reply names no screen, no route and no steps. It says the account
+ * cannot do this and points at the person who can change that, which is the
+ * only part that is actually useful to someone without access.
  */
-const notAllowed = (permissions = []) => `You do not have access to this yet — an administrator can grant ${permissions.join(', ') || 'the permission'}.`;
+const notAllowed = () => 'That is not something your account can do, so I cannot walk you '
+  + 'through it. If you think you should have access, your administrator can arrange it.';
 
 /**
  * Answer one message.
@@ -184,38 +202,29 @@ export const respond = ({ engine, text, pending = null, context = {} }) => {
   if (result.kind === 'recipe' && result.recipe.fulfilledBy) {
     const twin = engine.actions.find((a) => a.id === result.recipe.fulfilledBy);
     if (twin) {
-      return result.accessible
-        ? { ...fromResolution(resolveAction(twin, message)), defer: false }
-        : { ...fromRecipe(result.recipe, false), defer: false };
+      if (!result.accessible) return refuse();
+      return { ...fromResolution(resolveAction(twin, message)), defer: false };
     }
   }
 
   if (result.kind === 'action' && result.confidence === 'high') {
-    if (!result.accessible) {
-      /*
-       * Denied, but not dismissed. If a walkthrough covers the same task, it is
-       * shown with the note attached — somebody who cannot create a user can
-       * still learn what the screen is, see that it exists, and know which
-       * permission to ask for. A bare "you do not have access" teaches nothing
-       * and reads as though the feature were missing.
-       */
-      const prose = engine.recipes.find((r) => r.fulfilledBy === result.action.id);
-      if (prose) return { ...fromRecipe(prose, false), defer: false };
-      return { messages: [say(notAllowed(result.action.permissions))], pending: null, defer: false };
-    }
+    if (!result.accessible) return refuse();
     return { ...fromResolution(resolveAction(result.action, message)), defer: false };
   }
 
   if (result.kind === 'recipe' && result.confidence === 'high') {
-    return { ...fromRecipe(result.recipe, result.accessible), defer: false };
+    if (!result.accessible) return refuse();
+    return { ...fromRecipe(result.recipe), defer: false };
   }
 
   if (result.kind === 'navigation' && result.confidence === 'high') {
+    // Not even the trail. Naming where a screen sits is itself a direction to
+    // it, and the menu already withholds that from this person.
+    if (!result.accessible) return refuse();
     const { entry } = result;
     return {
       messages: [say(`${entry.label} is under ${entry.trail}.`, {
         links: [{ label: `Open ${entry.label}`, href: entry.route }],
-        denied: result.accessible ? null : notAllowed(entry.permissions),
       })],
       pending: null,
       defer: false,
@@ -227,6 +236,14 @@ export const respond = ({ engine, text, pending = null, context = {} }) => {
    * one click is cheaper for everybody than a confident wrong answer followed
    * by a correction.
    */
+  /*
+   * Recognised, but not for this person. Refuse rather than fall through to the
+   * server: the local engine knows exactly what was being asked for and knows
+   * the answer is no, and handing the question on would let it be explained
+   * after all.
+   */
+  if (result.kind !== 'unknown' && !result.accessible) return refuse();
+
   if (options.length && result.kind !== 'unknown') {
     return {
       messages: [say('I am not certain which you mean — is it one of these?', { options })],

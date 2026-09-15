@@ -37,30 +37,74 @@ const parseNav = () => {
   const source = read('src/components/layout/navConfig.js');
   const entries = [];
 
-  let section = null;
-  let submenu = null;
+  /*
+   * Entries are read as whole OBJECTS, not as lines.
+   *
+   * This was line-based, and every nav entry written across several lines lost
+   * whatever sat on the other lines. `/receipts` is the one that exposed it: it
+   * declares `permission: 'finance.commissions.view'` on its own line, the
+   * parser never saw it, and the screen went into the app map as needing
+   * nothing at all. That map is now what the assistant checks before it will
+   * explain anything — so a permission dropped here becomes a screen described
+   * to somebody the menu hides it from.
+   */
+  const block = (at) => {
+    let start = source.lastIndexOf('{', at);
+    let depth = 0;
+    for (let i = start; i < source.length; i += 1) {
+      if (source[i] === '{') depth += 1;
+      else if (source[i] === '}') {
+        depth -= 1;
+        if (depth === 0) return source.slice(start, i + 1);
+      }
+    }
+    return source.slice(start);
+  };
 
-  for (const line of source.split('\n')) {
-    const sectionMatch = line.match(/section:\s*'([^']+)'/);
-    if (sectionMatch) { section = sectionMatch[1]; submenu = null; continue; }
+  /** The section and sub-menu a given offset falls under. */
+  const contextAt = (at) => {
+    const before = source.slice(0, at);
+    const sections = [...before.matchAll(/section:\s*'([^']+)'/g)];
+    const section = sections.length ? sections[sections.length - 1][1] : null;
+    // A `label:` with an icon and no `to:` opens a sub-menu.
+    const submenus = [...before.matchAll(/^\s*label:\s*'([^']+)',\s*icon[^\n]*$/gm)]
+      .filter((m) => !m[0].includes('to:'));
+    const lastSection = sections.length ? sections[sections.length - 1].index : -1;
+    const submenu = submenus.length && submenus[submenus.length - 1].index > lastSection
+      ? submenus[submenus.length - 1][1]
+      : null;
+    return { section, submenu };
+  };
 
-    // A `label:` with no `to:` on the same line opens a sub-menu.
-    const labelOnly = line.match(/^\s*label:\s*'([^']+)',\s*icon/);
-    if (labelOnly && !line.includes('to:')) { submenu = labelOnly[1]; continue; }
+  const list = (text, key) => {
+    const match = text.match(new RegExp(`${key}:\\s*\\[([^\\]]*)\\]`));
+    return match ? [...match[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : [];
+  };
 
-    const to = line.match(/to:\s*'([^']+)'/);
-    if (!to) continue;
-
-    const label = line.match(/label:\s*'([^']+)'/)?.[1] || null;
-    const permission = line.match(/permission:\s*'([^']+)'/)?.[1] || null;
+  for (const match of source.matchAll(/to:\s*'([^']+)'/g)) {
+    const text = block(match.index);
+    const { section, submenu } = contextAt(match.index);
+    const label = text.match(/label:\s*'([^']+)'/)?.[1] || null;
+    const permission = text.match(/permission:\s*'([^']+)'/)?.[1] || null;
 
     entries.push({
-      route: to[1],
+      route: match[1],
       label,
       section,
       // "Finance → Invoicing" — the trail a person would read aloud.
       trail: [section, submenu, label].filter(Boolean).join(' → '),
       permissions: permission ? [permission] : [],
+      /*
+       * The role dimension, which a permission name does not capture. Payment
+       * Approvals is refused to buyers by the API regardless of what they hold,
+       * and My Invoices is shown ONLY to them — so both directions are carried.
+       */
+      showForTypes: list(text, 'showForTypes'),
+      hideForTypes: list(text, 'hideForTypes'),
+      hideForSuperior: /hideForSuperior:\s*true/.test(text),
+      // The platform-owner screens. Gated by BEING a superior admin, which is
+      // not a permission and not a user type — navConfig's own third axis.
+      superiorAdminOnly: /superiorAdminOnly:\s*true/.test(text),
       source: 'nav',
     });
   }
@@ -114,12 +158,40 @@ const unlinked = parseRoutes()
   .filter((route) => !NOT_DESTINATIONS.some((pattern) => pattern.test(route)))
   .map((route) => {
     const last = route.split('/').filter(Boolean).pop() || 'home';
+
+    /*
+     * An unlinked screen inherits from the menu entry it sits under.
+     *
+     * These used to go in with no permissions at all, which — now that the
+     * assistant refuses to describe anything it cannot confirm access to —
+     * read as "open to everybody". `/properties/create` is the plain example:
+     * it has no menu entry of its own, and a buyer would have been walked
+     * through creating a property.
+     *
+     * The parent is the longest menu route the path sits beneath, and its
+     * rules apply here too: you cannot reach Create Invoice without reaching
+     * Invoicing first.
+     */
+    const parent = nav
+      .filter((entry) => entry.route !== '/' && route.startsWith(`${entry.route}/`))
+      .sort((a, b) => b.route.length - a.route.length)[0];
+
     return {
       route,
       label: titleCase(last),
-      section: null,
-      trail: titleCase(last),
-      permissions: [],
+      section: parent?.section ?? null,
+      trail: parent ? `${parent.trail} → ${titleCase(last)}` : titleCase(last),
+      permissions: parent?.permissions ?? [],
+      showForTypes: parent?.showForTypes ?? [],
+      hideForTypes: parent?.hideForTypes ?? [],
+      superiorAdminOnly: parent?.superiorAdminOnly ?? false,
+      /*
+       * With no parent to inherit from there is nothing to check, and an
+       * unverifiable screen must not be described. `/settings`, `/users` and
+       * `/commissions` are all top-level paths whose real menu entries live one
+       * level down, so they land here.
+       */
+      unverified: !parent,
       source: 'route',
     };
   });

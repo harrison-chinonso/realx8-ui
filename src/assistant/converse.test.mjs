@@ -21,7 +21,16 @@ const check = (label, condition, detail = '') => {
   if (detail) console.log(`        ${detail}`);
 };
 
-const turn = (text, pending = null, context = {}) => respond({ engine, text, pending, context });
+/**
+ * The default context is an administrator who may do everything.
+ *
+ * It has to be stated rather than left empty: an empty context now means "no
+ * permission could be confirmed", which is a refusal. That is the correct
+ * default for the real widget — it always passes the signed-in person's
+ * grants — and the tests below that care about permissions pass their own.
+ */
+const ADMIN = { permissions: ['*'], role: 'admin' };
+const turn = (text, pending = null, context = ADMIN) => respond({ engine, text, pending, context });
 
 console.log('\n── It answers what it knows, locally ────────────────────────────');
 {
@@ -151,21 +160,92 @@ console.log('\n── Asking to DO something reaches the thing that does it ─�
     `${explain.messages[0].steps?.length} steps`);
 }
 
-console.log('\n── Permissions are stated, never hidden ─────────────────────────');
+console.log('\n── Permission is confirmed BEFORE anything is explained ─────────');
 {
-  const denied = turn('create a user', null, { permissions: ['dashboard.view'] });
   /*
-   * They still get the walkthrough — the feature is not hidden, it is explained
-   * with a note saying they cannot do it yet and what to ask for. Hiding it
-   * makes the feature look missing and sends them to support.
+   * The rule: no guidance and no redirection for a task this account cannot
+   * perform. Not the steps, not the screen name, not the trail, not a link —
+   * all four are directions to a door that will be shut.
    */
-  check('Someone without the permission is told so',
-    /do not have access/i.test(denied.messages[0].denied || ''),
-    denied.messages[0].denied);
-  check('...and no form is opened for them',
-    denied.pending === null && !denied.messages[0].links?.some((l) => /assist=/.test(l.href)));
-  check('...but the explanation is still shown',
-    Boolean(denied.messages[0].steps?.length), `${denied.messages[0].steps?.length} steps`);
+  const CLIENT = { permissions: ['dashboard.view', 'properties.view', 'support.view'], role: 'client' };
+
+  const denied = turn('create a user', null, CLIENT);
+  const m = denied.messages[0];
+  check('An action they cannot perform is refused', /cannot walk you through it/i.test(m.content), m.content);
+  check('...with no steps', !m.steps?.length);
+  check('...no screen name or trail', !m.trail);
+  check('...no link to it', !m.links?.length);
+  check('...and no form started', denied.pending === null);
+
+  const walkthrough = turn('how do I approve a payment', null, CLIENT);
+  check('A walkthrough they cannot follow is refused too',
+    !walkthrough.messages[0].steps?.length, walkthrough.messages[0].content);
+
+  /*
+   * Approving a payment is gated by ROLE on the server, not by a permission
+   * name — so holding every finance permission is not the test.
+   */
+  const staff = turn('how do I approve a payment', null,
+    { permissions: ['finance.invoices.view', 'finance.commissions.view'], role: 'employee' });
+  check('...and allowed for staff, who are gated by role not permission',
+    staff.messages[0].steps?.length > 0, `${staff.messages[0].steps?.length} steps`);
+
+  const nav = turn('where is payment approvals', null, CLIENT);
+  check('A screen they cannot open is not located for them',
+    !nav.messages[0].links?.length && !nav.messages[0].trail, nav.messages[0].content);
+
+  /*
+   * And the quieter leak: a "did you mean" list is guidance as much as an
+   * answer is.
+   */
+  const ambiguous = turn('payments', null, CLIENT);
+  const offered = ambiguous.messages[0]?.options || [];
+  check('Nothing forbidden is offered as an alternative either',
+    offered.every((o) => !/approval|commission|payout/i.test(o.label)),
+    offered.map((o) => o.label).join(' · ') || '(none offered)');
+}
+
+console.log('\n── An unconfirmed permission is a refusal ───────────────────────');
+{
+  /*
+   * Nothing supplied means nothing could be checked, and the rule is that
+   * permission is confirmed BEFORE guidance. This previously returned "do not
+   * pretend to know" and allowed everything through, which meant any caller
+   * that forgot to pass permissions got the full run of the application.
+   */
+  const unknown = respond({ engine, text: 'create a user', pending: null, context: {} });
+  check('A caller that supplies no permissions is refused, not trusted',
+    /cannot walk you through it/i.test(unknown.messages[0].content),
+    unknown.messages[0].content.slice(0, 60));
+}
+
+console.log('\n── ...without locking out the people who do have access ─────────');
+{
+  /*
+   * A superior admin carries an empty permission list — they need no entries.
+   * Gating on the list alone would refuse them the entire application, which is
+   * the failure mode that makes strict permission checks dangerous.
+   */
+  const superior = turn('create a user', null, { permissions: [], unrestricted: true, role: 'super_admin' });
+  check('A superior admin is not refused by an empty permission list',
+    Boolean(superior.pending) || superior.messages[0].links?.length > 0,
+    superior.messages[0].content);
+
+  const wildcard = turn('create a user', null, { permissions: ['*'], role: 'admin' });
+  check('...nor is a wildcard grant', Boolean(wildcard.pending), wildcard.messages[0].content);
+
+  const held = turn('create a user', null, { permissions: ['users.manage', 'users.view'], role: 'admin' });
+  check('...and the permission itself still works', Boolean(held.pending), held.messages[0].content);
+
+  /*
+   * Buyers must keep their own help. Their screens carry no permissions, so
+   * tightening the gate must not have swept them up.
+   */
+  const buyer = turn('how do I pay my invoice', null,
+    { permissions: ['dashboard.view', 'properties.view', 'support.view'], role: 'client' });
+  check('A buyer still gets buyer help',
+    buyer.defer || buyer.messages[0].steps?.length > 0 || buyer.messages[0].links?.length > 0,
+    buyer.messages[0]?.content || '(deferred to the server)');
 }
 
 console.log(`\n  ${pass} passed, ${fail} failed\n`);

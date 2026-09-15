@@ -121,5 +121,38 @@ const unguarded = actions.filter((a) => a.kind === 'write' && !a.permissions?.le
 check('Every write action names the permission it needs', unguarded.length === 0,
   unguarded.map((a) => a.id).join(', '));
 
+/**
+ * The gate is only as good as the map it checks against.
+ *
+ * Permission now decides whether anything is explained at all, so a screen that
+ * reaches the map without its rules is not a cosmetic gap — it is a screen
+ * described to somebody the menu hides it from. The line-based nav parser used
+ * to drop every entry written across several lines, which is how /receipts
+ * arrived declaring no permission despite navConfig giving it one.
+ */
+const navEntries = map.filter((entry) => entry.source === 'nav');
+const guarded = navEntries.filter((entry) => entry.permissions?.length
+  || entry.showForTypes?.length || entry.hideForTypes?.length);
+check(`Most menu screens carry a rule (${guarded.length}/${navEntries.length})`,
+  guarded.length >= navEntries.length * 0.75,
+  `${navEntries.length - guarded.length} with no permission and no role limit`);
+
+/** A screen with no rule to check must say so, rather than read as public. */
+const unruled = map.filter((entry) => entry.source !== 'nav'
+  && !entry.permissions?.length && !entry.showForTypes?.length
+  && !entry.hideForTypes?.length && !entry.unverified && !entry.superiorAdminOnly);
+check('Every unlinked screen either inherits a rule or is marked unverified',
+  unruled.length === 0, unruled.map((e) => e.route).join(', '));
+
+/*
+ * The one that would be caught last and hurt most: a route that creates,
+ * approves or configures something, reachable without any permission at all.
+ */
+const dangerous = map.filter((entry) => /\/(create|new|approve|settings|roles)\b/.test(entry.route))
+  .filter((entry) => !entry.permissions?.length && !entry.hideForTypes?.length
+    && !entry.unverified && !entry.superiorAdminOnly);
+check('No create/approve/configure screen is left unguarded',
+  dangerous.length === 0, dangerous.map((e) => e.route).join(', '));
+
 console.log(`\n  ${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

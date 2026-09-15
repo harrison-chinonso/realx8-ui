@@ -44,7 +44,18 @@ const TOOL_ACTIVITY = {
 export default function AssistantWidget() {
   const token = useAuthStore((s) => s.accessToken);
   const location = useLocation();
+  /*
+   * What the assistant is allowed to tell this person.
+   *
+   * All three matter. `permissions` is the grant list; `unrestricted` covers a
+   * superior admin, whose permission list is empty because they need no
+   * entries — gating on the list alone would refuse them everything; and
+   * `role` covers the tasks the API gates by role rather than by permission,
+   * such as approving a payment.
+   */
   const permissions = useAuthStore((s) => s.permissions);
+  const unrestricted = useAuthStore((s) => s.isSuperiorAdmin);
+  const role = useAuthStore((s) => s.effectiveType());
   const isAdmin = ['admin', 'super_admin', 'superior_admin'].includes(useAuthStore((s) => s.effectiveType()));
   const [status, setStatus] = useState(null);
   const [open, setOpen] = useState(false);
@@ -189,7 +200,7 @@ export default function AssistantWidget() {
       engine: getEngine(),
       text,
       pending,
-      context: { route: location.pathname, permissions },
+      context: { route: location.pathname, permissions, unrestricted, role },
     });
 
     setPending(result.pending ?? null);
