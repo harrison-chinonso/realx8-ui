@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import BrowserNotificationsCard from '../../components/settings/BrowserNotificationsCard';
 import {
   getNotificationConfig, saveNotificationConfig, resetNotificationConfig,
   previewNotificationRecipients,
@@ -9,7 +10,15 @@ import Modal from '../../components/common/Modal';
 
 const getData = (response) => response?.data ?? response ?? null;
 
-const CHANNEL_LABELS = { both: 'In-app and email', in_app: 'In-app only', email: 'Email only' };
+const CHANNEL_LABELS = {
+  in_app: 'In-app only',
+  email: 'Email only',
+  both: 'In-app and email',
+  push: 'Browser only',
+  'in_app,push': 'In-app and browser',
+  'email,push': 'Email and browser',
+  'in_app,email,push': 'In-app, email and browser',
+};
 const MODULE_LABELS = {
   finance: 'Finance', properties: 'Properties', crm: 'CRM', investments: 'Investments',
   realtors: 'Realtors', training: 'Training', media: 'Media', support: 'Support',
@@ -140,6 +149,14 @@ export default function NotificationSettingsPage() {
 
   return (
     <div className="space-y-4">
+      {/*
+        Above the per-event table, because turning browser notifications on is
+        a prerequisite for any of those choices to reach this device — a person
+        who sets six events to "browser" and never granted permission would
+        otherwise be configuring something switched off.
+      */}
+      <BrowserNotificationsCard />
+
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-slate-900">Notifications</h1>
