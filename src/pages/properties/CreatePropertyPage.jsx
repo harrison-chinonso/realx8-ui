@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createProperty, listPropertyTypes } from '../../api/propertyApi';
+import { createProperty, listPropertyTypes, listBranches } from '../../api/propertyApi';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import CompanySelect from '../../components/common/CompanySelect';
@@ -30,9 +30,11 @@ export default function CreatePropertyPage() {
   const navigate = useNavigate();
   const isSuperiorAdmin = useAuthStore((state) => state.isSuperiorAdmin);
   const [propertyTypes, setPropertyTypes] = useState([]);
+  const [branches, setBranches] = useState([]);
   const [form, setForm] = useState({
     name: '',
     type_id: '',
+    branch_id: '',
     type: '',
     address: '',
     country: '',
@@ -63,6 +65,16 @@ export default function CreatePropertyPage() {
         setPropertyTypes(items);
       })
       .catch(() => setPropertyTypes([]));
+
+    // A failure here leaves the dropdown empty and the property unassigned,
+    // which is recoverable on the property afterwards — it must not stop
+    // somebody creating the property.
+    listBranches({ limit: 'all' })
+      .then((response) => {
+        const items = Array.isArray(response) ? response : (response?.data ?? []);
+        setBranches(items);
+      })
+      .catch(() => setBranches([]));
   }, []);
 
   const states = form.country ? (COUNTRY_STATE_MAP[form.country] || []) : [];
@@ -103,6 +115,9 @@ export default function CreatePropertyPage() {
           quantity: unitConfig.quantity === '' ? 1 : Number(unitConfig.quantity),
         }] : [],
         ...(form.company_id ? { company_id: Number(form.company_id) } : {}),
+        // Explicit rather than carried by the spread: "" is how the form says
+        // "no branch", and null is how the server hears it.
+        branch_id: form.branch_id === '' ? null : Number(form.branch_id),
         images: images.length > 0 ? images : undefined,
       };
       const response = await createProperty(payload);
@@ -139,6 +154,34 @@ export default function CreatePropertyPage() {
               </Select>
             </div>
           </div>
+          {/*
+            Optional, and it says so. A company with no branches yet must not be
+            stopped here, and a property that belongs to no particular office is
+            an ordinary state rather than an omission.
+          */}
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700">
+              Branch <span className="font-normal text-slate-400">(optional)</span>
+            </label>
+            <div className="relative">
+              <Select
+                value={form.branch_id}
+                onChange={setField('branch_id')}
+                className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 pr-8 text-sm focus:border-blue-500 focus:outline-none"
+              >
+                <option value="">No branch</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id}>{branch.name}</option>
+                ))}
+              </Select>
+            </div>
+            {branches.length === 0 && (
+              <p className="text-xs text-slate-400">
+                No branches set up yet — add them under Property → Branches.
+              </p>
+            )}
+          </div>
+
           <div className="space-y-1">
             <label className="block text-sm font-medium text-slate-700">Status</label>
             <div className="relative">

@@ -2,6 +2,36 @@
 
 export const propertyRecipes = [
   {
+    id: 'branches',
+    title: 'Set up a branch and file properties under it',
+    summary: 'Create an office, then assign properties to it from the property itself.',
+    category: 'Property',
+    route: '/branches',
+    trail: 'Property → Branches',
+    permissions: ['properties.branches.manage'],
+    keywords: [
+      'create a branch', 'add a branch', 'new office', 'branches', 'office',
+      'assign a property to a branch', 'which branch', 'move a property to another branch',
+      'company branches', 'regional office', 'close a branch', 'delete a branch',
+    ],
+    steps: [
+      { text: 'Open **Property → Branches** and choose **Add branch**.' },
+      {
+        text: 'Give it a name and the office address.',
+        note: 'Those are the only two fields — a branch is an office, not a profile.',
+      },
+      {
+        text: 'To file a property under it, edit the PROPERTY and pick the branch there.',
+        note: 'A property belongs to one branch at a time, so choosing a new one moves it out of the old one.',
+      },
+      {
+        text: 'Closing a branch unassigns its properties rather than deleting them.',
+        note: 'They stay exactly as they were, with no branch, and can be put in another one afterwards.',
+      },
+    ],
+    related: ['create-property'],
+  },
+  {
     id: 'create-property',
     /*
      * An ACTION shares this id and does more: it reads the period (and the

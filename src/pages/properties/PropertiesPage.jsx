@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LayoutGrid, List, Download, Upload } from 'lucide-react';
-import { listProperties, updateProperty, deleteProperty, listPropertyTypes, exportPropertiesToExcel } from '../../api/propertyApi';
+import { listProperties, updateProperty, deleteProperty, listPropertyTypes, listBranches, exportPropertiesToExcel } from '../../api/propertyApi';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
 import Pagination from '../../components/common/Pagination';
@@ -33,6 +33,7 @@ const emptyEditForm = {
   state: '',
   country: '',
   status: 'available',
+  branch_id: '',
   latitude: '',
   longitude: '',
   images: [],
@@ -47,6 +48,7 @@ export default function PropertiesPage() {
   const [propertyTypes, setPropertyTypes] = useState([]);
   // Grid by default; remembered across visits so the user's preferred layout sticks.
   const [view, setView] = useState(() => (localStorage.getItem('propertiesView') === 'list' ? 'list' : 'grid'));
+  const [branches, setBranches] = useState([]);
   const [editingProperty, setEditingProperty] = useState(null);
   const [editForm, setEditForm] = useState(emptyEditForm);
   const [saving, setSaving] = useState(false);
@@ -68,6 +70,10 @@ export default function PropertiesPage() {
     listPropertyTypes({ limit: 100 })
       .then((r) => setPropertyTypes(Array.isArray(r) ? r : (r?.data ?? [])))
       .catch(() => {});
+
+    listBranches({ limit: 'all' })
+      .then((r) => setBranches(Array.isArray(r) ? r : (r?.data ?? [])))
+      .catch(() => setBranches([]));
   }, []);
 
   const handleExport = async () => {
@@ -98,6 +104,7 @@ export default function PropertiesPage() {
       state: property.state || '',
       country: property.country || '',
       status: property.status || 'available',
+      branch_id: property.branch_id ?? '',
       latitude: property.latitude ?? '',
       longitude: property.longitude ?? '',
       images: parseImages(property.images),
@@ -122,6 +129,8 @@ export default function PropertiesPage() {
         ...editForm,
         latitude: editForm.latitude === '' ? null : editForm.latitude,
         longitude: editForm.longitude === '' ? null : editForm.longitude,
+        // "" is the form's way of saying no branch; the server hears null.
+        branch_id: editForm.branch_id === '' ? null : Number(editForm.branch_id),
       });
       await loadProperties();
       closeEditModal(true);
@@ -274,6 +283,18 @@ export default function PropertiesPage() {
               <label className="block space-y-1">
                 <span className="text-sm font-medium text-slate-700">Country</span>
                 <input value={editForm.country} onChange={(e) => setEditForm((current) => ({ ...current, country: e.target.value }))} className={INPUT_CLASS} />
+              </label>
+              {/* One branch, or none. Moving a property here moves it OUT of
+                  whichever branch it was in — there is one column, so there is
+                  nowhere for a second assignment to go. */}
+              <label className="block space-y-1">
+                <span className="text-sm font-medium text-slate-700">Branch</span>
+                <Select value={editForm.branch_id} onChange={(e) => setEditForm((current) => ({ ...current, branch_id: e.target.value }))} className={INPUT_CLASS}>
+                  <option value="">No branch</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>{branch.name}</option>
+                  ))}
+                </Select>
               </label>
               <label className="block space-y-1">
                 <span className="text-sm font-medium text-slate-700">Status</span>

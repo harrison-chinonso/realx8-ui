@@ -26,6 +26,19 @@ export const updatePropertyImages = (id, images) =>
   client.put(`/properties/${id}`, { images }).then(r => r.data);
 
 // Property Types
+/**
+ * Branches — a company's offices.
+ *
+ * Listing needs no pagination: a company has offices, not thousands of them,
+ * and every caller here wants all of them to fill a dropdown.
+ */
+export const listBranches = (params) => client.get('/branches', { params }).then(r => r.data);
+export const getBranch = (id) => client.get(`/branches/${id}`).then(r => r.data);
+export const listBranchProperties = (id) => client.get(`/branches/${id}/properties`).then(r => r.data);
+export const createBranch = (payload) => client.post('/branches', payload).then(r => r.data);
+export const updateBranch = (id, payload) => client.put(`/branches/${id}`, payload).then(r => r.data);
+export const deleteBranch = (id) => client.delete(`/branches/${id}`).then(r => r.data);
+
 export const listPropertyTypes = (params) => client.get('/property-types', { params }).then(r => r.data);
 export const createPropertyType = (payload) => client.post('/property-types', payload).then(r => r.data);
 export const updatePropertyType = (id, payload) => client.put(`/property-types/${id}`, payload).then(r => r.data);

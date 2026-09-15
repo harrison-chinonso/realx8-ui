@@ -28,6 +28,23 @@
     "source": "nav"
   },
   {
+    "route": "/branches",
+    "label": "Branches",
+    "section": "Property",
+    "trail": "Property → Branches",
+    "permissions": [
+      "properties.view"
+    ],
+    "showForTypes": [],
+    "hideForTypes": [
+      "realtor",
+      "client"
+    ],
+    "hideForSuperior": false,
+    "superiorAdminOnly": false,
+    "source": "nav"
+  },
+  {
     "route": "/care",
     "label": "VIP Clients",
     "section": "Customer Care",

@@ -87,6 +87,9 @@ export const NAV = [
       { to: '/properties',             label: 'Property Listing',   icon: Building2,     permission: 'properties.view', hideForTypes: ['realtor', 'client'] },
       { to: '/promotions', label: 'Promotions and Offers', icon: Tag, permission: 'promotions.view' },
       { to: '/properties/types',       label: 'Property Setup',     icon: Wrench,        permission: 'properties.manage' },
+      // Offices, and which properties each one runs. Staff only: a buyer or a
+      // realtor has no use for a company's internal org structure.
+      { to: '/branches',               label: 'Branches',           icon: Landmark,      permission: 'properties.view', hideForTypes: ['realtor', 'client'] },
       { to: '/properties/listed',      label: 'Listed Properties',  icon: LayoutList,    permission: null, showForTypes: ['realtor', 'client'] },
       { to: '/properties/inspections', label: 'Property Inspection',icon: ClipboardList, permission: 'properties.inspections.view' },
     ],

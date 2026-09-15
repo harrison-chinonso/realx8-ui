@@ -13,6 +13,7 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import PropertiesPage from './pages/properties/PropertiesPage';
 import PropertyDetailPage from './pages/properties/PropertyDetailPage';
 import PropertyTypesPage from './pages/properties/PropertyTypesPage';
+import BranchesPage from './pages/properties/BranchesPage';
 import CreatePropertyPage from './pages/properties/CreatePropertyPage';
 import InspectionsPage from './pages/properties/InspectionsPage';
 import ListedPropertiesPage from './pages/listed/ListedPropertiesPage';
@@ -247,6 +248,8 @@ export default function App() {
           <Route path="/" element={<DashboardPage />} />
 
           <Route path="/properties" element={<StaffPropertiesRouter listedPath="/properties/listed"><PropertiesPage /></StaffPropertiesRouter>} />
+
+          <Route path="/branches" element={<BranchesPage />} />
           <Route path="/properties/create" element={<CreatePropertyPage />} />
           <Route path="/properties/inspections" element={<InspectionsPage />} />
           <Route path="/properties/types" element={<PropertyTypesPage />} />
