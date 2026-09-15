@@ -171,6 +171,36 @@ export default function ReceiptsPage() {
     }
   };
 
+  /**
+   * Attach the company's own receipt to a payment being approved.
+   *
+   * Deleted by the same commit that took openReview, and referenced by the
+   * review modal — so the modal crashed the moment it rendered, which React
+   * turns into a blank page rather than a dead button. The two failures looked
+   * different and had one cause.
+   */
+  const handleCompanyReceiptUpload = async (event) => {
+    const file = event.target.files?.[0];
+    // Clearing the picker must not clear an already-attached receipt: the
+    // browser fires change with no file when a dialog is cancelled.
+    if (!file) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const uploaded = await uploadMediaFiles([file]);
+      const first = uploaded?.files?.[0] ?? uploaded?.[0];
+      if (!first?.url) throw new Error('The upload returned no file.');
+      setCompanyReceipt({ url: first.url, public_id: first.public_id, name: first.name || file.name });
+    } catch (error) {
+      console.error(error);
+      setUploadError(getErrorMessage(error, 'That file could not be uploaded.'));
+    } finally {
+      setUploading(false);
+      // Reset the input so re-picking the SAME file fires change again.
+      event.target.value = '';
+    }
+  };
+
   const handleVerify = async (event) => {
     event.preventDefault();
     if (!reviewing) return;
