@@ -56,12 +56,21 @@ const useSections = () => {
       .map((section) => {
         const items = filterNavItems(section.items, ctx);
         /*
-         * Sub-menus are flattened. A launcher tile leads to a place, and
-         * "Finance → Invoicing" is not a place — it is a drawer with four
-         * screens in it. Flattening keeps the second level flat, which is the
-         * one part of the pattern's contract that survives here.
+         * Sub-menus are KEPT, not flattened.
+         *
+         * They were flattened, on the reasoning that a tile should lead to a
+         * place and "Finance → Invoicing" is a drawer rather than a place. That
+         * reasoning was fine until somebody grouped four screens under User
+         * Management → Realtor and could not find the group: on this template,
+         * and only on this template, it had been dissolved back into the list
+         * it was made to tidy. A grouping that exists in navConfig and vanishes
+         * in one layout is worse than no grouping at all, because the person
+         * who made it is left looking for it.
+         *
+         * `destinations` remains the flat list, because SEARCH wants screens
+         * rather than drawers.
          */
-        return { ...section, destinations: flattenNavItems(items) };
+        return { ...section, items, destinations: flattenNavItems(items) };
       })
       .filter((section) => section.destinations.length > 0);
 
@@ -84,10 +93,8 @@ const useSections = () => {
      * a realtor or client gets their profile and nothing more.
      */
     if (!['realtor', 'client'].includes(userType)) {
-      sections.push({
-        section: 'Settings',
-        destinations: [{ to: '/settings', label: 'Settings', icon: Settings }],
-      });
+      const settings = { to: '/settings', label: 'Settings', icon: Settings };
+      sections.push({ section: 'Settings', items: [settings], destinations: [settings] });
     }
 
     return sections;
@@ -157,6 +164,8 @@ const GRID = 'grid grid-cols-2 gap-3 '
 
 export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   const [section, setSection] = useState(null);
+  /** A sub-menu opened inside a section — User Management → Realtor. */
+  const [group, setGroup] = useState(null);
   const [query, setQuery] = useState('');
   const sections = useSections();
   const panelRef = useRef(null);
@@ -166,7 +175,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   // drilled into ten minutes ago is disorienting — and spatial memory, which is
   // the whole point of the grid, is memory of the TOP level.
   useEffect(() => {
-    if (open) { setSection(null); setQuery(''); }
+    if (open) { setSection(null); setGroup(null); setQuery(''); }
   }, [open]);
 
   useEffect(() => {
@@ -217,14 +226,26 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
    * Searching drops the two levels and lists destinations, because somebody who
    * types "invoice" wants the screen, not the section it lives in.
    */
+  /*
+   * Deduplicated by destination. A screen can be listed in two sections for two
+   * audiences — the realtor leaderboard is in Realtor Hub for realtors and
+   * under User Management → Realtor for the staff who administer them — and
+   * although no one person sees both listings in the menu, SEARCH walks every
+   * section and would offer the same screen twice.
+   */
   const matches = term
-    ? sections.flatMap((s) => s.destinations
-      .filter((item) => item.label.toLowerCase().includes(term)
-        || (s.section || '').toLowerCase().includes(term))
-      .map((item) => ({ ...item, section: s.section })))
+    ? [...new Map(
+      sections.flatMap((s) => s.destinations
+        .filter((item) => item.label.toLowerCase().includes(term)
+          || (s.section || '').toLowerCase().includes(term))
+        .map((item) => [item.to, { ...item, section: s.section }])),
+    ).values()]
     : [];
 
-  const heading = term ? 'Results' : (section?.section || 'Modules');
+  const heading = term
+    ? 'Results'
+    // The trail, so three levels deep still says which drawer this is.
+    : [section?.section, group?.label].filter(Boolean).join(' → ') || 'Modules';
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40">
@@ -249,11 +270,14 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
         className="relative flex h-[90vh] w-[90vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200"
       >
         <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2.5 sm:px-4">
-          {section && !term && (
+          {/* Back goes up ONE level, not all the way out: somebody three
+              levels in who wanted the section above would otherwise have to
+              start again from the top. */}
+          {(section || group) && !term && (
             <button
               type="button"
-              onClick={() => setSection(null)}
-              aria-label="Back to all modules"
+              onClick={() => (group ? setGroup(null) : setSection(null))}
+              aria-label={group ? `Back to ${section?.section || 'the section'}` : 'Back to all modules'}
               className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -330,10 +354,31 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
                   Nothing matches “{query.trim()}”.
                 </p>
               )
+            ) : group ? (
+              <div className={GRID}>
+                {group.children.map((item) => (
+                  <Tile key={`${item.to}-${item.label}`} to={item.to} icon={item.icon} label={item.label} onClick={onClose} />
+                ))}
+              </div>
             ) : section ? (
               <div className={GRID}>
-                {section.destinations.map((item) => (
-                  <Tile key={`${item.to}-${item.label}`} to={item.to} icon={item.icon} label={item.label} onClick={onClose} />
+                {section.items.map((item) => (
+                  /*
+                   * A sub-menu is a tile you open, not a tile you follow. It
+                   * looks identical to the rest — the pattern allows no
+                   * featured tile — and the only difference a person sees is
+                   * that it takes them one level deeper instead of to a screen.
+                   */
+                  item.children
+                    ? (
+                      <Tile
+                        key={`group-${item.label}`}
+                        icon={item.icon}
+                        label={item.label}
+                        onClick={() => setGroup(item)}
+                      />
+                    )
+                    : <Tile key={`${item.to}-${item.label}`} to={item.to} icon={item.icon} label={item.label} onClick={onClose} />
                 ))}
               </div>
             ) : (
