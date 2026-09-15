@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Search, X } from 'lucide-react';
+import { ArrowLeft, Search, Settings, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
 
@@ -51,7 +51,7 @@ const useSections = () => {
       : NAV;
     const ctx = { hasPermission, isSuperiorAdmin, userType };
 
-    return source
+    const sections = source
       .filter((section) => section.section !== 'Account')
       .map((section) => {
         const items = filterNavItems(section.items, ctx);
@@ -64,6 +64,33 @@ const useSections = () => {
         return { ...section, destinations: flattenNavItems(items) };
       })
       .filter((section) => section.destinations.length > 0);
+
+    /**
+     * Settings, last, always — and the one tile written by hand.
+     *
+     * It has to be. Settings is not a navConfig entry anywhere: every template
+     * puts it in its own chrome, in an avatar menu or a footer, so there is
+     * nothing to derive it from. Appending it here rather than adding it to
+     * navConfig keeps it out of the other five templates' menus, where it would
+     * appear twice.
+     *
+     * Its position is the point. A grid is memorised by position, and the last
+     * cell is the one place a person can find without scanning — which is why
+     * the pattern reserves it for the thing you reach for rarely and want
+     * instantly. It is appended after the derived sections so no rename or
+     * reordering in navConfig can dislodge it.
+     *
+     * Company settings are staff-only, the same rule the other templates apply:
+     * a realtor or client gets their profile and nothing more.
+     */
+    if (!['realtor', 'client'].includes(userType)) {
+      sections.push({
+        section: 'Settings',
+        destinations: [{ to: '/settings', label: 'Settings', icon: Settings }],
+      });
+    }
+
+    return sections;
   }, [hasPermission, isSuperiorAdmin, userType]);
 };
 
