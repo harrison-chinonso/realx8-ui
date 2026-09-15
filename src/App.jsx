@@ -33,6 +33,7 @@ import MyPropertiesPage from './pages/finance/MyPropertiesPage';
 import CreateInvoicePage from './pages/finance/CreateInvoicePage';
 import InvoiceDetailPage from './pages/finance/InvoiceDetailPage';
 import TaxesPage from './pages/finance/TaxesPage';
+import PromotionsPage from './pages/promotions/PromotionsPage';
 import BankAccountsPage from './pages/finance/BankAccountsPage';
 import CreditNotesPage from './pages/finance/CreditNotesPage';
 import DebitNotesPage from './pages/finance/DebitNotesPage';
@@ -270,6 +271,13 @@ export default function App() {
           <Route path="/finance/commission-analytics" element={<CommissionAnalyticsPage />} />
           <Route path="/finance/my-commission" element={<MyCommissionStatementPage />} />
           <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
+          {/*
+            Promotions live under Properties rather than Finance: they are
+            configured against properties and units, and the people who run
+            campaigns are the ones who manage stock, not the ones who reconcile
+            payments.
+          */}
+          <Route path="/promotions" element={<PromotionsPage />} />
           <Route path="/finance/taxes" element={<TaxesPage />} />
           <Route path="/finance/bank-accounts" element={<BankAccountsPage />} />
           <Route path="/finance/credit-notes" element={<CreditNotesPage />} />

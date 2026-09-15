@@ -143,10 +143,37 @@ export default function PurchaseModal({ open, property, onClose, onInvoice }) {
     }
   };
 
-  /** The running summary — base, surcharge, total, monthly. */
+  /**
+   * Whatever promotion applies to the arrangement being looked at.
+   *
+   * Read per payment type, because a campaign may be restricted to one — the
+   * discount on the outright column is not necessarily the discount on a plan.
+   */
+  const promotion = paymentType === 'installment' && selectedPlan
+    ? selectedPlan.promotion
+    : options?.outright?.promotion;
+
+  /**
+   * The running summary — base, discount, surcharge, total.
+   *
+   * ── Why the discount gets its own line ──────────────────────────────────
+   *
+   * The outright row used to read "3 × R5,000,000" against a total of
+   * R12,750,000, because the total already had the promotion in it and nothing
+   * said so. A buyer reading that sees an arithmetic error, and the honest
+   * ones ask about it before paying. Original, discount, payable — the three
+   * figures, each on its own line.
+   */
   const summary = paymentType === 'installment' && selectedPlan
     ? [
       { label: `${parsedQty} × ${fmt(unit.price || 0)}`, value: fmt(selectedPlan.base.amount) },
+      ...(promotion
+        ? [{
+          label: promotion.offers?.[0]?.name || 'Promotion',
+          value: `−${fmt(promotion.discount.amount)}`,
+          discount: true,
+        }]
+        : []),
       ...(selectedPlan.surcharge.amount > 0
         ? [{ label: `${selectedPlan.name} charge`, value: fmt(selectedPlan.surcharge.amount), muted: true }]
         : []),
@@ -154,7 +181,22 @@ export default function PurchaseModal({ open, property, onClose, onInvoice }) {
         ? [{ label: 'Rounding', value: fmt(selectedPlan.rounding.amount), muted: true }]
         : []),
     ]
-    : [{ label: `${parsedQty} × ${fmt(unit?.price || 0)}`, value: fmt(outrightTotal) }];
+    : [
+      {
+        label: `${parsedQty} × ${fmt(unit?.price || 0)}`,
+        value: fmt(options?.outright?.base?.amount ?? (Number(unit?.price || 0) * parsedQty)),
+      },
+      ...(promotion
+        ? [{
+          label: promotion.offers?.[0]?.name || 'Promotion',
+          value: `−${fmt(promotion.discount.amount)}`,
+          discount: true,
+        }]
+        : []),
+    ];
+
+  /** The offer's own wording, for a buyer deciding whether to commit. */
+  const offer = promotion?.offers?.[0] || null;
 
   const total = paymentType === 'installment' && selectedPlan ? selectedPlan.total.amount : outrightTotal;
 
@@ -298,10 +340,29 @@ export default function PurchaseModal({ open, property, onClose, onInvoice }) {
 
             {unit && qtyValid && (paymentType === 'outright' || selectedPlan) && (
               <div className="space-y-1 rounded-lg bg-slate-50 px-4 py-3 text-sm">
+                {/*
+                  The terms are shown HERE, at the moment of committing, rather than a
+                  click away — FRD 34 asks that a buyer can read them before completing
+                  the purchase, and a condition somebody has to go looking for is one
+                  they will not find.
+                */}
+                {offer && (
+                  <div className="rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-900 ring-1 ring-emerald-200">
+                    <span className="font-semibold">{offer.name}</span>
+                    {offer.message && <span> — {offer.message}</span>}
+                    {offer.terms && <p className="mt-1 text-emerald-800/80">{offer.terms}</p>}
+                  </div>
+                )}
+
                 {summary.map((line) => (
                   <div key={line.label} className="flex items-center justify-between">
-                    <span className={line.muted ? 'text-slate-500' : 'text-slate-600'}>{line.label}</span>
-                    <span className={line.muted ? 'text-slate-500' : 'text-slate-700'}>{line.value}</span>
+                    {/* A discount reads as good news, so it is coloured as such. */}
+                    <span className={line.discount ? 'text-emerald-700' : line.muted ? 'text-slate-500' : 'text-slate-600'}>
+                      {line.label}
+                    </span>
+                    <span className={line.discount ? 'font-medium text-emerald-700' : line.muted ? 'text-slate-500' : 'text-slate-700'}>
+                      {line.value}
+                    </span>
                   </div>
                 ))}
                 <div className="flex items-center justify-between border-t border-slate-200 pt-1">

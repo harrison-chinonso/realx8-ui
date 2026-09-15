@@ -85,6 +85,7 @@ export const NAV = [
     primary: true,
     items: [
       { to: '/properties',             label: 'Property Listing',   icon: Building2,     permission: 'properties.view', hideForTypes: ['realtor', 'client'] },
+      { to: '/promotions', label: 'Promotions and Offers', icon: Tag, permission: 'promotions.view' },
       { to: '/properties/types',       label: 'Property Setup',     icon: Wrench,        permission: 'properties.manage' },
       { to: '/properties/listed',      label: 'Listed Properties',  icon: LayoutList,    permission: null, showForTypes: ['realtor', 'client'] },
       { to: '/properties/inspections', label: 'Property Inspection',icon: ClipboardList, permission: 'properties.inspections.view' },

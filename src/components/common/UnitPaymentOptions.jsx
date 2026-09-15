@@ -43,17 +43,61 @@ export default function UnitPaymentOptions({ unitId, quantity = 1 }) {
 
   const plans = data.installment_plans || [];
   const outright = data.outright?.total?.amount ?? 0;
+  const outrightPromotion = data.outright?.promotion;
+  const outrightBase = data.outright?.base?.amount ?? 0;
+
+  /**
+   * Every offer named anywhere on this unit, listed once.
+   *
+   * A campaign restricted to outright payment appears on the outright figure
+   * and not on the plans, so the same offer can be attached to some rows and
+   * not others — but a buyer wants to read the terms once, not per row.
+   */
+  const offers = [
+    ...(outrightPromotion?.offers || []),
+    ...plans.flatMap((plan) => plan.promotion?.offers || []),
+  ].filter((offer, index, all) => all.findIndex((o) => o.name === offer.name) === index);
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-baseline gap-2">
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
-          Outright {fmt(outright)}
-        </span>
+        {/*
+          The original price stays on screen, struck through, beside what the
+          buyer would actually pay. Showing only the promotional figure hides
+          the thing that makes it an offer — and a buyer who cannot see what it
+          was has no reason to believe it is a discount at all.
+        */}
+        {outrightPromotion ? (
+          <span className="inline-flex items-baseline gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+            Outright
+            <span className="font-normal text-slate-500 line-through">{fmt(outrightBase)}</span>
+            {fmt(outright)}
+          </span>
+        ) : (
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+            Outright {fmt(outright)}
+          </span>
+        )}
         {!plans.length && (
           <span className="text-xs text-slate-500">— the only option on this unit</span>
         )}
       </div>
+
+      {offers.map((offer) => (
+        <div key={offer.name} className="rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-900 ring-1 ring-emerald-200">
+          <span className="font-semibold">{offer.name}</span>
+          {offer.message && <span> — {offer.message}</span>}
+          {(offer.perks || []).length > 0 && (
+            <span> Includes {offer.perks.map((perk) => perk.label).join(', ')}.</span>
+          )}
+          {/*
+            The terms are here rather than a click away, because FRD 34 asks
+            that a buyer can read them BEFORE completing a purchase — and a
+            condition somebody has to go looking for is one they will not find.
+          */}
+          {offer.terms && <p className="mt-1 text-emerald-800/80">{offer.terms}</p>}
+        </div>
+      ))}
 
       {plans.length > 0 && (
         <div className="overflow-hidden rounded-lg ring-1 ring-slate-200">
@@ -103,7 +147,14 @@ export default function UnitPaymentOptions({ unitId, quantity = 1 }) {
                     ) : '—'}
                   </td>
                   <td className="px-3 py-2 text-right font-semibold text-slate-900">
-                    {fmt(plan.total.amount)}
+                    {plan.promotion ? (
+                      <>
+                        <span className="block font-normal text-slate-400 line-through">
+                          {fmt(plan.base.amount + plan.surcharge.amount)}
+                        </span>
+                        <span className="text-emerald-800">{fmt(plan.total.amount)}</span>
+                      </>
+                    ) : fmt(plan.total.amount)}
                   </td>
                 </tr>
               ))}
