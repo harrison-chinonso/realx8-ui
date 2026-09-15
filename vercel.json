@@ -1,17 +1,4 @@
 {
-  "$comment": [
-    "Everything falls through to index.html for client-side routing, EXCEPT real",
-    "files that must be served as themselves.",
-    "",
-    "sw.js is the one that bites: a service worker rewritten to index.html is",
-    "served as HTML, the browser refuses to register a script with the wrong MIME",
-    "type, and browser notifications fail in production while working perfectly in",
-    "development — where Vite serves the file directly and no rewrite exists.",
-    "",
-    "A service worker is also only allowed to control the scope it is served",
-    "from, which is another reason it must stay at the root rather than move",
-    "under /assets."
-  ],
   "rewrites": [
     { "source": "/((?!assets/|sw\\.js|manifest\\.webmanifest|robots\\.txt|favicon\\.ico).*)", "destination": "/index.html" }
   ],
@@ -20,15 +7,8 @@
       "source": "/sw.js",
       "headers": [
         { "key": "Content-Type", "value": "application/javascript; charset=utf-8" },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        },
-        {
-          "$comment": "Lets the worker control the whole origin, not just /.",
-          "key": "Service-Worker-Allowed",
-          "value": "/"
-        }
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
       ]
     }
   ]

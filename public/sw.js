@@ -1,3 +1,22 @@
+/*
+ * ── Deployment note: this file must be served AS ITSELF ────────────────────
+ *
+ * vercel.json rewrites everything to index.html for client-side routing, with
+ * an exception list that names this file. Remove it from that list and the
+ * worker is served as HTML, the browser refuses to register a script with the
+ * wrong MIME type, and browser notifications fail in production while working
+ * perfectly in development — where Vite serves the file directly and no
+ * rewrite exists.
+ *
+ * It must also stay at the root. A service worker may only control the scope
+ * it is served from, so moving it under /assets would silently narrow what it
+ * can reach.
+ *
+ * (The explanation lives here rather than in vercel.json, which is validated
+ * against a schema that rejects any property it does not recognise — including
+ * a comment.)
+ */
+
 /* eslint-env serviceworker */
 
 /**
