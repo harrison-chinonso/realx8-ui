@@ -77,7 +77,6 @@ import FrontDeskPage from './pages/frontdesk/FrontDeskPage';
 import CustomerCarePage from './pages/care/CustomerCarePage';
 // Superior admin pages
 import PlatformDashboardPage from './pages/superior/PlatformDashboardPage';
-import GlobalSettingsPage from './pages/superior/GlobalSettingsPage';
 import CompanySettingsPage from './pages/superior/CompanySettingsPage';
 import CompaniesPage from './pages/superior/CompaniesPage';
 
@@ -228,7 +227,19 @@ export default function App() {
           <Route path="/superior/companies/new" element={<CompaniesPage />} />
           <Route path="/superior/companies/:id/settings" element={<CompanySettingsPage />} />
           <Route path="/superior/users" element={<UsersPage />} />
-          <Route path="/superior/settings" element={<GlobalSettingsPage />} />
+          {/*
+            The same Settings page every administrator gets, with a company
+            picker on top.
+
+            This used to be a separate GlobalSettingsPage: a second
+            implementation that had drifted badly — four layout templates where
+            the real page offered six, its own colour presets, its own currency
+            list, and none of the Invoicing, Inventory or AI Assistant tabs. A
+            platform admin arriving from the dashboard tile got a poorer page
+            than the tenants they administer. The URL is kept so that tile and
+            any bookmark still work.
+          */}
+          <Route path="/superior/settings" element={<SettingsPage />} />
         </Route>
 
         {/* Regular protected routes */}

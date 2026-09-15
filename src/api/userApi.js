@@ -31,15 +31,58 @@ export const upsertReferralSetting = (payload) => client.post('/referral/setting
 export const listReferralTransactions = (params) => client.get('/referral/transactions', { params }).then(r => r.data);
 
 // Settings — company users receive merged global-defaults + company overrides (company wins)
-export const getSettings = (group, { effective = false } = {}) =>
-  client.get('/settings', { params: { ...(group ? { group } : {}), ...(effective ? { effective: 'true' } : {}) } }).then(r => r.data);
-export const upsertSetting = (payload) => client.post('/settings', payload).then(r => r.data);
-export const bulkUpdateSettings = (settings, group) => client.post('/settings/bulk', { settings, group }).then(r => r.data);
-export const uploadLogo = (file) => {
+
+/**
+ * Which company a settings call is about.
+ *
+ * Only a platform admin can choose; the server pins everybody else to their own
+ * company whatever they send, so this is a convenience for the one account that
+ * administers tenants rather than a permission the client grants itself.
+ *
+ * `null` and `undefined` both mean the platform-wide defaults, and the
+ * parameter is left OFF the request in that case — the server reads a missing
+ * company_id as "platform", and sending an empty string instead would be read
+ * as a company whose id is the empty string.
+ */
+const companyParam = (companyId) => (companyId === null || companyId === undefined
+  ? {}
+  : { company_id: companyId });
+
+export const getSettings = (group, { effective = false, companyId = null } = {}) =>
+  client.get('/settings', {
+    params: {
+      ...(group ? { group } : {}),
+      ...(effective ? { effective: 'true' } : {}),
+      ...companyParam(companyId),
+    },
+  }).then(r => r.data);
+
+export const upsertSetting = (payload, companyId = null) =>
+  client.post('/settings', { ...payload, ...companyParam(companyId) }).then(r => r.data);
+
+/**
+ * The target rides on EACH setting, not on the envelope — that is where the
+ * server reads it from.
+ */
+export const bulkUpdateSettings = (settings, group, companyId = null) =>
+  client.post('/settings/bulk', {
+    settings: settings.map((setting) => ({ ...setting, ...companyParam(companyId) })),
+    group,
+  }).then(r => r.data);
+
+export const uploadLogo = (file, companyId = null) => {
   const fd = new FormData();
   fd.append('logo', file);
+  const target = companyParam(companyId);
+  if (target.company_id !== undefined) fd.append('company_id', target.company_id);
   return client.post('/settings/upload-logo', fd).then(r => r.data);
 };
+
+export const getSystemConfig = (companyId = null) =>
+  client.get('/settings/system', { params: companyParam(companyId) }).then(r => r.data);
+
+export const saveSystemConfig = (payload, companyId = null) =>
+  client.post('/settings/system', { ...payload, ...companyParam(companyId) }).then(r => r.data);
 
 
 // Public — no auth token required

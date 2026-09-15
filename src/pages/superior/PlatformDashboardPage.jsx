@@ -154,7 +154,7 @@ export default function PlatformDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         {[
           { icon: '🏢', label: 'Manage Companies', desc: 'View, edit, suspend companies', to: '/superior/companies' },
-          { icon: '⚙️', label: 'Global Settings', desc: 'Default settings for all tenants', to: '/superior/settings' },
+          { icon: '⚙️', label: 'Settings', desc: 'Platform defaults, or any one company', to: '/superior/settings' },
           { icon: '👥', label: 'All Users', desc: 'Browse users across all companies', to: '/superior/users' },
         ].map((a) => (
           <Link key={a.to} to={a.to}

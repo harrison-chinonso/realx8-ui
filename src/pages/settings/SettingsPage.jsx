@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { getSettings, bulkUpdateSettings } from '../../api/userApi';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  getSettings, bulkUpdateSettings, uploadLogo, getSystemConfig, saveSystemConfig,
+} from '../../api/userApi';
+import { listCompanies } from '../../api/companyApi';
 import { stripeCreateIntent, flutterwaveVerify, paystackVerify } from '../../api/financeApi';
 import { disable2FA, get2FAPolicy, me, set2FAPolicy, setup2FA, verifySetup2FA } from '../../api/authApi';
 import { useAppearance } from '../../context/useAppearance';
@@ -11,6 +14,39 @@ import Input from '../../components/ui/Input';
 import { brightenForDark } from '../../utils/colorUtils';
 import { CURRENCIES, currencyOptionLabel } from '../../constants/currencies';
 import Select from '../../components/ui/Select';
+
+/**
+ * Which company the settings on screen belong to.
+ *
+ * ── Why a context and not a prop ────────────────────────────────────────────
+ *
+ * Every tab reads and writes settings, and a platform admin editing on a
+ * tenant's behalf has to have that target reach all of them — including the
+ * ones nested several components deep. Threading it as a prop would mean
+ * touching every tab signature, and the failure mode of missing one is the
+ * worst available here: a save that silently lands on the platform defaults and
+ * changes the configuration for every company at once.
+ *
+ * `null` is the platform-wide defaults, which is what a platform admin sees
+ * until they pick a company, and what the server assumes when the parameter is
+ * absent. A company admin is pinned to their own company by the server
+ * regardless of this value.
+ */
+/** Every system-config field, empty — the shape a fresh target resets to. */
+const BLANK_SYSTEM_CONFIG = {
+  google_client_id: '',
+  google_client_secret: '',
+  google_callback_url: '',
+  jwt_secret: '',
+  jwt_access_expires: '',
+  jwt_refresh_days: '',
+  cloudinary_cloud_name: '',
+  cloudinary_api_key: '',
+  cloudinary_api_secret: '',
+};
+
+const SettingsTargetContext = createContext({ companyId: null, companyName: null });
+const useSettingsTarget = () => useContext(SettingsTargetContext);
 
 const PRESET_COLORS = [
   { label: 'Blue', value: '#2563eb' },
@@ -421,9 +457,18 @@ function AppearanceTab() {
   const [logoFile, setLogoFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [loadingTarget, setLoadingTarget] = useState(false);
   const fileRef = useRef();
+  const { companyId, companyName } = useSettingsTarget();
 
+  /*
+   * The form follows the signed-in person's own appearance — which is right up
+   * until a platform admin picks a company to configure. From then on it has to
+   * show THAT company's branding, not the platform admin's own, or they would
+   * be shown one company's colours and save them onto another's.
+   */
   useEffect(() => {
+    if (companyId) return;
     setForm({
       app_name: app_name || '',
       primary_color: primary_color || '#2563eb',
@@ -438,7 +483,37 @@ function AppearanceTab() {
       template: template || 'classic',
     });
     setLogoPreview(app_logo || null);
-  }, [app_name, app_logo, primary_color, secondary_color, dark_primary_color, dark_secondary_color, font_heading, font_body, font_ui, dark_mode, currency, template]);
+  }, [companyId, app_name, app_logo, primary_color, secondary_color, dark_primary_color, dark_secondary_color, font_heading, font_body, font_ui, dark_mode, currency, template]);
+
+  /** A chosen company's own appearance, read fresh. */
+  useEffect(() => {
+    if (!companyId) return;
+    let cancelled = false;
+    setLoadingTarget(true);
+    getSettings('appearance', { effective: true, companyId })
+      .then((response) => {
+        if (cancelled) return;
+        const data = response?.data || {};
+        setForm({
+          app_name: data.app_name || '',
+          primary_color: data.primary_color || '#2563eb',
+          secondary_color: data.secondary_color || '#0f172a',
+          dark_primary_color: data.dark_primary_color || '',
+          dark_secondary_color: data.dark_secondary_color || '',
+          font_heading: data.font_heading || 'Tomato Grotesk',
+          font_body: data.font_body || 'Inter',
+          font_ui: data.font_ui || 'Inter',
+          dark_mode: data.dark_mode || 'off',
+          currency: data.currency || 'USD',
+          template: data.template || 'classic',
+        });
+        setLogoPreview(data.app_logo || null);
+        setLogoFile(null);
+      })
+      .catch(() => { if (!cancelled) setMessage({ type: 'error', text: 'Could not load that company’s appearance.' }); })
+      .finally(() => { if (!cancelled) setLoadingTarget(false); });
+    return () => { cancelled = true; };
+  }, [companyId]);
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
@@ -451,11 +526,7 @@ function AppearanceTab() {
     setSaving(true);
     setMessage(null);
     try {
-      if (logoFile) {
-        const fd = new FormData();
-        fd.append('logo', logoFile);
-        await client.post('/settings/upload-logo', fd);
-      }
+      if (logoFile) await uploadLogo(logoFile, companyId);
 
       const settings = [
         { key: 'app_name', value: form.app_name },
@@ -472,11 +543,27 @@ function AppearanceTab() {
         { key: 'currency', value: form.currency },
         { key: 'template', value: form.template },
       ];
-      await client.post('/settings/bulk', { settings, group: 'appearance' });
+      await bulkUpdateSettings(settings, 'appearance', companyId);
 
-      await refresh();
+      /*
+       * Only reload the live theme when the settings that were saved are the
+       * ones this browser is painted with.
+       *
+       * `refresh()` re-reads the SIGNED-IN person's appearance and applies it.
+       * After editing another company that would do two wrong things at once:
+       * repaint nothing (their own theme has not changed) while resetting the
+       * form back to the platform admin's own colours — making a successful
+       * save look as though it had been discarded.
+       */
+      if (!companyId) await refresh();
+
       setLogoFile(null);
-      setMessage({ type: 'success', text: 'Appearance saved and applied.' });
+      setMessage({
+        type: 'success',
+        text: companyId
+          ? `Appearance saved for ${companyName || 'that company'}. Your own theme is unchanged.`
+          : 'Appearance saved and applied.',
+      });
     } catch (err) {
       setMessage({ type: 'error', text: err.userMessage });
     } finally {
@@ -1102,23 +1189,43 @@ function SystemConfigTab() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState(null);
+  const { companyId, companyName } = useSettingsTarget();
 
+  /*
+   * Re-read whenever the target changes. These are credentials, and showing one
+   * company's Cloudinary keys under another company's name is the single worst
+   * mix-up available on this page.
+   */
   useEffect(() => {
-    client.get('/settings/system').then((res) => {
-      const d = res.data?.data || {};
-      setForm(f => ({ ...f, ...d }));
-    }).finally(() => setLoading(false));
-  }, []);
+    let cancelled = false;
+    setLoading(true);
+    getSystemConfig(companyId)
+      .then((res) => {
+        if (cancelled) return;
+        const d = res?.data || {};
+        // Replaced, not merged: merging would leave the previous company's
+        // values standing wherever this one has set nothing.
+        setForm({ ...BLANK_SYSTEM_CONFIG, ...d });
+      })
+      .catch(() => { if (!cancelled) setForm({ ...BLANK_SYSTEM_CONFIG }); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [companyId]);
 
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     setMsg(null);
     try {
-      await client.post('/settings/system', form);
+      await saveSystemConfig(form, companyId);
       // Tell auth-service to pick up new config immediately
       await client.post('/auth/reload-config').catch(() => {});
-      setMsg({ type: 'success', text: 'System config saved and auth service notified.' });
+      setMsg({
+        type: 'success',
+        text: companyName
+          ? `System config saved for ${companyName}.`
+          : 'System config saved and auth service notified.',
+      });
     } catch (err) {
       setMsg({ type: 'error', text: err?.response?.data?.message || 'Save failed' });
     } finally {
@@ -1225,6 +1332,76 @@ function SystemConfigTab() {
   );
 }
 
+/**
+ * The company a platform admin is configuring.
+ *
+ * Rendered only for them — a company admin has exactly one target and a
+ * dropdown listing it would be furniture. The default is Platform defaults,
+ * because that is what a platform admin most often means and because it is what
+ * the server assumes if the choice were ever lost in transit.
+ */
+function CompanyTargetPicker({ companyId, onChange }) {
+  const [companies, setCompanies] = useState([]);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    // The endpoint is superior-admin gated and returns every company
+    // unpaginated, so there is nothing to ask it for. Sorted by name here
+    // because it answers in id order — newest first, which is not an order
+    // anybody looks a company up in.
+    listCompanies()
+      .then((response) => {
+        const rows = Array.isArray(response?.data) ? response.data : (response || []);
+        setCompanies(
+          (Array.isArray(rows) ? rows : [])
+            .slice()
+            .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''))),
+        );
+      })
+      .catch(() => setFailed(true));
+  }, []);
+
+  const selected = companies.find((company) => String(company.id) === String(companyId));
+
+  return (
+    <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+      {/*
+        The label belongs to the Select, which renders its own <label> wrapper.
+        A second one outside it would associate two labels with one control.
+      */}
+      <Select
+        id="settings-target"
+        label="Configuring"
+        value={companyId === null ? '' : String(companyId)}
+        onChange={(event) => {
+          const value = event.target.value;
+          const picked = companies.find((company) => String(company.id) === value);
+          onChange(value === '' ? null : value, picked?.name ?? null);
+        }}
+        options={[
+          { value: '', label: 'Platform defaults — every company' },
+          ...companies.map((company) => ({ value: String(company.id), label: company.name })),
+        ]}
+      />
+      <p className="mt-2 text-xs text-slate-500">
+        {selected
+          ? `Saving writes to ${selected.name} alone. Anything left blank there keeps falling back to the platform defaults.`
+          : 'Saving writes the platform-wide defaults, used by every company that has not set its own.'}
+      </p>
+      {/*
+        A failed list is said out loud. Silently showing only "Platform
+        defaults" would look like a platform with no companies on it, and the
+        next save would go somewhere the person did not intend.
+      */}
+      {failed && (
+        <p className="mt-2 text-xs text-rose-600">
+          The company list could not be loaded, so only the platform defaults can be edited here.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [activeGroup, setActiveGroup] = useState('appearance');
   const [values, setValues] = useState({});
@@ -1234,11 +1411,28 @@ export default function SettingsPage() {
   const [paymentTesting, setPaymentTesting] = useState('');
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
 
+  /**
+   * The company being configured. Only a platform admin can move it; for
+   * everybody else it stays null and the server pins them to their own company.
+   */
+  const [targetCompanyId, setTargetCompanyId] = useState(null);
+  const [targetCompanyName, setTargetCompanyName] = useState(null);
+  const target = useMemo(
+    () => ({ companyId: targetCompanyId, companyName: targetCompanyName }),
+    [targetCompanyId, targetCompanyName],
+  );
+
   useEffect(() => {
     if (isSuperiorAdmin) {
-      // Superior admin: effective merged view for all groups
-      getSettings(null, { effective: true })
-        .then((res) => setValues(res.data || {}));
+      /*
+       * Platform admin. With no company chosen this is the platform defaults;
+       * with one chosen it is that company's effective configuration — what its
+       * own admin would see, defaults and overrides merged, which is the only
+       * view in which "is this already set?" can be answered.
+       */
+      getSettings(null, { effective: Boolean(targetCompanyId), companyId: targetCompanyId })
+        .then((res) => setValues(res.data || {}))
+        .catch(() => setValues({}));
     } else {
       // Company admin: effective for appearance/general (OK to inherit branding/name),
       // but own-rows-only for email/payment (never show global secrets)
@@ -1262,7 +1456,7 @@ export default function SettingsPage() {
         });
       });
     }
-  }, [isSuperiorAdmin]);
+  }, [isSuperiorAdmin, targetCompanyId]);
 
   const handleChange = (key, value) => setValues((prev) => ({ ...prev, [key]: value }));
 
@@ -1273,7 +1467,7 @@ export default function SettingsPage() {
     setMessage(null);
     try {
       const settings = groupDef.fields.map(({ key }) => ({ key, value: values[key] || '' }));
-      await bulkUpdateSettings(settings, group);
+      await bulkUpdateSettings(settings, group, targetCompanyId);
       setMessage({ type: 'success', text: 'Settings saved successfully.' });
     } catch (err) {
       setMessage({ type: 'error', text: err.userMessage });
@@ -1314,17 +1508,41 @@ export default function SettingsPage() {
   };
 
   return (
+    <SettingsTargetContext.Provider value={target}>
     <div className="flex flex-col gap-6">
+      {/*
+        The platform admin picks who they are configuring before anything else
+        on the page, because every field below means something different
+        depending on the answer.
+      */}
+      {isSuperiorAdmin && (
+        <CompanyTargetPicker
+          companyId={targetCompanyId}
+          onChange={(id, name) => { setTargetCompanyId(id); setTargetCompanyName(name ?? null); }}
+        />
+      )}
+
       {/* Role-aware banner */}
       {isSuperiorAdmin ? (
-        <div className="flex items-start gap-3 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-800 ring-1 ring-blue-200">
-          <span className="text-lg leading-none">🌐</span>
-          <div>
-            <span className="font-semibold">Global defaults mode.</span>{' '}
-            Changes you make here become the platform-wide defaults applied to all companies
-            that haven’t configured their own values.
+        targetCompanyName ? (
+          <div className="flex items-start gap-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+            <span className="text-lg leading-none">🏢</span>
+            <div>
+              <span className="font-semibold">Editing {targetCompanyName}.</span>{' '}
+              You are changing one company’s configuration on its behalf. Saving affects that
+              company alone, and nothing here changes your own account or the platform defaults.
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-start gap-3 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-800 ring-1 ring-blue-200">
+            <span className="text-lg leading-none">🌐</span>
+            <div>
+              <span className="font-semibold">Global defaults mode.</span>{' '}
+              Changes you make here become the platform-wide defaults applied to all companies
+              that haven’t configured their own values.
+            </div>
+          </div>
+        )
       ) : (
         <div className="flex items-start gap-3 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-800 ring-1 ring-blue-200">
           <span className="text-lg leading-none">🏢</span>
@@ -1446,5 +1664,6 @@ export default function SettingsPage() {
         )}
       </div>
     </div>
+    </SettingsTargetContext.Provider>
   );
 }
