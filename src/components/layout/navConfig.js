@@ -61,9 +61,32 @@ export const NAV = [
     items: [
       { to: '/users/employees', label: 'Staff',               icon: UserCheck,  permission: 'users.manage' },
       { to: '/users/clients',   label: 'Clients',             icon: Briefcase,  permission: 'users.manage' },
-      { to: '/users/realtors',  label: 'Realtors',            icon: UserCog,    permission: 'users.manage' },
-      { to: '/realtor/levels',  label: 'Realtor Levels',      icon: Trophy,     permission: 'users.manage' },
-      { to: '/users/verifications', label: 'Realtor Verifications', icon: ShieldCheck, permission: 'users.manage', hideForSuperior: true },
+      /**
+       * Everything about realtors, in one place.
+       *
+       * These were four siblings of Staff and Clients, which put "Realtor
+       * Levels" and "Realtor Verifications" at the same level as the people
+       * they apply to and made User Management a list of nine where three
+       * items began with the same word. Grouped, the section reads as the three
+       * kinds of person a company manages — staff, clients, realtors — with the
+       * realtor machinery folded underneath.
+       *
+       * Each child keeps its own permission: the leaderboard is visible to
+       * anyone who may read it, which is not the same set as the people who may
+       * manage realtor records.
+       */
+      {
+        label: 'Realtor', icon: UserCog,
+        children: [
+          { to: '/users/realtors',      label: 'Realtors',             icon: UserCog,    permission: 'users.manage' },
+          { to: '/realtor/levels',      label: 'Realtor Levels',       icon: Trophy,     permission: 'users.manage' },
+          // Staff-facing. Realtors hold this permission too and would otherwise
+          // see the leaderboard here AND in their own Realtor Hub — the exact
+          // double listing the split was made to avoid.
+          { to: '/realtor/leaderboard', label: 'Realtor Leaderboard',  icon: Trophy,     permission: 'realtors.leaderboard.view', hideForTypes: ['realtor', 'client'] },
+          { to: '/users/verifications', label: 'Realtor Verification', icon: ShieldCheck, permission: 'users.manage', hideForSuperior: true },
+        ],
+      },
       { to: '/roles',           label: 'Roles & Permissions', icon: ShieldCheck, permission: 'roles.view' },
       /**
        * Hidden from anyone without `audit.view`, which is nobody by default
@@ -268,7 +291,17 @@ export const NAV = [
     section: 'Realtor Hub',
     items: [
       { to: '/realtor/training',    label: 'Training & LMS', icon: GraduationCap, permission: 'realtors.training.view' },
-      { to: '/realtor/leaderboard', label: 'Leadership',     icon: Trophy,        permission: 'realtors.leaderboard.view' },
+      /**
+       * A realtor's own standing, in a realtor's own section.
+       *
+       * The management view of this lives under User Management → Realtor,
+       * where staff administering realtors will look for it. But a realtor
+       * manages nobody, and sending them into an administration section to see
+       * their own ranking is the wrong door — so this entry exists for them
+       * alone. `showForTypes` keeps the two apart: nobody sees the leaderboard
+       * listed twice.
+       */
+      { to: '/realtor/leaderboard', label: 'Leaderboard',    icon: Trophy,        permission: 'realtors.leaderboard.view', showForTypes: ['realtor'] },
       { to: '/realtor/recruitment', label: 'Recruitment',    icon: Megaphone,     permission: 'realtors.recruitment.view' },
       // Scoped server-side to the holder's own investments.
       { to: '/investments/portfolio', label: 'Investments',   icon: TrendingUp,    permission: 'investments.own.view', showForTypes: ['realtor'] },

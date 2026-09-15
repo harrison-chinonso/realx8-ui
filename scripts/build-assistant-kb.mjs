@@ -196,7 +196,43 @@ const unlinked = parseRoutes()
     };
   });
 
-const map = [...nav, ...unlinked].sort((a, b) => a.route.localeCompare(b.route));
+/**
+ * One entry per route, even when the menu lists it twice.
+ *
+ * A screen can legitimately appear in two places for two audiences — the
+ * realtor leaderboard is under Realtor Hub for realtors and under User
+ * Management → Realtor for the staff who administer them, with `showForTypes`
+ * keeping them apart so nobody sees it listed twice.
+ *
+ * The assistant, though, keys its screen rules BY ROUTE, so a second entry
+ * silently overwrote the first: the last one wins, and the last one here says
+ * "realtors only" — which would have refused an administrator any guidance
+ * about a screen they own. Nothing would have errored.
+ *
+ * So duplicates are merged, and merged toward what is REACHABLE: a type
+ * restriction on one listing is not a restriction on the screen if the other
+ * listing carries none.
+ */
+const mergeEntries = (a, b) => ({
+  ...a,
+  // Needed only where BOTH listings demand it — satisfying either one gets you in.
+  permissions: (a.permissions || []).filter((p) => (b.permissions || []).includes(p)),
+  // An unrestricted listing means the screen is not type-restricted at all.
+  showForTypes: (a.showForTypes?.length && b.showForTypes?.length)
+    ? [...new Set([...a.showForTypes, ...b.showForTypes])]
+    : [],
+  hideForTypes: (a.hideForTypes || []).filter((t) => (b.hideForTypes || []).includes(t)),
+  superiorAdminOnly: Boolean(a.superiorAdminOnly && b.superiorAdminOnly),
+});
+
+const byRoute = new Map();
+for (const entry of [...nav, ...unlinked]) {
+  const existing = byRoute.get(entry.route);
+  // The first listing keeps its trail: nav order is the order a person reads.
+  byRoute.set(entry.route, existing ? mergeEntries(existing, entry) : entry);
+}
+
+const map = [...byRoute.values()].sort((a, b) => a.route.localeCompare(b.route));
 
 const out = path.join(root, 'src/assistant/kb/app-map.generated.json');
 fs.writeFileSync(out, `${JSON.stringify(map, null, 2)}\n`);

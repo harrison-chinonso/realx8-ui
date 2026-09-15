@@ -17,7 +17,7 @@
     "route": "/audit-logs",
     "label": "Audit Trail",
     "section": "User Management",
-    "trail": "User Management → Audit Trail",
+    "trail": "User Management → Realtor → Audit Trail",
     "permissions": [
       "audit.view"
     ],
@@ -525,22 +525,7 @@
       "investments.own.view"
     ],
     "showForTypes": [
-      "realtor"
-    ],
-    "hideForTypes": [],
-    "hideForSuperior": false,
-    "superiorAdminOnly": false,
-    "source": "nav"
-  },
-  {
-    "route": "/investments/portfolio",
-    "label": "Investments",
-    "section": "My Portfolio",
-    "trail": "My Portfolio → Investments",
-    "permissions": [
-      "investments.own.view"
-    ],
-    "showForTypes": [
+      "realtor",
       "client"
     ],
     "hideForTypes": [],
@@ -739,7 +724,7 @@
     "route": "/realtor/clients",
     "label": "My Clients",
     "section": "User Management",
-    "trail": "User Management → My Clients",
+    "trail": "User Management → Realtor → My Clients",
     "permissions": [],
     "showForTypes": [
       "realtor"
@@ -751,9 +736,9 @@
   },
   {
     "route": "/realtor/leaderboard",
-    "label": "Leadership",
-    "section": "Realtor Hub",
-    "trail": "Realtor Hub → Leadership",
+    "label": "Realtor Leaderboard",
+    "section": "User Management",
+    "trail": "User Management → Realtor → Realtor Leaderboard",
     "permissions": [
       "realtors.leaderboard.view"
     ],
@@ -767,7 +752,7 @@
     "route": "/realtor/levels",
     "label": "Realtor Levels",
     "section": "User Management",
-    "trail": "User Management → Realtor Levels",
+    "trail": "User Management → Realtor → Realtor Levels",
     "permissions": [
       "users.manage"
     ],
@@ -795,7 +780,7 @@
     "route": "/realtor/referrals",
     "label": "My Referrals",
     "section": "User Management",
-    "trail": "User Management → My Referrals",
+    "trail": "User Management → Realtor → My Referrals",
     "permissions": [],
     "showForTypes": [
       "realtor"
@@ -861,7 +846,7 @@
     "route": "/roles",
     "label": "Roles & Permissions",
     "section": "User Management",
-    "trail": "User Management → Roles & Permissions",
+    "trail": "User Management → Realtor → Roles & Permissions",
     "permissions": [
       "roles.view"
     ],
@@ -1015,7 +1000,7 @@
     "route": "/users/realtors",
     "label": "Realtors",
     "section": "User Management",
-    "trail": "User Management → Realtors",
+    "trail": "User Management → Realtor → Realtors",
     "permissions": [
       "users.manage"
     ],
@@ -1027,9 +1012,9 @@
   },
   {
     "route": "/users/verifications",
-    "label": "Realtor Verifications",
+    "label": "Realtor Verification",
     "section": "User Management",
-    "trail": "User Management → Realtor Verifications",
+    "trail": "User Management → Realtor → Realtor Verification",
     "permissions": [
       "users.manage"
     ],

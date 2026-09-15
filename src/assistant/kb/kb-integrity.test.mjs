@@ -122,6 +122,20 @@ check('Every write action names the permission it needs', unguarded.length === 0
   unguarded.map((a) => a.id).join(', '));
 
 /**
+ * One entry per route.
+ *
+ * The screen rules are keyed BY ROUTE, so a duplicate does not sit alongside
+ * its twin — it overwrites it. The realtor leaderboard is listed twice in the
+ * menu on purpose (once for realtors, once for the staff who administer them),
+ * and before the generator merged them the second listing's "realtors only"
+ * quietly became the rule for everybody, which would have refused an
+ * administrator any guidance about a screen they own. Nothing errored.
+ */
+const routeCounts = map.reduce((acc, entry) => ({ ...acc, [entry.route]: (acc[entry.route] || 0) + 1 }), {});
+const duplicated = Object.entries(routeCounts).filter(([, n]) => n > 1).map(([route]) => route);
+check('No route appears in the map twice', duplicated.length === 0, duplicated.join(', '));
+
+/**
  * The gate is only as good as the map it checks against.
  *
  * Permission now decides whether anything is explained at all, so a screen that
