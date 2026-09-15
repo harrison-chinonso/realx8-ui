@@ -8,8 +8,6 @@ import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
 import Badge from '../../components/common/Badge';
 import { useCurrency } from '../../context/useAppearance';
-import CompanySelect from '../../components/common/CompanySelect';
-import useAuthStore from '../../store/authStore';
 import Select from '../../components/ui/Select';
 import { enumLabel } from '../../utils/enumLabel';
 
@@ -55,7 +53,6 @@ const toApiPayload = (form) => {
  */
 export default function TransactionsPage() {
   const formatCurrency = useCurrency();
-  const isSuperiorAdmin = useAuthStore((state) => state.isSuperiorAdmin);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
@@ -74,10 +71,6 @@ export default function TransactionsPage() {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => {
-    setEditing({});
-    setForm({ ...EMPTY_FORM });
-  };
 
   const openEdit = (row) => {
     setEditing(row);
@@ -153,7 +146,6 @@ export default function TransactionsPage() {
             .
           </p>
         </div>
-        <Button onClick={openCreate}>+ New Transaction</Button>
       </div>
 
       <Table
@@ -176,11 +168,8 @@ export default function TransactionsPage() {
         )}
       />
 
-      <Modal open={editing !== null} onClose={closeModal} title={`${editing?.id ? 'Edit' : 'New'} Transaction`}>
+      <Modal open={editing !== null} onClose={closeModal} title="Edit Transaction">
         <form onSubmit={handleSave} className="space-y-3">
-          {!editing?.id && isSuperiorAdmin && (
-            <CompanySelect value={form.company_id} onChange={handleChange('company_id')} />
-          )}
           <Input label="Date" type="date" value={form.date} onChange={handleChange('date')} required />
           <Input label="Description" value={form.description} onChange={handleChange('description')} required />
           <MoneyInput label="Amount" value={form.amount} onChange={(amount) => setForm((current) => ({ ...current, amount }))} required />

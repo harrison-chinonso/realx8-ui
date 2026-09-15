@@ -8,6 +8,7 @@ import { plural } from '../../utils/plural';
 import {
   listCommissionPayouts, buildCommissionPayouts,
   approveCommissionPayout, payCommissionPayout, cancelCommissionPayout,
+  listPayoutRequests,
 } from '../../api/commissionApi';
 
 /**
@@ -41,6 +42,7 @@ export default function CommissionPayoutsPage() {
   const [failed, setFailed] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [requests, setRequests] = useState([]);
 
   const [viewing, setViewing] = useState(null);
   const [reference, setReference] = useState('');
@@ -60,12 +62,27 @@ export default function CommissionPayoutsPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const build = async () => {
+  /**
+   * Who is waiting. Read separately from the payouts list because it is a
+   * different question — the list says what has been batched, this says what
+   * somebody has asked for and nobody has batched yet.
+   */
+  useEffect(() => {
+    listPayoutRequests().then((rows) => setRequests(rows || [])).catch(() => setRequests([]));
+  }, [payouts]);
+
+  /**
+   * @param {boolean} requestedOnly  build only for realtors who have asked.
+   *   The ordinary run pays everybody what they are owed whether or not they
+   *   asked — nobody should have to chase to be paid — so this is the narrower
+   *   action, for an admin working through the request queue.
+   */
+  const build = async (requestedOnly = false) => {
     setBusy(true);
     setMessage('');
     setFailed('');
     try {
-      const result = await buildCommissionPayouts({});
+      const result = await buildCommissionPayouts(requestedOnly ? { requested_only: true } : {});
       /**
        * "Nothing payable" is an outcome, not a failure, and saying so plainly
        * saves the next question. It usually means either nothing has vested
@@ -144,8 +161,30 @@ export default function CommissionPayoutsPage() {
             nothing moves until a batch is approved and paid.
           </p>
         </div>
-        <Button onClick={build} disabled={busy}>{busy ? 'Working…' : 'Build payout run'}</Button>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {/*
+            Shown only when somebody is actually waiting. A request nobody
+            knows about is the same as no request — the realtor believes they
+            have asked and the admin has nothing telling them so.
+          */}
+          {requests.length > 0 && (
+            <Button variant="secondary" onClick={() => build(true)} disabled={busy}>
+              Pay the {plural(requests.length, 'realtor')} who asked
+            </Button>
+          )}
+          <Button onClick={() => build(false)} disabled={busy}>{busy ? 'Working…' : 'Build payout run'}</Button>
+        </div>
       </div>
+
+      {requests.length > 0 && (
+        <div className="rounded-lg bg-info-surface px-4 py-3 text-sm text-info">
+          <span className="font-semibold">
+            {plural(requests.length, 'realtor has', 'realtors have')} asked to be paid.
+          </span>{' '}
+          {requests.slice(0, 4).map((row) => row.realtor_name || `#${row.realtor_id}`).join(', ')}
+          {requests.length > 4 && ` and ${requests.length - 4} more`}.
+        </div>
+      )}
 
       {message && <div className="rounded-lg bg-info-surface px-4 py-2 text-sm text-info">{message}</div>}
       {failed && <div className="rounded-lg bg-danger-surface px-4 py-2 text-sm text-danger">{failed}</div>}

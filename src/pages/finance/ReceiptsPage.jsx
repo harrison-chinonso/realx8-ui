@@ -11,6 +11,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
 import { useCurrency, useAppearance } from '../../context/useAppearance';
+import { openReceipt } from '../../utils/receiptDocument';
 import Select from '../../components/ui/Select';
 import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentMethods';
 import { enumLabel } from '../../utils/enumLabel';
@@ -22,12 +23,6 @@ const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
 const getItems = (response) => response?.data ?? response ?? [];
 const getErrorMessage = (error, fallback) => error?.userMessage || fallback;
 const formatDate = (value) => (value ? new Date(value).toLocaleString() : '—');
-const escapeHtml = (value) => String(value ?? '')
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&#39;');
 
 function StatusBadge({ status }) {
   const key = String(status || 'pending').toLowerCase();
@@ -183,109 +178,16 @@ export default function ReceiptsPage() {
   };
 
   /**
-   * The company's own receipt wins over anything this page can draw.
-   *
-   * Where an admin attached one at approval, THAT is the receipt — it is what
-   * the buyer can already download, and it is very likely the one their
-   * accounts department has. Generating a second document from these columns
-   * would put two different receipts in circulation for the same payment, with
-   * different layouts and possibly different numbers, which is the confusion
-   * attaching a real one was meant to end.
-   *
-   * It opens in a tab rather than going straight to the print dialog: the file
-   * is a PDF or an image served from storage, and the browser's own viewer is
-   * better at printing those than a popup this page controls.
+   * One generator, shared with the dashboard, the invoice payment history and
+   * the client's own property page — see utils/receiptDocument. It prefers the
+   * company's own attached receipt and otherwise draws one carrying the
+   * property, the unit, the quantity and the balance left.
    */
-  const printReceipt = (receipt) => {
-    if (receipt.company_receipt_url) {
-      window.open(receipt.company_receipt_url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    const win = window.open('', '_blank', 'width=900,height=700');
-    if (!win) return;
-
-    const receiptNumber = receipt.receipt_number || receipt.number || `RCPT-${receipt.id}`;
-    const company = escapeHtml(appearance?.app_name || 'Receipt');
-    const logo = appearance?.app_logo ? escapeHtml(appearance.app_logo) : null;
-    const brand = escapeHtml(appearance?.primary_color || '#0f172a');
-
-    /**
-     * Rows are built from what this receipt actually has.
-     *
-     * A printed receipt full of "—" reads as a broken document rather than a
-     * complete one that happens to carry no note, and a buyer handed it has no
-     * way to tell which. Empty fields are left out instead.
-     */
-    const line = (label, value) => (value
-      ? `<tr><td class="label">${escapeHtml(label)}</td><td>${escapeHtml(value)}</td></tr>`
-      : '');
-
-    const html = `
-      <html>
-        <head>
-          <title>Receipt ${escapeHtml(receiptNumber)}</title>
-          <style>
-            @page { margin: 18mm; }
-            body { font-family: -apple-system, Segoe UI, Arial, sans-serif; color: #0f172a; margin: 0; }
-            .head { display: flex; align-items: center; gap: 16px;
-                    border-bottom: 3px solid ${brand}; padding-bottom: 16px; margin-bottom: 28px; }
-            .head img { max-height: 56px; max-width: 200px; object-fit: contain; }
-            .company { font-size: 20px; font-weight: 700; color: ${brand}; }
-            .title { margin-left: auto; text-align: right; }
-            .title .word { font-size: 24px; font-weight: 700; letter-spacing: 0.08em;
-                           text-transform: uppercase; color: ${brand}; }
-            .title .num { font-size: 12px; color: #64748b; margin-top: 2px; }
-            table { width: 100%; border-collapse: collapse; }
-            td { padding: 9px 0; border-bottom: 1px solid #e2e8f0; font-size: 14px; vertical-align: top; }
-            td.label { color: #64748b; width: 190px; }
-            .total { margin-top: 28px; padding: 18px 20px; border-radius: 10px;
-                     background: ${brand}; color: #fff; display: flex; justify-content: space-between;
-                     align-items: center; }
-            .total .amt { font-size: 24px; font-weight: 700; }
-            .foot { margin-top: 32px; font-size: 11px; color: #94a3b8; line-height: 1.6; }
-            @media print { .foot { position: fixed; bottom: 0; } }
-          </style>
-        </head>
-        <body>
-          <div class="head">
-            ${logo ? `<img src="${logo}" alt="${company}" />` : ''}
-            <div class="company">${company}</div>
-            <div class="title">
-              <div class="word">Receipt</div>
-              <div class="num">${escapeHtml(receiptNumber)}</div>
-            </div>
-          </div>
-
-          <table>
-            ${line('Date', formatDate(receipt.date || receipt.created_at || receipt.createdAt))}
-            ${line('Received from', receipt.client_name || receipt.client?.name)}
-            ${line('Invoice', receipt.invoice_id)}
-            ${line('Payment method', receipt.payment_method)}
-            ${line('Reference', receipt.reference)}
-            ${line('Status', receipt.status)}
-            ${line('Note', receipt.notes)}
-          </table>
-
-          <div class="total">
-            <span>Amount received</span>
-            <span class="amt">${escapeHtml(fmt(receipt.amount || 0))}</span>
-          </div>
-
-          <div class="foot">
-            ${company} &middot; Receipt ${escapeHtml(receiptNumber)}<br />
-            Generated by ${company}. Keep this for your records.
-          </div>
-        </body>
-      </html>
-    `;
-
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    win.print();
-  };
+  const printReceipt = (receipt) => openReceipt(receipt, {
+    appearance,
+    fmt,
+    onError: (message) => setFeedback('error', message),
+  });
 
   const TABS = [
     /**

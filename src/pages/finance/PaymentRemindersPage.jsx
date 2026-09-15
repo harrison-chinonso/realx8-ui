@@ -8,6 +8,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import EntitySearchSelect from '../../components/common/EntitySearchSelect';
 import Select from '../../components/ui/Select';
+import ReminderSchedulePanel from '../../components/finance/ReminderSchedulePanel';
 
 const EMPTY_FORM = {
   invoice_id: '',
@@ -44,10 +45,6 @@ export default function PaymentRemindersPage() {
 
   useEffect(() => { load(); }, []);
 
-  const openCreate = () => {
-    setEditing({});
-    setForm({ ...EMPTY_FORM });
-  };
 
   const openEdit = (row) => {
     setEditing(row);
@@ -101,9 +98,24 @@ export default function PaymentRemindersPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-800">Payment Reminders</h1>
-        <Button onClick={openCreate}>+ New Reminder</Button>
+      {/*
+        The RULES come first, because they are what decides when almost every
+        buyer hears from the company. The list below is the exceptions — a
+        one-off reminder somebody scheduled by hand.
+      */}
+      <ReminderSchedulePanel />
+
+      <div>
+        <h1 className="text-xl font-bold text-slate-800">Reminders already scheduled</h1>
+        {/*
+          Reminders are raised by the schedule above, not typed in one at a
+          time. This list is the record of what it has queued and sent — the
+          heading says so, because a bare "Payment Reminders" over a table with
+          no way to add to it reads as a broken screen rather than a log.
+        */}
+        <p className="text-sm text-slate-500">
+          Raised automatically from the schedule above. Edit one to change or cancel it.
+        </p>
       </div>
       <Table
       /*
@@ -122,7 +134,7 @@ export default function PaymentRemindersPage() {
           </div>
         )}
       />
-      <Modal open={editing !== null} onClose={closeModal} title={`${editing?.id ? 'Edit' : 'New'} Payment Reminder`}>
+      <Modal open={editing !== null} onClose={closeModal} title="Edit Payment Reminder">
         <form onSubmit={handleSave} className="space-y-3">
           <EntitySearchSelect
             label="Client"

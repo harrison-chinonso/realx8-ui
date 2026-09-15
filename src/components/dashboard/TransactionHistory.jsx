@@ -1,4 +1,6 @@
 import Badge from '../common/Badge';
+import { openReceipt } from '../../utils/receiptDocument';
+import { useAppearance } from '../../context/useAppearance';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -8,6 +10,8 @@ const formatDate = (value) => {
 
 /** Most recent transactions — date, amount, status. */
 export default function TransactionHistory({ title = 'Recent Transactions', rows = [], fmt, emptyText }) {
+  const appearance = useAppearance();
+
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <h2 className="mb-4 text-sm font-semibold text-slate-900">{title}</h2>
@@ -54,16 +58,21 @@ export default function TransactionHistory({ title = 'Recent Transactions', rows
                 <td className="whitespace-nowrap px-4 py-2.5 text-right font-semibold text-slate-900">{fmt(row.amount)}</td>
                 <td className="px-4 py-2.5"><Badge value={row.status} /></td>
                 <td className="whitespace-nowrap px-4 py-2.5">
-                  {row.company_receipt_url ? (
-                    <a
-                      href={row.company_receipt_url}
-                      target="_blank"
-                      rel="noreferrer"
+                  {/*
+                    Every approved payment has a receipt, not only the ones an
+                    admin attached a file to. A dash here used to mean "no
+                    receipt", which a buyer reasonably read as "this payment was
+                    not properly recorded" — see utils/receiptDocument.
+                  */}
+                  {row.status === 'verified' ? (
+                    <button
+                      type="button"
+                      onClick={() => openReceipt(row, { appearance, fmt })}
                       className="font-medium hover:underline"
                       style={{ color: 'var(--primary)' }}
                     >
-                      Download
-                    </a>
+                      Receipt
+                    </button>
                   ) : <span className="text-slate-300">—</span>}
                 </td>
               </tr>

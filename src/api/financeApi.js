@@ -60,6 +60,19 @@ export const createDebitNote = (payload) => client.post('/debit-notes', payload)
 export const updateDebitNote = (id, payload) => client.put(`/debit-notes/${id}`, payload).then(r => r.data);
 export const deleteDebitNote = (id) => client.delete(`/debit-notes/${id}`).then(r => r.data);
 
+/*
+ * Credit and debit note approval.
+ *
+ * The status is no longer something the form sends — a note is raised as
+ * pending and only an approver moves it, so each transition is its own call
+ * rather than a field on a save.
+ */
+const notePath = (kind) => (kind === 'credit' ? 'credit-notes' : 'debit-notes');
+export const approveNote = (kind, id) => client.post(`/${notePath(kind)}/${id}/approve`).then(r => r.data);
+export const rejectNote = (kind, id, reason) => client.post(`/${notePath(kind)}/${id}/reject`, { reason }).then(r => r.data);
+export const settleNote = (kind, id) => client.post(`/${notePath(kind)}/${id}/settle`).then(r => r.data);
+export const listPendingNotes = () => client.get('/notes/pending-approval').then(r => r.data);
+
 // Payment Reminders
 export const listPaymentReminders = (params) => client.get('/payment-reminders', { params }).then(r => r.data);
 export const createPaymentReminder = (payload) => client.post('/payment-reminders', payload).then(r => r.data);
@@ -109,6 +122,24 @@ export const calculateCommission = (payload) => client.post('/commissions/calcul
 
 // Receipts
 export const listReceipts = (params) => client.get('/receipts', { params }).then(r => r.data);
+/*
+ * What a receipt needs to be a receipt: the property, the unit, the quantity
+ * and the balance left afterwards. None of those live on the receipt row, and
+ * the balance is a live figure rather than something the payment recorded — so
+ * it is fetched for the one receipt being printed, not for the whole list.
+ */
+export const getReceiptPrintData = (id) => client.get(`/receipts/${id}/print-data`).then(r => r.data);
+
+/*
+ * Reminder SCHEDULES — the rules for when buyers get chased, as distinct from
+ * the one-off reminders under /payment-reminders.
+ */
+export const getReminderDefault = () => client.get('/reminder-schedules/default').then(r => r.data);
+export const saveReminderDefault = (payload) => client.put('/reminder-schedules/default', payload).then(r => r.data);
+export const listReminderSchedules = () => client.get('/reminder-schedules').then(r => r.data);
+export const createReminderSchedule = (payload) => client.post('/reminder-schedules', payload).then(r => r.data);
+export const updateReminderSchedule = (id, payload) => client.put(`/reminder-schedules/${id}`, payload).then(r => r.data);
+export const assignReminderSchedule = (payload) => client.post('/reminder-schedules/assign', payload).then(r => r.data);
 export const getReceipt = (id) => client.get(`/receipts/${id}`).then(r => r.data);
 export const createReceipt = (payload) => client.post('/receipts', payload).then(r => r.data);
 export const verifyReceipt = (id, payload) => client.post(`/receipts/${id}/verify`, payload || {}).then(r => r.data);

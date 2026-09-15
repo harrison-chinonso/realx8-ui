@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Download, Eye, Lock } from 'lucide-react';
 import { getMyProperties } from '../../api/financeApi';
-import { useCurrency } from '../../context/useAppearance';
+import { useCurrency, useAppearance } from '../../context/useAppearance';
+import { openReceipt } from '../../utils/receiptDocument';
 import { resolveMedia } from '../../utils/mediaUrl';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { STATE_TONE, STATE_LABEL } from '../../utils/invoiceState';
@@ -101,6 +102,7 @@ function DocumentRow({ doc }) {
 
 export default function MyPropertiesPage() {
   const fmt = useCurrency();
+  const appearance = useAppearance();
   const [rows, setRows] = useState(null);
   const [totals, setTotals] = useState(null);
   const [error, setError] = useState('');
@@ -227,10 +229,15 @@ export default function MyPropertiesPage() {
                                 that reason: two links both called "receipt"
                                 would be worse than one.
                               */}
-                              {proof.company_receipt_url && (
-                                <a href={proof.company_receipt_url} target="_blank" rel="noreferrer" className="text-xs font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
+                              {proof.status === 'verified' && (
+                                <button
+                                  type="button"
+                                  onClick={() => openReceipt(proof, { appearance, fmt })}
+                                  className="text-xs font-semibold hover:underline"
+                                  style={{ color: 'var(--primary)' }}
+                                >
                                   Download receipt
-                                </a>
+                                </button>
                               )}
                             </span>
                           </div>

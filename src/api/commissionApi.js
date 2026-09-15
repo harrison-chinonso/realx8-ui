@@ -103,6 +103,19 @@ export const payCommissionPayout = (id, reference) =>
 export const myCommissionStatement = (params) =>
   client.get('/commission-statements/mine', { params }).then((r) => r.data?.data);
 
+/*
+ * Asking to be paid for particular commissions. The realtor id comes from the
+ * session on the server, so there is nothing here that could name somebody
+ * else's earnings.
+ */
+export const requestMyCommissionPayout = (entitlementIds) =>
+  client.post('/commission-statements/mine/request-payout', { entitlement_ids: entitlementIds })
+    .then((r) => r.data?.data);
+
+/** Realtors waiting to be paid, oldest request first. */
+export const listPayoutRequests = () =>
+  client.get('/commission-payouts/requests').then((r) => r.data?.data);
+
 export const commissionStatementFor = (realtorId, params) =>
   client.get(`/commission-statements/${realtorId}`, { params }).then((r) => r.data?.data);
 

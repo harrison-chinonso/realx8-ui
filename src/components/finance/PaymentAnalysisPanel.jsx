@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getPaymentAnalysis } from '../../api/financeApi';
-import { useCurrency } from '../../context/useAppearance';
+import { useCurrency, useAppearance } from '../../context/useAppearance';
+import { openReceipt } from '../../utils/receiptDocument';
 import Badge from '../common/Badge';
 import SummaryTile from '../dashboard/SummaryTile';
 import { STATE_TONE, STATE_LABEL } from '../../utils/invoiceState';
@@ -44,6 +45,7 @@ export default function PaymentAnalysisPanel({
   const showInvoices = show === 'both' || show === 'invoices';
   const showPayments = show === 'both' || show === 'payments';
   const fmt = useCurrency();
+  const appearance = useAppearance();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -207,22 +209,25 @@ export default function PaymentAnalysisPanel({
                   <td className="px-4 py-3"><Badge value={row.status} /></td>
                   <td className="px-4 py-3 text-slate-500">{row.note || '—'}</td>
                   {/*
-                    The receipt the company issued, where one was attached. Not
-                    every payment has one — a company may not require them, and
-                    nothing issued before this existed has one — so the column
-                    is quiet rather than apologetic when it is empty.
+                    The company's own receipt where one was attached, and a
+                    generated one carrying the property, the unit and the
+                    balance where none was — see utils/receiptDocument. The
+                    column is quiet only for a payment that has no receipt to
+                    give, which now means one that was never approved.
                   */}
                   <td className="px-4 py-3">
-                    {row.company_receipt_url ? (
-                      <a
-                        href={row.company_receipt_url}
-                        target="_blank"
-                        rel="noreferrer"
+                    {row.receipt_id || row.company_receipt_url ? (
+                      <button
+                        type="button"
+                        onClick={() => openReceipt(
+                          { id: row.receipt_id, company_receipt_url: row.company_receipt_url },
+                          { appearance, fmt },
+                        )}
                         className="text-sm font-medium hover:underline"
                         style={{ color: 'var(--primary)' }}
                       >
-                        Download
-                      </a>
+                        Receipt
+                      </button>
                     ) : <span className="text-slate-400">—</span>}
                   </td>
                 </tr>

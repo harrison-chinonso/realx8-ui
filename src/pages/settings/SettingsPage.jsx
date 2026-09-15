@@ -1301,14 +1301,23 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Horizontal tab bar — replaces the left sidebar */}
-      <div className="flex overflow-x-auto border-b border-slate-200 -mx-0">
+      {/*
+        The tabs WRAP rather than scroll sideways.
+
+        As one scrolling row, how many tabs you could see depended on how much
+        width your layout left for the content — so Invoicing and AI Assistant,
+        which sit fifth and sixth, were off the right-hand edge in every layout
+        with a sidebar and there was no scrollbar to suggest otherwise. A
+        setting you cannot see is a setting you do not have, and which ones
+        those were came down to a theme choice.
+      */}
+      <div className="flex flex-wrap border-b border-slate-200">
         {SETTING_GROUPS.map((g) => (
           <button
             key={g.group}
             type="button"
             onClick={() => { setActiveGroup(g.group); setMessage(null); }}
-            className={`shrink-0 whitespace-nowrap border-b-2 px-5 py-3 text-sm font-medium transition-colors ${
+            className={`whitespace-nowrap border-b-2 px-5 py-3 text-sm font-medium transition-colors ${
               activeGroup === g.group
                 ? 'border-blue-600 text-blue-600'
                 : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'

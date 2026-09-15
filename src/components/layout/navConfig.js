@@ -197,8 +197,24 @@ export const NAV = [
           { to: '/finance/my-commission', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
         ],
       },
-      { to: '/finance/credit-notes',      label: 'Credit Note',       icon: FileMinus,    permission: 'finance.credit-notes.manage' },
-      { to: '/finance/debit-notes',       label: 'Debit Note',        icon: FilePlus,     permission: 'finance.debit-notes.manage' },
+      /**
+       * Both carry the SAME badge count, because the queue is one queue.
+       *
+       * A note waiting for approval is waiting whichever kind it is, and an
+       * approver who has to remember to check two screens will eventually check
+       * neither. The count is the combined figure; the row you open filters it
+       * to its own kind.
+       */
+      {
+        to: '/finance/credit-notes', label: 'Credit Note', icon: FileMinus,
+        permission: 'finance.credit-notes.manage',
+        badge: 'pendingNotes', badgeLabel: 'notes awaiting approval',
+      },
+      {
+        to: '/finance/debit-notes', label: 'Debit Note', icon: FilePlus,
+        permission: 'finance.debit-notes.manage',
+        badge: 'pendingNotes', badgeLabel: 'notes awaiting approval',
+      },
       { to: '/finance/taxes',             label: 'Taxes',             icon: Tag,          permission: 'finance.taxes.manage' },
       { to: '/finance/reports',           label: 'Report',            icon: FolderOpen,   permission: 'finance.reports.view' },
     ],

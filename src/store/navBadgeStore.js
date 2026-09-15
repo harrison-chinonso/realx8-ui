@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { listReceipts } from '../api/financeApi';
+import { listReceipts, listPendingNotes } from '../api/financeApi';
 
 /**
  * Counts of work waiting, for the badges on the sidebar.
@@ -57,16 +57,34 @@ const useNavBadgeStore = create((set, get) => ({
 
     set({ loading: true });
     try {
-      const response = await listReceipts({ status: 'pending', limit: 1 });
-      const total = Number(response?.pagination?.total);
-      set((state) => ({
-        counts: {
-          ...state.counts,
-          pendingApprovals: Number.isFinite(total) ? total : 0,
-        },
-      }));
+      /**
+       * Both counts in one pass, and neither is allowed to sink the other.
+       *
+       * A staff member holding one permission but not the other gets a 403 on
+       * the endpoint they cannot see — which must not blank the badge they
+       * can. allSettled rather than all, for exactly that.
+       */
+      const [receipts, notes] = await Promise.allSettled([
+        listReceipts({ status: 'pending', limit: 1 }),
+        listPendingNotes(),
+      ]);
+
+      set((state) => {
+        const counts = { ...state.counts };
+
+        if (receipts.status === 'fulfilled') {
+          const total = Number(receipts.value?.pagination?.total);
+          counts.pendingApprovals = Number.isFinite(total) ? total : 0;
+        }
+        if (notes.status === 'fulfilled') {
+          const rows = notes.value?.data ?? notes.value ?? [];
+          counts.pendingNotes = Array.isArray(rows) ? rows.length : 0;
+        }
+
+        return { counts };
+      });
     } catch {
-      // Leave the previous count in place.
+      // Leave the previous counts in place.
     } finally {
       set({ loading: false });
     }

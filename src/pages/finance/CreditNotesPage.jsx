@@ -3,6 +3,7 @@ import { listCreditNotes, createCreditNote, updateCreditNote, listTaxes } from '
 import PartySelect from '../../components/finance/PartySelect';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
+import NoteApprovalActions from '../../components/finance/NoteApprovalActions';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
@@ -16,17 +17,47 @@ const EMPTY_FORM = {
   party_type: 'client',
   amount: '',
   tax_id: '',
-  status: 'draft',
   description: '',
 };
 
-const STATUS_OPTIONS = ['draft', 'sent', 'paid'];
+/**
+ * How each state reads to a person.
+ *
+ * The raw values are for the database. "pending_approval" on a screen makes a
+ * reader translate; "Waiting for approval" tells them what is happening and who
+ * it is waiting on.
+ */
+const STATUS_LABELS = {
+  pending_approval: 'Waiting for approval',
+  approved: 'Approved',
+  rejected: 'Refused',
+  used: 'Used',
+  cancelled: 'Cancelled',
+  draft: 'Draft',
+  sent: 'Sent',
+  partial: 'Part used',
+};
+const statusLabel = (status) => STATUS_LABELS[status] || status || '—';
+
+/**
+ * The page opens on what is WAITING, not on everything ever raised.
+ *
+ * An approver's question is "what needs me", and a flat list in id order
+ * answers a different one — they have to read every row to find the two that
+ * matter. Each tab also says what an empty one MEANS: the table's own default
+ * is "No data available", which on a queue reads as a loading failure rather
+ * than as the good news that there is nothing to do.
+ */
+const TABS = [
+  { key: 'pending_approval', label: 'Waiting for approval', empty: 'Nothing is waiting for approval.' },
+  { key: 'approved', label: 'Approved', empty: 'Nothing has been approved yet.' },
+  { key: 'rejected', label: 'Refused', empty: 'Nothing has been refused.' },
+  { key: 'used', label: 'Used', empty: 'Nothing has been settled yet.' },
+  { key: 'all', label: 'All', empty: 'No credit notes have been raised yet.' },
+];
 
 const getItems = (response) => response?.data ?? response ?? [];
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
-const normalizeCreditStatus = (status) => (status === 'used' ? 'paid' : status || 'draft');
-const toApiCreditStatus = (status) => (status === 'paid' ? 'used' : status);
-const getStatusOptions = (value) => [...new Set([...STATUS_OPTIONS, value].filter(Boolean))];
 
 export default function CreditNotesPage() {
   const fmt = useCurrency();
@@ -36,6 +67,7 @@ export default function CreditNotesPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [tab, setTab] = useState('pending_approval');
 
   const load = async () => {
     setLoading(true);
@@ -64,7 +96,6 @@ export default function CreditNotesPage() {
       party_type: row.party_type ?? 'client',
       amount: row.amount ?? '',
       tax_id: row.tax_id ?? '',
-      status: normalizeCreditStatus(row.status),
       description: row.reason || row.description || '',
     });
   };
@@ -87,7 +118,6 @@ export default function CreditNotesPage() {
         party_type: form.party_type || 'client',
         amount: Number(form.amount),
         tax_id: form.tax_id ? Number(form.tax_id) : null,
-        status: toApiCreditStatus(form.status),
         reason: form.description.trim() || null,
       };
 
@@ -124,10 +154,24 @@ export default function CreditNotesPage() {
       ),
     },
     { header: 'Amount', render: (row) => fmt(Number(row.amount || 0)) },
-    { header: 'Status', render: (row) => <Badge value={normalizeCreditStatus(row.status)} /> },
+    {
+      header: 'Status',
+      render: (row) => (
+        <div>
+          <Badge value={statusLabel(row.status)} />
+          {row.status === 'rejected' && row.rejection_reason && (
+            <p className="mt-1 max-w-xs text-xs text-slate-500">{row.rejection_reason}</p>
+          )}
+        </div>
+      ),
+    },
     { header: 'Tax', render: getTaxLabel },
     { header: 'Created At', render: (row) => formatDate(row.createdAt || row.created_at) },
   ];
+
+  const countFor = (key) => (key === 'all' ? items.length : items.filter((row) => row.status === key).length);
+  const active = TABS.find((entry) => entry.key === tab) || TABS[0];
+  const visible = tab === 'all' ? items : items.filter((row) => row.status === tab);
 
   return (
     <div className="space-y-4">
@@ -135,13 +179,46 @@ export default function CreditNotesPage() {
         <h1 className="text-xl font-bold text-slate-800">Credit Notes</h1>
         <Button onClick={openCreate}>+ New Credit Note</Button>
       </div>
+
+      {/* Wraps rather than scrolls, so no tab can be pushed out of sight. */}
+      <div className="flex flex-wrap border-b border-slate-200">
+        {TABS.map((entry) => (
+          <button
+            key={entry.key}
+            type="button"
+            onClick={() => setTab(entry.key)}
+            className={`whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+              tab === entry.key
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
+            }`}
+          >
+            {entry.label}
+            {countFor(entry.key) > 0 && (
+              <span className="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+                {countFor(entry.key)}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
       <Table
         columns={columns}
-        data={items}
+        data={visible}
         loading={loading}
+        emptyMessage={active.empty}
         renderActions={(row) => (
-          <div className="flex justify-end gap-3">
-            <Button onClick={() => openEdit(row)} variant="primary" size="sm">Edit</Button>
+          <div className="flex items-center justify-end gap-2">
+            {/*
+              Editable only while it is still waiting. Once somebody has
+              approved or refused it, what they signed off on has to stay the
+              thing that was signed off on — an edit afterwards would change the
+              amount under an approval that had already been given.
+            */}
+            {row.status === 'pending_approval' && (
+              <Button onClick={() => openEdit(row)} variant="primary" size="sm">Edit</Button>
+            )}
+            <NoteApprovalActions kind="credit" note={row} onChanged={load} />
           </div>
         )}
       />
@@ -185,20 +262,6 @@ export default function CreditNotesPage() {
             </Select>
           </label>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Status</span>
-            <Select
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              value={form.status}
-              onChange={handleChange('status')}
-            >
-              {getStatusOptions(form.status).map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className="block space-y-1">
             <span className="text-sm font-medium text-slate-700">Description</span>
             <textarea
               rows={4}
@@ -207,6 +270,16 @@ export default function CreditNotesPage() {
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             />
           </label>
+          {/*
+            Said before they save, not after. Somebody who expects the note to
+            take effect immediately needs to know it will not, and finding that
+            out from a status badge afterwards is finding it out too late.
+          */}
+          {!editing?.id && (
+            <p className="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              This goes to an approver before it can be used against what they owe.
+            </p>
+          )}
           <div className="flex gap-2 pt-2">
             <Button type="submit" className="flex-1" disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
             <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>

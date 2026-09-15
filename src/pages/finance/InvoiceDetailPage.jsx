@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getInvoice, updateInvoice, sendInvoice, payInvoice, getInvoicePayments, listBankAccounts } from '../../api/financeApi';
-import { useCurrency } from '../../context/useAppearance';
+import { useCurrency, useAppearance } from '../../context/useAppearance';
+import { openReceipt } from '../../utils/receiptDocument';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import useAuthStore from '../../store/authStore';
@@ -52,6 +53,7 @@ const formatValue = (value) => (value === null || value === undefined || value =
 export default function InvoiceDetailPage() {
   const { id } = useParams();
   const fmt = useCurrency();
+  const appearance = useAppearance();
   const [invoice, setInvoice] = useState(null);
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -472,16 +474,18 @@ export default function InvoiceDetailPage() {
                */
               key: 'receipt',
               label: 'Receipt',
-              render: (row) => (row.proof?.company_receipt_url ? (
-                <a
-                  href={row.proof.company_receipt_url}
-                  target="_blank"
-                  rel="noreferrer"
+              render: (row) => (row.proof?.receipt_id || row.proof?.company_receipt_url ? (
+                <button
+                  type="button"
+                  onClick={() => openReceipt(
+                    { id: row.proof.receipt_id, company_receipt_url: row.proof.company_receipt_url },
+                    { appearance, fmt },
+                  )}
                   className="font-medium hover:underline"
                   style={{ color: 'var(--primary)' }}
                 >
-                  Download
-                </a>
+                  Receipt
+                </button>
               ) : <span className="text-xs text-slate-400">—</span>),
             },
             {

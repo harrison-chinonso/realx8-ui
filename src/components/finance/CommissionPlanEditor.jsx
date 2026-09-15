@@ -287,6 +287,19 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
   const warnings = verdict?.warnings || [];
 
   const allocation = preview?.entitlements || [];
+
+  /**
+   * What the selling realtor is actually paid, once the plan's charges come
+   * off — the number that reaches their bank account.
+   *
+   * Computed by the SERVER, alongside the allocation, rather than here. The
+   * order the charges are applied in changes the answer, so a second
+   * implementation in the browser would agree with the payout run right up
+   * until a company configured the combination that distinguishes them — and
+   * then this preview would promise a figure the payout did not pay.
+   */
+  const netPreview = preview?.net_to_seller || null;
+
   const roleLabel = (line) => (line.role === 'UPLINE'
     ? `Generation ${line.generation}`
     : line.role === 'DIRECT' ? 'Selling realtor'
@@ -778,6 +791,35 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
                       {fmt(preview.allocated_minor / 100)}
                     </td>
                   </tr>
+                  {/*
+                    What is actually paid, once the plan's charges come off.
+                    Shown against the seller's own share rather than the pool,
+                    because charges apply to what each person receives — and
+                    because "total commission" is not a number anybody is ever
+                    paid.
+                  */}
+                  {netPreview && (
+                    <>
+                      {netPreview.lines.map((line) => (
+                        <tr key={line.code}>
+                          <td className="py-1 pr-2 text-xs text-slate-500">
+                            less {line.label}
+                          </td>
+                          <td className="py-1 text-right text-xs text-slate-500">
+                            −{fmt(line.amount_minor / 100)}
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="border-t border-slate-200">
+                        <td className="pt-2 pr-2 font-semibold text-slate-900">
+                          Seller is paid
+                        </td>
+                        <td className="pt-2 text-right font-bold text-slate-900">
+                          {fmt(netPreview.net_minor / 100)}
+                        </td>
+                      </tr>
+                    </>
+                  )}
                 </tfoot>
               </table>
 
@@ -795,6 +837,21 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
               {busy ? 'Working…' : 'Enter a price to see what this pays.'}
             </p>
           )}
+        </Section>
+
+        {/*
+          Taxes and charges, which are the difference between what a realtor
+          earns and what they are actually paid.
+        */}
+        <Section
+          title="Taxes and charges on the payout"
+          description="Taken off a commission before it reaches the realtor. Leave empty and they are paid the whole of what they earned."
+        >
+          <DeductionEditor
+            deductions={config.deductions || []}
+            onChange={(deductions) => patch({ deductions: deductions.length ? deductions : undefined })}
+            disabled={disabled}
+          />
         </Section>
 
         {(errors.length > 0 || warnings.length > 0) && (
@@ -818,6 +875,133 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Taxes and charges taken off a commission before it is paid.
+ *
+ * ── Why the order is something you set, not something we decide ─────────────
+ *
+ * Withholding tax on the gross and an admin fee on the gross give a different
+ * net from tax on the gross and a fee on what is left. Both arrangements are
+ * real, jurisdictions differ, and a system that fixed one would be quietly
+ * wrong for half its tenants. So each charge says whether it applies to the
+ * full commission or to what is left at its point in the list, and the list
+ * order is the order they are applied in.
+ *
+ * ── Never more than is there ────────────────────────────────────────────────
+ *
+ * The engine caps each charge at what remains, so a profile whose charges
+ * exceed the commission produces a zero payout rather than a negative one. A
+ * realtor is never asked to fund their own earnings.
+ */
+const DEDUCTION_PRESETS = [
+  { code: 'WHT', label: 'Withholding tax', type: 'PERCENTAGE', value: 5, basis: 'GROSS' },
+  { code: 'ADMIN', label: 'Administrative charge', type: 'PERCENTAGE', value: 2.5, basis: 'GROSS' },
+  { code: 'PROCESSING', label: 'Processing fee', type: 'FLAT', value: 0, basis: 'GROSS' },
+];
+
+function DeductionEditor({ deductions, onChange, disabled }) {
+  const set = (index, patch) => onChange(
+    deductions.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)),
+  );
+  const remove = (index) => onChange(
+    deductions.filter((unused, i) => i !== index).map((entry, i) => ({ ...entry, order: i })),
+  );
+  const add = (preset) => onChange([
+    ...deductions,
+    { ...preset, order: deductions.length, is_active: true },
+  ]);
+
+  return (
+    <div className="space-y-2">
+      {deductions.map((entry, index) => (
+        <div key={index} className="space-y-2 rounded-lg border border-slate-200 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              value={entry.label || ''}
+              onChange={(e) => set(index, { label: e.target.value })}
+              placeholder="What it is called"
+              disabled={disabled}
+              className="flex-1 min-w-[10rem] rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+            />
+            <Select
+              value={entry.type || 'PERCENTAGE'}
+              onChange={(e) => set(index, { type: e.target.value })}
+              disabled={disabled}
+            >
+              <option value="PERCENTAGE">a percentage</option>
+              <option value="FLAT">a fixed amount</option>
+            </Select>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={entry.type === 'FLAT'
+                ? String((entry.value_minor ?? 0) / 100)
+                : (entry.value ?? '')}
+              onChange={(e) => (entry.type === 'FLAT'
+                ? set(index, { value_minor: Math.round(Number(e.target.value || 0) * 100) })
+                : set(index, { value: numberOrUndefined(e.target.value) }))}
+              disabled={disabled}
+              className="w-28 rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
+            />
+            {entry.type !== 'FLAT' && (
+              <Select
+                value={entry.basis || 'GROSS'}
+                onChange={(e) => set(index, { basis: e.target.value })}
+                disabled={disabled}
+              >
+                <option value="GROSS">% of the full commission</option>
+                <option value="RUNNING">% of what is left at this point</option>
+              </Select>
+            )}
+            {!disabled && (
+              <button
+                type="button"
+                onClick={() => remove(index)}
+                className="text-sm text-slate-400 hover:text-rose-600"
+              >
+                Remove
+              </button>
+            )}
+          </div>
+          {/*
+            The order only matters once a charge is taken on the RUNNING
+            balance, so it is explained where it starts to matter rather than
+            up front where it is noise.
+          */}
+          {entry.basis === 'RUNNING' && index > 0 && (
+            <p className="text-xs text-slate-500">
+              Applied after everything above it, so the charges above reduce what this is taken from.
+            </p>
+          )}
+        </div>
+      ))}
+
+      {!disabled && (
+        <div className="flex flex-wrap gap-2 pt-1">
+          {DEDUCTION_PRESETS.map((preset) => (
+            <Button
+              key={preset.code}
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => add(preset)}
+            >
+              + {preset.label}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {!deductions.length && (
+        <p className="text-sm text-slate-500">
+          Nothing is taken off. Realtors on this plan are paid the full commission they earn.
+        </p>
+      )}
     </div>
   );
 }

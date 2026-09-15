@@ -5,6 +5,7 @@ import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import { enumLabel } from '../../utils/enumLabel';
+import MyEntitlementsPanel from '../../components/finance/MyEntitlementsPanel';
 
 const getData = (response) => response?.data ?? response ?? null;
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '—');
@@ -71,6 +72,13 @@ export default function MyCommissionsPage() {
 
   return (
     <div className="space-y-4">
+      {/*
+        Commissions from the engine come first — those are the ones a sale
+        raises on its own. The list below is the older flat-rate arrangement,
+        which a company may still be on and which a realtor's history may span.
+      */}
+      <MyEntitlementsPanel />
+
       <div>
         <h1 className="text-xl font-semibold text-slate-900">My Commissions</h1>
         <p className="text-sm text-slate-500">
