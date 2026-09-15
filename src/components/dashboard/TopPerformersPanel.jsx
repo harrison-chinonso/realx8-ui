@@ -1,4 +1,4 @@
-import { Building2, Home, UserRound } from 'lucide-react';
+import { Building2, Home, UserRound, Landmark } from 'lucide-react';
 import { DASHBOARD_ROWS, capRows } from './dashboardRows';
 
 /**
@@ -75,7 +75,11 @@ export function Ranking({ icon: Icon, title, rows, fmt, emptyNote, limit = DASHB
 }
 
 export default function TopPerformersPanel({ data, fmt, period }) {
-  const { properties = [], units, clients = [], units_unattributed: unattributed = 0 } = data || {};
+  const {
+    properties = [], units, clients = [], branches,
+    units_unattributed: unattributed = 0,
+    branches_unassigned: branchless = 0,
+  } = data || {};
 
   return (
     <div className="space-y-2">
@@ -84,7 +88,13 @@ export default function TopPerformersPanel({ data, fmt, period }) {
         <span className="text-[11px] text-slate-400">By payments received · {period}</span>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      {/*
+        Three columns, or four once a company runs branches. The branch card is
+        absent rather than empty for a company that has not set any up — an
+        empty leaderboard reads as "no sales", which is a different and alarming
+        claim.
+      */}
+      <div className={`grid gap-3 ${branches ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3'}`}>
         <Ranking
           icon={Building2} title="Properties" rows={properties} fmt={fmt}
           emptyNote="No payments received yet."
@@ -105,6 +115,17 @@ export default function TopPerformersPanel({ data, fmt, period }) {
           icon={UserRound} title="Clients" rows={clients} fmt={fmt}
           emptyNote="No payments received yet."
         />
+        {/*
+          A branch earns through the properties assigned to it, so this ranks
+          the same money as the property column — grouped by the office that
+          sells it rather than by the estate.
+        */}
+        {branches && (
+          <Ranking
+            icon={Landmark} title="Branches" rows={branches} fmt={fmt}
+            emptyNote="No payments received yet."
+          />
+        )}
       </div>
 
       {/*
@@ -117,6 +138,18 @@ export default function TopPerformersPanel({ data, fmt, period }) {
         <p className="text-[11px] text-slate-400">
           {fmt(unattributed)} received against sales with no unit recorded — counted under
           properties and clients, but not in the unit ranking.
+        </p>
+      )}
+
+      {/*
+        Same reasoning as the unit note. A branch ranking covering a third of
+        the revenue looks exactly like one covering all of it, and somebody
+        decides which office is performing on the strength of that.
+      */}
+      {branches && branchless > 0 && (
+        <p className="text-[11px] text-slate-400">
+          {fmt(branchless)} received against properties in no branch — not counted in the
+          branch ranking. Assign them on the property to include them.
         </p>
       )}
     </div>
