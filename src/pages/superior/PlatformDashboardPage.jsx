@@ -5,6 +5,7 @@ import { topPerformersReport } from '../../api/financeApi';
 import StatsCard from '../../components/common/StatsCard';
 import Badge from '../../components/common/Badge';
 import { Ranking } from '../../components/dashboard/TopPerformersPanel';
+import { capRows } from '../../components/dashboard/dashboardRows';
 import { useCurrency } from '../../context/useAppearance';
 import { Link } from 'react-router-dom';
 
@@ -113,7 +114,15 @@ export default function PlatformDashboardPage() {
           </div>
         ) : (
           <div className="space-y-2">
-            {companies.map((c) => (
+            {/*
+              * Capped here as well as in the request.
+              *
+              * `?limit=5` is a request, not a guarantee — an endpoint that
+              * ignores it, or a default that changes, would quietly grow this
+              * panel past the five rows every other dashboard list shows. The
+              * cap belongs where the rows are drawn.
+              */}
+            {capRows(companies).map((c) => (
               <div key={c.id}
                 className="flex items-center justify-between rounded-lg border border-slate-100 px-4 py-3 hover:bg-slate-50">
                 <div className="flex items-center gap-3 min-w-0">
