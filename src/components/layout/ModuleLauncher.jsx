@@ -319,7 +319,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   );
 
   return (
-    <div className="rx-launcher fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-slate-900/40 sm:p-10">
+    <div className="rx-launcher fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-slate-900/40 min-[520px]:p-6 min-[900px]:p-10">
       <style>{LAUNCHER_CSS}</style>
       <div className="absolute inset-0" onClick={close} aria-hidden="true" />
 

@@ -225,7 +225,15 @@ export const LAUNCHER_CSS = `
 .rx-empty { padding: 42px 0; text-align: center; font-size: 13px; color: var(--rx-ink-3); }
 
 /* ── Phone: full-bleed, tighter, and the second tier of type goes ───────── */
-@media (max-width: 639px) {
+/*
+ * The phone treatment stops at 520px, not 640px.
+ *
+ * Two columns have to fill whatever width they are given, and between 520 and
+ * 640 that produced tiles 304px wide and 112 tall — a letterbox, not a tile.
+ * Above 520 there is room for the three-column desktop grid at its proper
+ * proportions, so that is where the switch belongs.
+ */
+@media (max-width: 519px) {
   .rx-panel { max-width: none; width: 100%; height: 100%; max-height: none; border-radius: 0; }
   /*
    * Two columns, stated rather than derived.
