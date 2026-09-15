@@ -144,7 +144,15 @@ function Tile({ icon: Icon, label, ...props }) {
  * The one explicit breakpoint is 1200px, on the PANEL — the width at which the
  * fourth column is specified to appear, and not a width Tailwind has a name for.
  */
-const GRID = 'grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3 '
+/**
+ * Two columns on a phone, stated rather than derived; auto-fill above that.
+ *
+ * The phone case was left to auto-fill too, and at 320px — an iPhone SE, still
+ * the narrowest screen in common use — a 130px minimum plus its gutter did not
+ * fit twice, so the grid quietly dropped to ONE column and the launcher became
+ * a list. Two is the floor the pattern specifies, so two is what it says.
+ */
+const GRID = 'grid grid-cols-2 gap-3 '
   + 'sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] sm:gap-4';
 
 export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
@@ -219,7 +227,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   const heading = term ? 'Results' : (section?.section || 'Modules');
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-start justify-center bg-slate-900/40 p-3 sm:p-6">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40">
       {/* The backdrop closes it, as every overlay in this application does. */}
       <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
 
@@ -228,7 +236,17 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
         role="dialog"
         aria-modal="true"
         aria-label="Modules"
-        className="relative mt-2 flex max-h-[calc(100vh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 sm:mt-6 min-[1200px]:max-w-4xl"
+        /*
+         * Nine tenths of the screen, centred — so the same 5% of page shows
+         * above, below and to either side, and the launcher reads as a surface
+         * of its own rather than a panel that happens to be near the top.
+         *
+         * A fixed size rather than one that hugs its contents: the grid is
+         * memorised by position, and a panel that grew and shrank with the
+         * number of tiles would move every tile whenever somebody's permissions
+         * changed or they drilled into a section.
+         */
+        className="relative flex h-[90vh] w-[90vw] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200"
       >
         <div className="flex items-center gap-2 border-b border-slate-200 px-3 py-2.5 sm:px-4">
           {section && !term && (
@@ -270,7 +288,27 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
+        {/*
+          The grid sits in the middle of the panel rather than at the top of it.
+          At this size a dozen tiles leave a lot of room underneath, and a block
+          pinned to the top of a centred overlay looks like it fell there.
+
+          `m-auto` rather than `justify-center`: a centred flex child whose
+          content is TALLER than the box has its overflow clipped at the top and
+          cannot be scrolled back to — which is exactly what would happen inside
+          Finance, where fifteen destinations do not fit.
+        */}
+        <div className="flex min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
+          {/*
+            The panel is nine tenths of the screen; the GRID is not.
+            
+            On a 27" monitor nine tenths is 2300px, and auto-fill happily filled
+            it with twelve columns in a single row — a ribbon, not a grid, and
+            slower to scan than the sidebar this replaces. Capped and centred,
+            the tiles stay a readable size and the column count tops out at six
+            however wide the screen gets.
+          */}
+          <div className="m-auto w-full max-w-[1100px]">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">{heading}</p>
 
           <nav aria-label="Modules">
@@ -330,6 +368,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
               </div>
             )}
           </nav>
+          </div>
         </div>
       </div>
     </div>
