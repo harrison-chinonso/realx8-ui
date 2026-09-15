@@ -334,6 +334,35 @@ function PreviewGrouped() {
   );
 }
 
+function PreviewLauncher() {
+  return (
+    <svg viewBox="0 0 200 112" className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
+      {/* Page */}
+      <rect width="200" height="112" fill="#f8fafc" />
+      {/* Utility bar — the only chrome this template has */}
+      <rect width="200" height="16" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
+      {/* The launcher button, in the corner it actually occupies */}
+      <rect x="5" y="5" width="7" height="7" rx="1.5" fill="#2563eb" />
+      <rect x="16" y="6" width="18" height="4" rx="1.5" fill="#cbd5e1" />
+      <circle cx="190" cy="8" r="4" fill="#e2e8f0" />
+      <rect x="170" y="6" width="12" height="4" rx="2" fill="#e2e8f0" />
+      {/* The launcher itself, open over the page */}
+      <rect x="28" y="24" width="144" height="80" rx="6" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
+      <rect x="34" y="30" width="100" height="7" rx="3" fill="#f1f5f9" />
+      {[0, 1, 2, 3].map((col) => [0, 1].map((row) => (
+        <g key={`${col}-${row}`}>
+          <rect
+            x={34 + col * 34} y={44 + row * 28} width="30" height="24" rx="3"
+            fill="#ffffff" stroke="#e2e8f0" strokeWidth="1"
+          />
+          <rect x={45 + col * 34} y={50 + row * 28} width="8" height="8" rx="2" fill="#94a3b8" />
+          <rect x={42 + col * 34} y={61 + row * 28} width="14" height="3" rx="1.5" fill="#e2e8f0" />
+        </g>
+      )))}
+    </svg>
+  );
+}
+
 const TEMPLATE_OPTIONS = [
   {
     id: 'classic',
@@ -364,6 +393,12 @@ const TEMPLATE_OPTIONS = [
     label: 'Grouped',
     description: 'Collapsible grouped left sidebar',
     Preview: PreviewGrouped,
+  },
+  {
+    id: 'launcher',
+    label: 'Launcher',
+    description: 'No sidebar — a module grid opened from the top bar',
+    Preview: PreviewLauncher,
   },
 ];
 

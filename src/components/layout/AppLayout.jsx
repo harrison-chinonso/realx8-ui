@@ -4,6 +4,7 @@ import ModernLayout from './ModernLayout';
 import MinimalLayout from './MinimalLayout';
 import BoldLayout from './BoldLayout';
 import GroupedLayout from './GroupedLayout';
+import LauncherLayout from './LauncherLayout';
 import AssistantWidget from '../common/AssistantWidget';
 import { NavBadges } from './NavBadge';
 
@@ -13,6 +14,7 @@ const TEMPLATES = {
   minimal: MinimalLayout,
   bold:    BoldLayout,
   grouped: GroupedLayout,
+  launcher: LauncherLayout,
 };
 
 export default function AppLayout({ children }) {
