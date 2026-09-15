@@ -5,10 +5,11 @@ import Input from '../../components/ui/Input';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import { plural } from '../../utils/plural';
+import { useCurrency } from '../../context/useAppearance';
 import {
   listCommissionPayouts, buildCommissionPayouts,
   approveCommissionPayout, payCommissionPayout, cancelCommissionPayout,
-  listPayoutRequests,
+  listPayoutRequests, raisePayoutDebitNote,
 } from '../../api/commissionApi';
 
 /**
@@ -37,6 +38,7 @@ const money = (minor) => (Number(minor || 0) / 100)
   .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function CommissionPayoutsPage() {
+  const fmt = useCurrency();
   const [payouts, setPayouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState('');
@@ -98,6 +100,27 @@ export default function CommissionPayoutsPage() {
       await load();
     } catch (error) {
       setFailed(error?.response?.data?.message || 'Could not build the payout run.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /**
+   * Raise the note that pays this payout.
+   *
+   * Refused on anything not approved, and refused a second time if a note
+   * already exists — a double click must not send a realtor two of them.
+   */
+  const raiseNote = async (payout) => {
+    setBusy(true);
+    setMessage('');
+    setFailed('');
+    try {
+      const note = await raisePayoutDebitNote(payout.id);
+      setMessage(`${note.debit_note_id} raised for ${fmt(note.amount)}. `
+        + 'It is waiting for approval; paying it is what records the money leaving.');
+    } catch (error) {
+      setFailed(error?.response?.data?.message || 'Could not raise the debit note.');
     } finally {
       setBusy(false);
     }
@@ -216,6 +239,20 @@ export default function CommissionPayoutsPage() {
             {(row.status === 'DRAFT' || row.status === 'APPROVED') && (
               <Button type="button" variant="danger" size="sm" disabled={busy} onClick={() => act(row, 'cancel')}>
                 Cancel
+              </Button>
+            )}
+            {/*
+              The order the money actually moves in: raise a debit note for the
+              NET, have somebody approve it, pay THAT — which is what writes the
+              ledger entry — then come back here and record the payment.
+
+              "Record payment" closes the payout's own record; it no longer
+              writes a transaction, because nothing had approved one at that
+              point.
+            */}
+            {row.status === 'APPROVED' && (
+              <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => raiseNote(row)}>
+                Raise debit note
               </Button>
             )}
             {row.status === 'APPROVED' && (

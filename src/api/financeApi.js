@@ -92,6 +92,12 @@ export const paystackVerify = (payload) => client.post('/payments/paystack/verif
 
 // Reports
 export const revenueReport = () => client.get('/reports/revenue').then(r => r.data);
+/*
+ * Commission across both the engine and the older flat rate, totalled on the
+ * server. Summing `/commissions` in the browser reported zero for every company
+ * on the engine, and could only ever have totalled one page of rows anyway.
+ */
+export const commissionReport = (params) => client.get('/reports/commissions', { params }).then(r => r.data);
 
 /**
  * Top performing properties, units and clients, ranked by money RECEIVED.

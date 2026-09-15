@@ -113,6 +113,14 @@ export const requestMyCommissionPayout = (entitlementIds) =>
     .then((r) => r.data?.data);
 
 /** Realtors waiting to be paid, oldest request first. */
+/*
+ * Raise the debit note that pays a payout. The note goes for approval, and
+ * paying THAT is what writes the ledger entry — marking the commission paid is
+ * the bookkeeping step afterwards.
+ */
+export const raisePayoutDebitNote = (id) =>
+  client.post(`/commission-payouts/${id}/debit-note`).then((r) => r.data?.data);
+
 export const listPayoutRequests = () =>
   client.get('/commission-payouts/requests').then((r) => r.data?.data);
 

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { invoiceReport, revenueReport, transactionReport } from '../../api/financeApi';
-import { listCommissions } from '../../api/userApi';
+import { invoiceReport, revenueReport, transactionReport, commissionReport } from '../../api/financeApi';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
 import StatsCard from '../../components/common/StatsCard';
@@ -28,6 +27,7 @@ export default function ReportsPage() {
   const [invoices, setInvoices] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [commissions, setCommissions] = useState([]);
+  const [commissionTotals, setCommissionTotals] = useState(null);
   const [revenue, setRevenue] = useState(0);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ start_date: '', end_date: '', status: '' });
@@ -39,12 +39,15 @@ export default function ReportsPage() {
         invoiceReport(filters),
         transactionReport(),
         revenueReport(),
-        listCommissions(),
+        // Both commission systems, totalled on the server — see the note
+        // on totalCommissions below.
+        commissionReport(filters),
       ]);
       setInvoices(Array.isArray(inv.data) ? inv.data : []);
       setTransactions(Array.isArray(txn.data) ? txn.data : []);
       setRevenue(rev.data?.revenue || 0);
       setCommissions(Array.isArray(com.data) ? com.data : []);
+      setCommissionTotals(com.totals || null);
     } catch (e) {
       console.error('Reports load error:', e);
     } finally { setLoading(false); }
@@ -79,8 +82,19 @@ export default function ReportsPage() {
     { header: 'Date', render: r => new Date(r.createdAt).toLocaleDateString() },
   ];
 
-  const totalCommissions = commissions.reduce((s, c) => s + Number(c.amount || 0), 0);
-  const paidCommissions = commissions.filter(c => c.status === 'paid').reduce((s, c) => s + Number(c.amount || 0), 0);
+  /**
+   * The server's totals, not a sum of the rows on screen.
+   *
+   * Summing here could only ever total what was fetched — and the list is
+   * capped — so a figure labelled "total" would quietly mean "total of the
+   * first few". It also read the older flat-rate table alone, which is empty on
+   * any company using the commission engine: the card said 0 while ₦1.1m had
+   * been paid. The fallback keeps an older server working.
+   */
+  const totalCommissions = commissionTotals?.total
+    ?? commissions.reduce((s, c) => s + Number(c.amount || 0), 0);
+  const paidCommissions = commissionTotals?.paid
+    ?? commissions.filter((c) => c.status === 'paid').reduce((s, c) => s + Number(c.amount || 0), 0);
 
   const currentData = tab === 'invoices' ? invoices : tab === 'transactions' ? transactions : commissions;
   const currentCols = tab === 'invoices' ? invoiceColumns : tab === 'transactions' ? txnColumns : commissionColumns;
