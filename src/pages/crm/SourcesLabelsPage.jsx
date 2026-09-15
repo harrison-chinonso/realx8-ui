@@ -55,7 +55,15 @@ export default function SourcesLabelsPage() {
   ]);
 
   const load = async () => {
-    const [s, l] = await Promise.all([listSources(), listLabels()]);
+    /*
+     * All of them. This screen MANAGES sources and labels, so a paginated
+     * response hides rows an administrator is trying to edit — and with fifteen
+     * of each against a default page of ten, a third of them were invisible.
+     */
+    const [s, l] = await Promise.all([
+      listSources({ limit: 'all' }),
+      listLabels({ limit: 'all' }),
+    ]);
     setSources(Array.isArray(s) ? s : s?.data ?? []);
     setLabels(Array.isArray(l) ? l : l?.data ?? []);
   };

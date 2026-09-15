@@ -28,8 +28,10 @@ export default function DealsPage() {
   const load = () =>
     Promise.all([
       listDeals().then((r) => setDeals(r.data || [])),
-      listPipelines().then((r) => setPipelines(r.data || [])),
-      listStages().then((r) => setStages(r.data || [])),
+      // Dropdowns need every option, not the first page of ten — a stage
+      // missing from the list is a stage a deal can never be moved to.
+      listPipelines({ limit: 'all' }).then((r) => setPipelines(r.data || [])),
+      listStages({ limit: 'all' }).then((r) => setStages(r.data || [])),
     ]);
 
   useEffect(() => { load(); }, []);

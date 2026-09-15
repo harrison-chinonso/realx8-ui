@@ -52,10 +52,20 @@ export default function PipelinesPage() {
     setLeadStageError('');
 
     try {
+      /**
+       * Every row, not the first page of ten.
+       *
+       * This screen is a configuration editor, not a browsable list: it counts
+       * stages per pipeline and filters them client-side, so a paginated
+       * response silently truncates the answer. With the default page size of
+       * ten and forty-three stages, three of five pipelines reported "0 stages"
+       * while their stages sat in the database — and a pipeline that claims to
+       * have none is one an administrator will try to rebuild.
+       */
       const [pipelineResponse, stageResponse, leadStageResponse] = await Promise.all([
-        listPipelines(),
-        listStages(),
-        listLeadStages(),
+        listPipelines({ limit: 'all' }),
+        listStages({ limit: 'all' }),
+        listLeadStages({ limit: 'all' }),
       ]);
       const pipelineRows = normalizeList(pipelineResponse);
       const stageRows = normalizeList(stageResponse);

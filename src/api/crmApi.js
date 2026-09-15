@@ -39,7 +39,12 @@ export const updateStage = (id, payload) => client.put(`/stages/${id}`, payload)
 export const deleteStage = (id) => client.delete(`/stages/${id}`).then(r => r.data);
 
 // Lead Stages (custom stages separate from pipeline stages)
-export const listLeadStages = () => client.get('/lead-stages').then(r => r.data);
+/*
+ * Takes params like every other list here. It did not, so a caller could not
+ * ask for all of them — and these are reference data a screen needs in full to
+ * count or to fill a dropdown, not a page at a time.
+ */
+export const listLeadStages = (params) => client.get('/lead-stages', { params }).then(r => r.data);
 export const createLeadStage = (payload) => client.post('/lead-stages', payload).then(r => r.data);
 export const deleteLeadStage = (id) => client.delete(`/lead-stages/${id}`).then(r => r.data);
 
