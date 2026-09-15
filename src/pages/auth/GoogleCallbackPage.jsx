@@ -15,7 +15,20 @@ export default function GoogleCallbackPage() {
     const error = params.get('error');
 
     if (error) {
-      navigate(`/login?error=${encodeURIComponent(error)}`, { replace: true });
+      /**
+       * Carry the server's own sentence through, not just the code.
+       *
+       * Every Google failure used to arrive as `google_auth_failed`, whatever
+       * had actually gone wrong — a missing company code and a declined consent
+       * screen looked identical, and neither told anybody what to do. The
+       * server now names the cause and supplies the wording; this passes both
+       * to the sign-in page rather than keeping a second copy of every message.
+       */
+      const detail = params.get('message');
+      navigate(
+        `/login?error=${encodeURIComponent(error)}${detail ? `&message=${encodeURIComponent(detail)}` : ''}`,
+        { replace: true },
+      );
       return;
     }
 
@@ -28,7 +41,13 @@ export default function GoogleCallbackPage() {
     try {
       const user = JSON.parse(userParam);
       setSession(token, refreshToken, user);
-      navigate('/', { replace: true });
+      /**
+       * Back to where they were, if the server carried it through the state.
+       * Somebody who pressed Google from a property page expects to land on
+       * that property, not on a dashboard they then have to navigate out of.
+       */
+      const redirect = params.get('redirect');
+      navigate(redirect && redirect.startsWith('/') ? redirect : '/', { replace: true });
     } catch (err) {
       setMessage(`Google sign-in failed: ${err.message}`);
       navigate('/login?error=google_auth_failed', { replace: true });

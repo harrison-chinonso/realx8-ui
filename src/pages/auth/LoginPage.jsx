@@ -6,11 +6,16 @@ import PropertyCarousel from '../../components/common/PropertyCarousel';
 import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
 import { apiUrl } from '../../api/apiBase';
+import { googleAuthUrl, codesFromLocation } from '../../utils/googleAuthUrl';
 
 // A full-page redirect, not an XHR, so it has to be a URL the BROWSER can
 // follow. Derived from the API base rather than hardcoded: pinned to
 // localhost:3000, Google login broke in every deployment but a local one.
-const GOOGLE_AUTH_URL = apiUrl('/auth/google');
+/*
+ * Built per render, because it carries the codes from THIS visit. Somebody who
+ * follows an agent's property link and presses "Continue with Google" without
+ * having an account yet is signing UP, and the sign-up needs both codes.
+ */
 
 /* ── Brand logo — uses DB-backed platform/company name ── */
 function RealtoBrand({ light = false }) {
@@ -172,12 +177,33 @@ export default function LoginPage() {
   const [forgotLoading, setForgotLoading] = useState(false);
   const [mobileState, setMobileState] = useState('splash'); // 'splash' | 'form'
 
+  /**
+   * What actually went wrong with Google, in words somebody can act on.
+   *
+   * This used to answer "Google sign-in failed. Please try again." for every
+   * cause — including the ones where trying again could never work, such as
+   * arriving without a company code. The server now names the reason and
+   * supplies the sentence; that sentence is preferred, and the cases below are
+   * the fallback for an older server that does not send one.
+   */
   const googleError = useMemo(() => {
     const params = new URLSearchParams(location.search);
     const code = params.get('error');
+    if (!code) return '';
+
+    const fromServer = params.get('message');
+    if (fromServer) return fromServer;
+
     if (code === 'account_inactive') return 'Your account is inactive.';
-    if (code) return 'Google sign-in failed. Please try again.';
-    return '';
+    if (code === 'company_code_missing') {
+      return 'To create an account with Google, open the link your company or agent sent you — '
+        + 'it carries the company code we need.';
+    }
+    if (code === 'company_code_invalid') {
+      return 'That company code was not recognised. Check it with whoever sent you the link.';
+    }
+    if (code === 'company_suspended') return 'That company account is currently suspended.';
+    return 'Google sign-in failed. Please try again.';
   }, [location.search]);
 
   useEffect(() => {
@@ -419,7 +445,10 @@ export default function LoginPage() {
           </div>
 
           <a
-            href={GOOGLE_AUTH_URL}
+            href={googleAuthUrl({
+            ...codesFromLocation(),
+            redirect: new URLSearchParams(window.location.search).get('redirect'),
+          })}
             className="flex w-full items-center justify-center gap-2 h-11 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-white/70 hover:bg-white/10 transition"
           >
             <GoogleIcon />

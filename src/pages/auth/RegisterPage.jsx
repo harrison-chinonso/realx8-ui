@@ -8,6 +8,7 @@ import PropertyCarousel from '../../components/common/PropertyCarousel';
 import { useAppearance } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
 import { apiUrl } from '../../api/apiBase';
+import { googleAuthUrl } from '../../utils/googleAuthUrl';
 
 /**
  * A full-page redirect, not an XHR, so it has to be a URL the BROWSER can
@@ -15,7 +16,11 @@ import { apiUrl } from '../../api/apiBase';
  * LoginPage gives: a pinned localhost:3000 broke Google in every deployment
  * but a local one.
  */
-const GOOGLE_AUTH_URL = apiUrl('/auth/google');
+/*
+ * Built per render rather than once at module load, because it has to carry the
+ * company and realtor codes from THIS visit — a constant computed at import
+ * time would be the same for everybody who ever opened the page.
+ */
 
 /* ── Google icon — matched to the one on the sign-in page ── */
 function GoogleIcon() {
@@ -317,7 +322,11 @@ export default function RegisterPage() {
           must follow, not something fetch can do.
         */}
         <a
-          href={GOOGLE_AUTH_URL}
+          href={googleAuthUrl({
+            companyCode: form.company_code || presetCompanyCode,
+            realtorCode: referringRealtorCode,
+            redirect: redirectTo,
+          })}
           className="flex w-full items-center justify-center gap-2 h-11 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-white/70 hover:bg-white/10 transition"
         >
           <GoogleIcon />
