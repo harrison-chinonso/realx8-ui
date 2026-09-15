@@ -112,9 +112,9 @@
   },
   {
     "route": "/crm/agent-performance",
-    "label": "Realtor Leaderboard",
+    "label": "Realtor Performance",
     "section": "Leads & Deals",
-    "trail": "Leads & Deals → Realtor Leaderboard",
+    "trail": "Leads & Deals → Realtor Performance",
     "permissions": [
       "crm.analytics.view"
     ],

@@ -270,7 +270,17 @@ export const NAV = [
       { to: '/crm/sources-labels',  label: 'Sources & Labels',  icon: Tags,       permission: 'crm.leads.view' },
       { to: '/crm/analytics',       label: 'Analytics/Reports', icon: BarChart2,  permission: 'crm.analytics.view' },
       // Reachable only by clicking through the dashboard widget until now.
-      { to: '/crm/agent-performance', label: 'Realtor Leaderboard', icon: Award,    permission: 'crm.analytics.view' },
+      /*
+       * "Realtor Performance", not "Realtor Leaderboard".
+       *
+       * Two different screens carried that one name: this, which ranks agents
+       * by sales and flags the ones at risk, and /realtor/leaderboard, which is
+       * the standing a realtor sees. Identical labels on different destinations
+       * send people to the wrong screen and give the assistant nothing to tell
+       * them apart. This one is about performance and who needs attention,
+       * which is a different question from who is winning.
+       */
+      { to: '/crm/agent-performance', label: 'Realtor Performance', icon: Award,    permission: 'crm.analytics.view' },
     ],
   },
 
