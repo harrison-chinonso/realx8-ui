@@ -20,6 +20,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import Table from '../../components/common/Table';
 import useAuthStore from '../../store/authStore';
+import BrowserNotificationsCard from '../../components/settings/BrowserNotificationsCard';
 import Select from '../../components/ui/Select';
 
 const TYPE_OPTIONS = ['info', 'warning', 'success', 'alert'];
@@ -777,6 +778,15 @@ export default function NotificationsPage() {
           )}
         </div>
       </div>
+
+      {/*
+        Turning notifications on for THIS browser, on the page everybody can
+        open. It is a personal, per-device setting — there is nothing about it
+        that belongs behind an administrator's permission, which is where it
+        used to be — so it sits above the inbox where somebody wondering why
+        their laptop is quiet will actually find it.
+      */}
+      <BrowserNotificationsCard />
 
       {isAdmin && tab === 'compose' && (
         <ComposePanel

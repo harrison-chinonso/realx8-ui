@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import BrowserNotificationsCard from '../../components/settings/BrowserNotificationsCard';
+import { Link } from 'react-router-dom';
 import {
   getNotificationConfig, saveNotificationConfig, resetNotificationConfig,
   previewNotificationRecipients,
@@ -155,7 +155,21 @@ export default function NotificationSettingsPage() {
         who sets six events to "browser" and never granted permission would
         otherwise be configuring something switched off.
       */}
-      <BrowserNotificationsCard />
+      {/*
+        The browser toggle used to live here, and only here — behind
+        `finance.purchase-notifications.manage`. Which meant the one setting
+        that is PERSONAL, per browser and per device, could be reached only by
+        somebody who administers the company's notification rules. A client, a
+        realtor or an ordinary employee could never turn their own notifications
+        on. It now lives on Notifications, which everyone with a role can open,
+        and is signposted from here because this is where an administrator
+        configuring the event matrix will look for it.
+      */}
+      <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600 ring-1 ring-slate-200">
+        Turning browser notifications on for your own device is on the{' '}
+        <Link to="/notifications" className="font-medium underline" style={{ color: 'var(--primary)' }}>Notifications</Link>{' '}
+        page — it is a per-browser setting, so everyone turns it on for themselves.
+      </p>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
