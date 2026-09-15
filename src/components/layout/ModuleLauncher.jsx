@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Search, Settings, X } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Search, Settings, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
 
@@ -110,8 +110,8 @@ const useSections = () => {
  * colours would clash with whichever brand it was not designed around. The
  * accent appears on hover and focus instead, in the tenant's own colour.
  */
-function Tile({ icon: Icon, label, ...props }) {
-  const className = 'group flex aspect-[4/3] flex-col items-center justify-center gap-2.5 '
+function Tile({ icon: Icon, label, opens = 0, ...props }) {
+  const className = 'group relative flex aspect-[4/3] flex-col items-center justify-center gap-2.5 '
     + 'rounded-xl border border-slate-200 bg-white p-3 text-center transition-colors '
     + 'hover:border-slate-400 hover:bg-slate-50 '
     + 'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 '
@@ -120,6 +120,23 @@ function Tile({ icon: Icon, label, ...props }) {
 
   const body = (
     <>
+      {/*
+        A tile that OPENS something needs to say so.
+        
+        Sub-menu tiles looked exactly like destination tiles — same size, same
+        icon, same label — so "Realtor" read as a screen, and the four screens
+        behind it looked deleted rather than grouped. The pattern forbids a
+        featured tile, and this is not one: the tile keeps its size and weight,
+        and gains a chevron and a count of what is inside. That is structure,
+        not decoration, and it is the difference between a drawer and a door.
+      */}
+      {opens > 0 && (
+        <span className="absolute right-2 top-2 flex items-center gap-0.5 text-[10px] font-medium text-slate-400">
+          {opens}
+          <ChevronRight aria-hidden="true" className="h-3 w-3" />
+        </span>
+      )}
+
       {/* Decorative: the label is the accessible name. */}
       <Icon
         aria-hidden="true"
@@ -375,6 +392,9 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
                         key={`group-${item.label}`}
                         icon={item.icon}
                         label={item.label}
+                        opens={item.children.length}
+                        // Says what it does, for anyone who cannot see the chevron.
+                        aria-label={`${item.label} — ${item.children.length} screens`}
                         onClick={() => setGroup(item)}
                       />
                     )
