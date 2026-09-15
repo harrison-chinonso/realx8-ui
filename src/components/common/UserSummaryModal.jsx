@@ -59,6 +59,12 @@ function RealtorBody({ summary, fmt }) {
         rows={summary.transactions || []}
         fmt={fmt}
         emptyText="No commission recorded yet."
+        /*
+          Uncapped. The five-row limit belongs to the dashboard, where every
+          panel competes for one screen — this is a modal opened to look at one
+          person, and trimming their history is the opposite of its purpose.
+        */
+        limit={null}
       />
     </>
   );
@@ -105,6 +111,8 @@ function ClientBody({ summary, fmt }) {
         rows={summary.transactions || []}
         fmt={fmt}
         emptyText="No transactions yet."
+        // Uncapped, for the reason above.
+        limit={null}
       />
     </>
   );

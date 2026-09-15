@@ -22,7 +22,15 @@
  */
 export const DASHBOARD_ROWS = 5;
 
-/** The first `limit` of a list, safely for anything that is not an array. */
-export const capRows = (rows, limit = DASHBOARD_ROWS) => (
-  Array.isArray(rows) ? rows.slice(0, limit) : []
-);
+/**
+ * The first `limit` of a list, safely for anything that is not an array.
+ *
+ * A `limit` of null means no cap. That is how a non-dashboard caller opts out:
+ * these components are shared, and a summary modal or a detail view showing
+ * five of somebody's transactions would be hiding the rest for a reason that
+ * only applies to a crowded dashboard.
+ */
+export const capRows = (rows, limit = DASHBOARD_ROWS) => {
+  if (!Array.isArray(rows)) return [];
+  return limit == null ? rows : rows.slice(0, limit);
+};
