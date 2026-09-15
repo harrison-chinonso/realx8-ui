@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { MessageCircle, X, Send, Loader2, History, Trash2, Plus, Sparkles } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   getAssistantStatus, streamAssistant, listConversations, getConversation, deleteConversation,
 } from '../../api/assistantApi';
 import useAuthStore from '../../store/authStore';
 import useDraggable from '../../hooks/useDraggable';
+import { getEngine } from '../../assistant/index.js';
+import { respond } from '../../assistant/converse.js';
+import AssistantMessage from './AssistantMessage';
 
 /**
  * The in-app assistant.
@@ -14,8 +17,19 @@ import useDraggable from '../../hooks/useDraggable';
  * the question and could not see any of the user's data. This one answers from
  * live data via server-side tools, scoped to whoever is signed in.
  *
- * It renders nothing unless the company has configured a key, so a tenant that
- * has not set one up sees no dead button.
+ * ── Local first, server for data ───────────────────────────────────────────
+ *
+ * Two things answer here. A local engine, built from a map GENERATED out of the
+ * router and a set of hand-written walkthroughs, handles "where is", "how do I"
+ * and the executable actions — instantly, offline, and with no API key. The
+ * server assistant handles questions about the tenant's own figures, which the
+ * local engine cannot see.
+ *
+ * Every message tries local first. Only a question the local engine does not
+ * recognise is streamed to the server. This is why the widget now renders for
+ * everyone rather than only for companies with a key configured: navigation and
+ * how-to help costs nothing and works regardless, and the old behaviour — no
+ * button at all — left those tenants with no assistant of any kind.
  */
 /** What to show while a tool runs — never the raw tool name. */
 const TOOL_ACTIVITY = {
@@ -29,6 +43,8 @@ const TOOL_ACTIVITY = {
 
 export default function AssistantWidget() {
   const token = useAuthStore((s) => s.accessToken);
+  const location = useLocation();
+  const permissions = useAuthStore((s) => s.permissions);
   const isAdmin = ['admin', 'super_admin', 'superior_admin'].includes(useAuthStore((s) => s.effectiveType()));
   const [status, setStatus] = useState(null);
   const [open, setOpen] = useState(false);
@@ -56,6 +72,15 @@ export default function AssistantWidget() {
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [activity, setActivity] = useState('');   // e.g. "checking your invoices…"
+  /**
+   * An action part-way through collecting what it needs.
+   *
+   * Held here rather than derived from the transcript because it is a live
+   * object — the action, the values so far, the slot being asked about — and
+   * reconstructing it by re-reading the messages would mean re-running
+   * extraction on every render.
+   */
+  const [pending, setPending] = useState(null);
   const [dismissed, setDismissed] = useState(false);
   const endRef = useRef(null);
   const inputRef = useRef(null);
@@ -76,6 +101,13 @@ export default function AssistantWidget() {
    * request.
    */
   const isAuthenticated = Boolean(token);
+  /*
+   * Whether the SERVER half is available. The local half always is, so this
+   * decides only one thing: what happens to a question the local engine does
+   * not recognise.
+   */
+  const serverEnabled = Boolean(status?.enabled);
+  const appName = status?.app_name || 'Realx8';
   useEffect(() => {
     if (!isAuthenticated) { setStatus(null); return; }
     getAssistantStatus()
@@ -108,7 +140,7 @@ export default function AssistantWidget() {
     catch { setHistory([]); }
   };
 
-  useEffect(() => { if (open && status?.enabled) loadHistory(); }, [open, status?.enabled]);
+  useEffect(() => { if (open && serverEnabled) loadHistory(); }, [open, serverEnabled]);
 
   const openConversation = async (id) => {
     try {
@@ -128,6 +160,9 @@ export default function AssistantWidget() {
     setConversationId(null);
     setShowHistory(false);
     setError('');
+    // A new chat abandons a half-collected action; carrying it over would have
+    // the assistant ask for an email nobody remembers requesting.
+    setPending(null);
   };
 
   const removeConversation = async (id, event) => {
@@ -141,16 +176,64 @@ export default function AssistantWidget() {
     }
   };
 
-  const send = async (event) => {
+  /**
+   * Ask the local engine, and only fall through to the server if it shrugs.
+   *
+   * Returns true when it handled the message. The route and the person's
+   * permissions go with the question: being on the invoices page makes an
+   * invoice walkthrough likelier, and permissions decide whether an action is
+   * offered or explained.
+   */
+  const answerLocally = (text) => {
+    const result = respond({
+      engine: getEngine(),
+      text,
+      pending,
+      context: { route: location.pathname, permissions },
+    });
+
+    setPending(result.pending ?? null);
+
+    if (result.messages.length) {
+      setMessages((prev) => [...prev, ...result.messages]);
+      return true;
+    }
+
+    /*
+     * Deferred, but the server is not configured for this company. Rather than
+     * say nothing, offer whatever came nearest — usually what they meant,
+     * phrased differently.
+     */
+    if (result.defer && !serverEnabled) {
+      setMessages((prev) => [...prev, {
+        role: 'assistant',
+        content: result.options?.length
+          ? 'I am not sure about that one. These are the closest things I know:'
+          : 'I do not know that one. I can help you find a screen, walk you through a task, or start one for you.',
+        options: result.options,
+      }]);
+      return true;
+    }
+
+    return false;
+  };
+
+  const send = async (event, override) => {
     event?.preventDefault();
-    const text = draft.trim();
+    const text = (override ?? draft).trim();
     if (!text || sending) return;
 
-    // Show the question and an empty reply that fills in as deltas arrive.
-    setMessages((prev) => [...prev, { role: 'user', content: text }, { role: 'assistant', content: '' }]);
+    setMessages((prev) => [...prev, { role: 'user', content: text }]);
     setDraft('');
     setError('');
     setActivity('');
+
+    // Local answers are synchronous — no spinner, no round trip, no cost.
+    if (answerLocally(text)) return;
+
+    // Nothing local fit: this is a question about the data, so the server gets
+    // it. An empty reply bubble is appended for the deltas to fill.
+    setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
     setSending(true);
 
     const appendToReply = (chunk) => setMessages((prev) => {
@@ -187,16 +270,22 @@ export default function AssistantWidget() {
     }
   };
 
-  if (!token || !status) return null;
+  // Signed out is the only reason to render nothing. The local engine works
+  // without a key, so a company that has not configured one still gets
+  // navigation, walkthroughs and actions rather than no assistant at all.
+  if (!token) return null;
 
-  // Switched off for this company is the only reason to render nothing.
-  if (!status.enabled) return null;
-
-  const name = status.name || 'Assistant';
+  const name = status?.name || 'Assistant';
+  /*
+   * Openers that show what it can do, not just what it can say. The first two
+   * are answered locally and instantly; the third is only offered when the
+   * server half is configured, so nobody is invited to ask a question that will
+   * come back "I do not know".
+   */
   const openers = [
-    'What can I afford on ₦2,000,000?',
-    'How do I pay my invoice?',
-    'What does Certificate of Occupancy mean?',
+    'How do I approve a payment?',
+    'Create a user',
+    ...(serverEnabled ? ['What can I afford on ₦2,000,000?'] : ['Where do I find payment approvals?']),
   ];
 
   return (
@@ -236,15 +325,18 @@ export default function AssistantWidget() {
           <div className="flex items-center justify-between px-4 py-3 text-white" style={{ backgroundColor: 'var(--primary, #2563eb)' }}>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{name}</p>
-              <p className="truncate text-[11px] opacity-80">{status.app_name} assistant</p>
+              <p className="truncate text-[11px] opacity-80">{appName} assistant</p>
             </div>
             <div className="flex items-center gap-1">
               <button type="button" onClick={startNew} aria-label="New chat" title="New chat" className="rounded p-1 hover:bg-white/20">
                 <Plus size={17} />
               </button>
-              <button type="button" onClick={() => setShowHistory((v) => !v)} aria-label="History" title="Past chats" className="rounded p-1 hover:bg-white/20">
-                <History size={17} />
-              </button>
+              {/* Past chats live on the server. With no key there are none. */}
+              {serverEnabled && (
+                <button type="button" onClick={() => setShowHistory((v) => !v)} aria-label="History" title="Past chats" className="rounded p-1 hover:bg-white/20">
+                  <History size={17} />
+                </button>
+              )}
               <button type="button" onClick={() => setOpen(false)} aria-label="Close" className="rounded p-1 hover:bg-white/20">
                 <X size={18} />
               </button>
@@ -281,14 +373,14 @@ export default function AssistantWidget() {
               <div className="space-y-3">
                 <p className="rounded-xl bg-white px-3 py-2 text-sm text-slate-700 shadow-sm ring-1 ring-slate-200">
                   Hi — I can help you find a property, work out what an installment
-                  would cost, or walk you through anything in {status.app_name}.
+                  would cost, or walk you through anything in {appName}.
                 </p>
                 <div className="space-y-1.5">
                   {openers.map((q) => (
                     <button
                       key={q}
                       type="button"
-                      onClick={() => setDraft(q)}
+                      onClick={() => send(null, q)}
                       className="block w-full rounded-lg bg-white px-3 py-2 text-left text-xs text-slate-600 ring-1 ring-slate-200 hover:ring-slate-300"
                     >
                       {q}
@@ -298,18 +390,34 @@ export default function AssistantWidget() {
               </div>
             )}
 
-            {messages.map((m, i) => (m.role === 'assistant' && !m.content ? null : (
-              <div key={i} className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
-                <p
-                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm ${
-                    m.role === 'user' ? 'text-white' : 'bg-white text-slate-700 shadow-sm ring-1 ring-slate-200'
-                  }`}
-                  style={m.role === 'user' ? { backgroundColor: 'var(--primary, #2563eb)' } : undefined}
-                >
-                  {m.content}
-                </p>
-              </div>
-            )))}
+            {messages.map((m, i) => {
+              // The empty placeholder a server stream fills in — nothing to show yet.
+              if (m.role === 'assistant' && !m.content && !m.steps && !m.options && !m.links) return null;
+
+              if (m.role === 'user') {
+                return (
+                  <div key={i} className="flex justify-end">
+                    <p
+                      className="max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm text-white"
+                      style={{ backgroundColor: 'var(--primary, #2563eb)' }}
+                    >
+                      {m.content}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <AssistantMessage
+                  key={i}
+                  message={m}
+                  onOption={(query) => send(null, query)}
+                  // Following a link means they have arrived — the panel would
+                  // otherwise sit over the page they were sent to.
+                  onNavigate={() => setOpen(false)}
+                />
+              );
+            })}
 
             {/* Only until the first token lands — after that the reply itself
                 is the progress indicator. */}

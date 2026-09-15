@@ -17,6 +17,7 @@ import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentM
 import { enumLabel } from '../../utils/enumLabel';
 import useNavBadgeStore from '../../store/navBadgeStore';
 import { uploadMediaFiles } from '../../api/mediaApi';
+import { useAssistantHandoff } from '../../assistant/useAssistantHandoff';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 
@@ -88,6 +89,14 @@ export default function ReceiptsPage() {
    * is the only screen that lists receipts at all.
    */
   const [tab, setTab] = useState('pending');
+
+  // Sent here by the assistant — open on the queue it was asked about rather
+  // than the default, which would make "show me what needs approving" land on
+  // a tab they then have to find.
+  const approvalsHandoff = useAssistantHandoff('find-payments-to-approve');
+  useEffect(() => {
+    if (approvalsHandoff?.tab) setTab(approvalsHandoff.tab);
+  }, [approvalsHandoff]);
 
   const load = async () => {
     setLoading(true);

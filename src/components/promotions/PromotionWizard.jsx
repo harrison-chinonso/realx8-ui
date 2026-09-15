@@ -63,10 +63,22 @@ const Field = ({ label, hint, children }) => (
   </label>
 );
 
-export default function PromotionWizard({ existing = null, onSaved, onCancel }) {
+export default function PromotionWizard({ existing = null, initialName = '', onSaved, onCancel }) {
   const fmt = useCurrency();
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState(() => ({ ...BLANK, ...(existing?.config || {}), ...(existing || {}) }));
+  /*
+   * `initialName` is for a NEW promotion that arrived with a name already —
+   * from the assistant, which heard "create a promotion called Easter Offer".
+   * It cannot ride in on `existing`, because a truthy `existing` is what marks
+   * this as an EDIT: the save would go to the wrong endpoint and the wizard
+   * would open on a promotion that does not exist.
+   */
+  const [draft, setDraft] = useState(() => ({
+    ...BLANK,
+    ...(existing?.config || {}),
+    ...(existing || {}),
+    ...(existing ? {} : { name: initialName || BLANK.name }),
+  }));
   const [properties, setProperties] = useState([]);
   const [units, setUnits] = useState([]);
   const [preview, setPreview] = useState(null);

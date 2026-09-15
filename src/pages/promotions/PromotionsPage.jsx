@@ -9,6 +9,7 @@ import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import PromotionWizard from '../../components/promotions/PromotionWizard';
+import { useAssistantHandoff } from '../../assistant/useAssistantHandoff';
 
 /**
  * Every campaign, and how each is doing.
@@ -63,6 +64,14 @@ export default function PromotionsPage() {
   const [tab, setTab] = useState('live');
   const [editing, setEditing] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  // From the assistant: open the wizard on a blank promotion, with the name
+  // filled in if one was mentioned. `{}` rather than null is what the modal
+  // reads as "new" — see the Modal's `editing !== null` test below.
+  const promotionHandoff = useAssistantHandoff('create-promotion');
+  useEffect(() => {
+    if (promotionHandoff) setEditing(promotionHandoff.name ? { name: promotionHandoff.name } : {});
+  }, [promotionHandoff]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -213,6 +222,7 @@ export default function PromotionsPage() {
         {editing !== null && (
           <PromotionWizard
             existing={editing?.id ? editing : null}
+            initialName={editing?.id ? '' : (editing?.name || '')}
             onSaved={() => { setEditing(null); load(); }}
             onCancel={() => setEditing(null)}
           />

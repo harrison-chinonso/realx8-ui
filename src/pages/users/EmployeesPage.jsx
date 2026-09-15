@@ -7,6 +7,7 @@ import DetailsModal from '../../components/common/DetailsModal';
 import ActionsMenu from '../../components/common/ActionsMenu';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
+import { useAssistantHandoff } from '../../assistant/useAssistantHandoff';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 
@@ -24,6 +25,26 @@ export default function EmployeesPage() {
   const [editingUser, setEditingUser] = useState(null);
   const [detailRow, setDetailRow] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', is_active: true });
+
+  /**
+   * Arriving from the assistant: open the form with what it collected.
+   *
+   * The role and the password are deliberately NOT accepted from the link. A
+   * role is a permission grant — an Administrator can approve money — and a
+   * password set by anything other than the person creating the account is not
+   * a password. Both stay where they were: chosen here, by a human, before save.
+   */
+  const handoff = useAssistantHandoff('create-user');
+  useEffect(() => {
+    if (!handoff) return;
+    setForm((prev) => ({
+      ...prev,
+      name: handoff.name || prev.name,
+      email: handoff.email || prev.email,
+      phone: handoff.phone || prev.phone,
+    }));
+    setShowCreate(true);
+  }, [handoff]);
 
   const roleOptions = useMemo(
     () => roles.map((role) => ({ value: role.name, label: role.display_name || role.name })),

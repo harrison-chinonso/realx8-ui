@@ -1,0 +1,692 @@
+[
+  {
+    "route": "/",
+    "label": "Dashboard",
+    "section": "Platform Admin",
+    "trail": "Platform Admin → Dashboard",
+    "permissions": [
+      "dashboard.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/audit-logs",
+    "label": "Audit Trail",
+    "section": "User Management",
+    "trail": "User Management → Audit Trail",
+    "permissions": [
+      "audit.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/care",
+    "label": "VIP Clients",
+    "section": "Customer Care",
+    "trail": "Customer Care → VIP Clients",
+    "permissions": [
+      "care.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/care/alerts",
+    "label": "Scheduled Alerts",
+    "section": "Customer Care",
+    "trail": "Customer Care → Scheduled Alerts",
+    "permissions": [
+      "care.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/care/communications",
+    "label": "Messaging",
+    "section": "Customer Care",
+    "trail": "Customer Care → Messaging",
+    "permissions": [
+      "care.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/commissions",
+    "label": "Commissions",
+    "section": null,
+    "trail": "Commissions",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/commissions/mine",
+    "label": "Mine",
+    "section": null,
+    "trail": "Mine",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/crm/agent-performance",
+    "label": "Realtor Leaderboard",
+    "section": "Leads & Deals",
+    "trail": "Leads & Deals → Realtor Leaderboard",
+    "permissions": [
+      "crm.analytics.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/crm/analytics",
+    "label": "Analytics/Reports",
+    "section": "Leads & Deals",
+    "trail": "Leads & Deals → Analytics/Reports",
+    "permissions": [
+      "crm.analytics.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/crm/deals",
+    "label": "Manage Deals",
+    "section": "Leads & Deals",
+    "trail": "Leads & Deals → Manage Deals",
+    "permissions": [
+      "crm.deals.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/crm/leads",
+    "label": "Manage Leads",
+    "section": "Leads & Deals",
+    "trail": "Leads & Deals → Manage Leads",
+    "permissions": [
+      "crm.leads.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/crm/pipelines",
+    "label": "Pipeline",
+    "section": "Leads & Deals",
+    "trail": "Leads & Deals → Pipeline",
+    "permissions": [
+      "crm.pipelines.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/crm/sources-labels",
+    "label": "Sources & Labels",
+    "section": "Leads & Deals",
+    "trail": "Leads & Deals → Sources & Labels",
+    "permissions": [
+      "crm.leads.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/crm/tasks",
+    "label": "Tasks",
+    "section": "Leads & Deals",
+    "trail": "Leads & Deals → Tasks",
+    "permissions": [
+      "crm.tasks.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/bank-accounts",
+    "label": "Bank Accounts",
+    "section": "Finance",
+    "trail": "Finance → Payments → Bank Accounts",
+    "permissions": [
+      "finance.bank-accounts.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/commission-analytics",
+    "label": "Analytics",
+    "section": "Finance",
+    "trail": "Finance → Commission → Analytics",
+    "permissions": [
+      "finance.commissions.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/commission-payouts",
+    "label": "Payouts",
+    "section": "Finance",
+    "trail": "Finance → Commission → Payouts",
+    "permissions": [
+      "finance.commissions.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/commission-plans",
+    "label": "Plans",
+    "section": "Finance",
+    "trail": "Finance → Commission → Plans",
+    "permissions": [
+      "finance.commissions.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/credit-notes",
+    "label": "Credit Note",
+    "section": "Finance",
+    "trail": "Finance → Commission → Credit Note",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/debit-notes",
+    "label": "Debit Note",
+    "section": "Finance",
+    "trail": "Finance → Commission → Debit Note",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/installment-plans",
+    "label": "Installment Plans",
+    "section": "Finance",
+    "trail": "Finance → Payments → Installment Plans",
+    "permissions": [
+      "finance.installment-plans.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/invoices",
+    "label": "All Invoices",
+    "section": "Finance",
+    "trail": "Finance → Invoicing → All Invoices",
+    "permissions": [
+      "finance.invoices.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/invoices/create",
+    "label": "Create",
+    "section": null,
+    "trail": "Create",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/finance/invoices/due",
+    "label": "Due Invoice",
+    "section": "Finance",
+    "trail": "Finance → Invoicing → Due Invoice",
+    "permissions": [
+      "finance.invoices.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/my-commission",
+    "label": "My Commissions",
+    "section": "Finance",
+    "trail": "Finance → Commission → My Commissions",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/my-invoices",
+    "label": "My Invoices",
+    "section": "My Portfolio",
+    "trail": "My Portfolio → My Invoices",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/my-payments",
+    "label": "My Payments",
+    "section": "My Portfolio",
+    "trail": "My Portfolio → My Payments",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/my-properties",
+    "label": "My Properties",
+    "section": "My Portfolio",
+    "trail": "My Portfolio → My Properties",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/payment-plans",
+    "label": "Payment Plans",
+    "section": "Finance",
+    "trail": "Finance → Payments → Payment Plans",
+    "permissions": [
+      "finance.invoices.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/payment-reminders",
+    "label": "Payment Reminders",
+    "section": "Finance",
+    "trail": "Finance → Payments → Payment Reminders",
+    "permissions": [
+      "finance.payment-reminders.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/reports",
+    "label": "Report",
+    "section": "Finance",
+    "trail": "Finance → Commission → Report",
+    "permissions": [
+      "finance.reports.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/taxes",
+    "label": "Taxes",
+    "section": "Finance",
+    "trail": "Finance → Commission → Taxes",
+    "permissions": [
+      "finance.taxes.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/transactions",
+    "label": "All Payments",
+    "section": "Finance",
+    "trail": "Finance → Payments → All Payments",
+    "permissions": [
+      "finance.invoices.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/finance/transactions/pending",
+    "label": "Pending",
+    "section": null,
+    "trail": "Pending",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/front-desk",
+    "label": "Visitor Log & Attendance",
+    "section": "Front Desk",
+    "trail": "Front Desk → Visitor Log & Attendance",
+    "permissions": [
+      "frontdesk.visitors.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/investments",
+    "label": "Investments",
+    "section": "Investments",
+    "trail": "Investments → Investments",
+    "permissions": [
+      "investments.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/investments/portfolio",
+    "label": "Investments",
+    "section": "Realtor Hub",
+    "trail": "Realtor Hub → Investments",
+    "permissions": [
+      "investments.own.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/investments/portfolio",
+    "label": "Investments",
+    "section": "My Portfolio",
+    "trail": "My Portfolio → Investments",
+    "permissions": [
+      "investments.own.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/investments/retention-alerts",
+    "label": "Manage Schedule",
+    "section": "Investments",
+    "trail": "Investments → Manage Schedule",
+    "permissions": [
+      "investments.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/media/analytics",
+    "label": "Analytics",
+    "section": "Media",
+    "trail": "Media → Analytics",
+    "permissions": [
+      "media.analytics.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/media/blog",
+    "label": "Blog",
+    "section": "Media",
+    "trail": "Media → Blog",
+    "permissions": [
+      "media.blog.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/media/posts",
+    "label": "Content Posts",
+    "section": "Media",
+    "trail": "Media → Content Posts",
+    "permissions": [
+      "media.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/media/social-accounts",
+    "label": "Social Media Accounts",
+    "section": "Media",
+    "trail": "Media → Social Media Accounts",
+    "permissions": [
+      "media.schedule"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/notifications",
+    "label": "Notification",
+    "section": "General",
+    "trail": "General → Notification",
+    "permissions": [
+      "notifications.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/profile",
+    "label": "Profile",
+    "section": null,
+    "trail": "Profile",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/promotions",
+    "label": "Promotions and Offers",
+    "section": "Property",
+    "trail": "Property → Promotions and Offers",
+    "permissions": [
+      "promotions.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/properties",
+    "label": "Property Listing",
+    "section": "Property",
+    "trail": "Property → Property Listing",
+    "permissions": [
+      "properties.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/properties/create",
+    "label": "Create",
+    "section": null,
+    "trail": "Create",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/properties/inspections",
+    "label": "Property Inspection",
+    "section": "Property",
+    "trail": "Property → Property Inspection",
+    "permissions": [
+      "properties.inspections.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/properties/listed",
+    "label": "Listed Properties",
+    "section": "Property",
+    "trail": "Property → Listed Properties",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/properties/types",
+    "label": "Property Setup",
+    "section": "Property",
+    "trail": "Property → Property Setup",
+    "permissions": [
+      "properties.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/realtor/clients",
+    "label": "My Clients",
+    "section": "User Management",
+    "trail": "User Management → My Clients",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/realtor/leaderboard",
+    "label": "Leadership",
+    "section": "Realtor Hub",
+    "trail": "Realtor Hub → Leadership",
+    "permissions": [
+      "realtors.leaderboard.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/realtor/levels",
+    "label": "Realtor Levels",
+    "section": "User Management",
+    "trail": "User Management → Realtor Levels",
+    "permissions": [
+      "users.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/realtor/recruitment",
+    "label": "Recruitment",
+    "section": "Realtor Hub",
+    "trail": "Realtor Hub → Recruitment",
+    "permissions": [
+      "realtors.recruitment.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/realtor/referrals",
+    "label": "My Referrals",
+    "section": "User Management",
+    "trail": "User Management → My Referrals",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/realtor/training",
+    "label": "Training & LMS",
+    "section": "Realtor Hub",
+    "trail": "Realtor Hub → Training & LMS",
+    "permissions": [
+      "realtors.training.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/realtor/verification",
+    "label": "Verification",
+    "section": null,
+    "trail": "Verification",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/receipts",
+    "label": "Payment Approvals",
+    "section": "Finance",
+    "trail": "Finance → Payments → Payment Approvals",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/referral",
+    "label": "Referral",
+    "section": null,
+    "trail": "Referral",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/roles",
+    "label": "Roles & Permissions",
+    "section": "User Management",
+    "trail": "User Management → Roles & Permissions",
+    "permissions": [
+      "roles.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/settings",
+    "label": "Settings",
+    "section": null,
+    "trail": "Settings",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/settings/notifications",
+    "label": "Notification Settings",
+    "section": "General",
+    "trail": "General → Notification Settings",
+    "permissions": [
+      "finance.purchase-notifications.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/superior/companies",
+    "label": "Companies",
+    "section": "Platform Admin",
+    "trail": "Platform Admin → Companies",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/superior/companies/new",
+    "label": "New",
+    "section": null,
+    "trail": "New",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/superior/dashboard",
+    "label": "Platform Dashboard",
+    "section": "Platform Admin",
+    "trail": "Platform Admin → Platform Dashboard",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/superior/settings",
+    "label": "Settings",
+    "section": null,
+    "trail": "Settings",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/superior/users",
+    "label": "All Users",
+    "section": "Platform Admin",
+    "trail": "Platform Admin → All Users",
+    "permissions": [],
+    "source": "nav"
+  },
+  {
+    "route": "/support",
+    "label": "Support Centre",
+    "section": "Customer Care",
+    "trail": "Customer Care → Support Centre",
+    "permissions": [
+      "support.view"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/users",
+    "label": "Users",
+    "section": null,
+    "trail": "Users",
+    "permissions": [],
+    "source": "route"
+  },
+  {
+    "route": "/users/clients",
+    "label": "Clients",
+    "section": "User Management",
+    "trail": "User Management → Clients",
+    "permissions": [
+      "users.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/users/employees",
+    "label": "Staff",
+    "section": "User Management",
+    "trail": "User Management → Staff",
+    "permissions": [
+      "users.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/users/realtors",
+    "label": "Realtors",
+    "section": "User Management",
+    "trail": "User Management → Realtors",
+    "permissions": [
+      "users.manage"
+    ],
+    "source": "nav"
+  },
+  {
+    "route": "/users/verifications",
+    "label": "Realtor Verifications",
+    "section": "User Management",
+    "trail": "User Management → Realtor Verifications",
+    "permissions": [
+      "users.manage"
+    ],
+    "source": "nav"
+  }
+]

@@ -19,7 +19,9 @@
     "verify:export": "node scripts/verify-export.cjs",
     "verify:dashboard-export": "node scripts/verify-dashboard-export.cjs",
     "verify:interop": "node scripts/verify-payload-interop.cjs",
-    "lint:nav": "node scripts/lint-nav.js"
+    "lint:nav": "node scripts/lint-nav.js",
+    "assistant:build-kb": "node scripts/build-assistant-kb.mjs",
+    "assistant:test": "node src/assistant/kb/kb-integrity.test.mjs && node src/assistant/assistant.test.mjs && node src/assistant/converse.test.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",

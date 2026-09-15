@@ -9,6 +9,7 @@ import LocationFields from '../../components/common/LocationFields';
 import PropertyUnitFields, { emptyUnitConfig } from '../../components/common/PropertyUnitFields';
 import useAuthStore from '../../store/authStore';
 import Select from '../../components/ui/Select';
+import { useAssistantHandoff } from '../../assistant/useAssistantHandoff';
 
 const COUNTRY_STATE_MAP = {
   Nigeria: ['Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara', 'FCT'],
@@ -46,6 +47,13 @@ export default function CreatePropertyPage() {
   const [unitConfig, setUnitConfig] = useState(emptyUnitConfig);
   const [images, setImages] = useState([]);
   const [saving, setSaving] = useState(false);
+
+  // From the assistant. Only the name — everything that carries a price, a
+  // location or a unit count is typed here, where it can be checked.
+  const handoff = useAssistantHandoff('create-property');
+  useEffect(() => {
+    if (handoff?.name) setForm((prev) => ({ ...prev, name: handoff.name }));
+  }, [handoff]);
   const [error, setError] = useState('');
 
   useEffect(() => {

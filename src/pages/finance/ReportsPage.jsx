@@ -5,6 +5,7 @@ import Badge from '../../components/common/Badge';
 import StatsCard from '../../components/common/StatsCard';
 import Button from '../../components/ui/Button';
 import { useCurrency } from '../../context/useAppearance';
+import { useAssistantHandoff } from '../../assistant/useAssistantHandoff';
 import Select from '../../components/ui/Select';
 
 function exportCSV(filename, columns, rows) {
@@ -31,6 +32,22 @@ export default function ReportsPage() {
   const [revenue, setRevenue] = useState(0);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ start_date: '', end_date: '', status: '' });
+
+  /**
+   * Arriving from the assistant with a period and a tab already worked out.
+   *
+   * It sets the filters and stops. The export itself is still a button press —
+   * downloading a file because of a sentence somebody typed into a chat box is
+   * not a thing software should do unasked.
+   */
+  const handoff = useAssistantHandoff('export-report');
+  useEffect(() => {
+    if (!handoff) return;
+    if (handoff.tab) setTab(handoff.tab);
+    if (handoff.from || handoff.to) {
+      setFilters((prev) => ({ ...prev, start_date: handoff.from || '', end_date: handoff.to || '' }));
+    }
+  }, [handoff]);
 
   const loadData = async () => {
     setLoading(true);
