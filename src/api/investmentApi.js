@@ -38,3 +38,22 @@ export const listOpenPlans = () => client.get('/investments/open-plans').then((r
 
 /** Subscribes the signed-in client to a plan. user_id is taken from the session. */
 export const subscribeToPlan = (payload) => client.post('/investments/subscribe', payload).then((r) => r.data);
+
+/**
+ * An investor's own positions — what they put in, what it has earned, what is
+ * still owed and when the next release falls.
+ *
+ * Computed server-side from the terms stored on each subscription, so the
+ * figure a statement shows is the figure a payout will use. A screen that did
+ * its own arithmetic would eventually disagree with the money.
+ */
+export const listMyInvestments = () => client.get('/investments/mine').then((r) => r.data?.data ?? []);
+
+/** What leaving early would cost — quoted, never committed. */
+export const getExitQuote = (id) => client.get(`/investments/${id}/exit-quote`).then((r) => r.data?.data);
+
+/** Catch one subscription up with a payment that has just been approved. */
+export const syncInvestmentFunding = (id) => client.post(`/investments/${id}/sync-funding`).then((r) => r.data);
+
+/** Run the nightly accrual by hand. Safe to repeat: nothing further falls due. */
+export const runInvestmentAccrual = () => client.post('/investments/run-accrual').then((r) => r.data);

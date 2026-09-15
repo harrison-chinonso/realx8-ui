@@ -6,6 +6,7 @@ import Modal from '../../components/common/Modal';
 import MoneyInput from '../../components/ui/MoneyInput';
 import { useCurrency } from '../../context/useAppearance';
 import useAuthStore from '../../store/authStore';
+import MyInvestmentsPanel from '../../components/investments/MyInvestmentsPanel';
 
 const num = (value) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 
@@ -109,6 +110,23 @@ export default function MyInvestmentsPage() {
         <Stat label="Paid Out So Far" value={fmt(totals.paidOut)} />
         <Stat label="Active Investments" value={String(totals.active)} />
       </div>
+
+      {/*
+        What they already hold comes first, and what they could buy second.
+        Somebody opening this page nearly always wants to know how their money
+        is doing — an investor checks a balance far more often than they start
+        a new investment.
+      */}
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Your investments</h2>
+          <p className="text-sm text-slate-500">
+            Earned is what has accrued to today. Paid is what has been released to you so far —
+            between payout dates the two differ, and that is normal.
+          </p>
+        </div>
+        <MyInvestmentsPanel />
+      </section>
 
       <section className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <h2 className="mb-1 text-lg font-semibold text-slate-900">Available Plans</h2>

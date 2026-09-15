@@ -38,7 +38,41 @@ const emptyPlanForm = () => ({
   max_amount: '',
   return_rate: '',
   status: 'active',
+  /*
+   * A rate alone is not an offer. 12% a year paid monthly and compounding is a
+   * different sum from 12% paid once at maturity, and an investor cannot judge
+   * an opportunity without all three. Defaults are the cautious reading:
+   * simple, at maturity, no early exit.
+   */
+  payout_frequency: 'at_maturity',
+  return_basis: 'simple',
+  tenor_days: '',
+  cap_amount: '',
+  opens_at: '',
+  closes_at: '',
+  property_id: '',
+  early_exit_allowed: false,
+  lock_in_days: '',
+  penalty_type: 'none',
+  penalty_value: '',
 });
+
+/** What a company is actually offering, in the words an investor reads. */
+const FREQUENCY_OPTIONS = [
+  { value: 'at_maturity', label: 'Once, at maturity' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+];
+const BASIS_OPTIONS = [
+  { value: 'simple', label: 'Simple — the return does not itself earn' },
+  { value: 'compound', label: 'Compounding — each payout period earns on the last' },
+];
+const PENALTY_OPTIONS = [
+  { value: 'none', label: 'No penalty' },
+  { value: 'percentage_of_return', label: 'A percentage of the return earned' },
+  { value: 'flat_fee', label: 'A flat fee' },
+  { value: 'forfeit_all_return', label: 'Forfeit all return; capital is returned' },
+];
 const emptyInvestmentForm = () => ({ user_id: '', plan_id: '', amount: '' });
 
 const normalizeList = (response) => {
@@ -171,6 +205,18 @@ export default function InvestmentsPage() {
       max_amount: String(plan.max_amount ?? ''),
       return_rate: String(plan.return_rate ?? ''),
       status: plan.status ?? 'active',
+      payout_frequency: plan.payout_frequency ?? 'at_maturity',
+      return_basis: plan.return_basis ?? 'simple',
+      tenor_days: String(plan.tenor_days ?? ''),
+      cap_amount: plan.cap_minor ? String(Number(plan.cap_minor) / 100) : '',
+      // Date inputs want yyyy-mm-dd and nothing else.
+      opens_at: plan.opens_at ? String(plan.opens_at).slice(0, 10) : '',
+      closes_at: plan.closes_at ? String(plan.closes_at).slice(0, 10) : '',
+      property_id: String(plan.property_id ?? ''),
+      early_exit_allowed: Boolean(plan.early_exit_allowed),
+      lock_in_days: String(plan.lock_in_days ?? ''),
+      penalty_type: plan.penalty_type ?? 'none',
+      penalty_value: String(plan.penalty_value ?? ''),
     });
     setShowPlanModal(true);
   };
@@ -191,6 +237,20 @@ export default function InvestmentsPage() {
         max_amount: Number(planForm.max_amount),
         return_rate: Number(planForm.return_rate),
         status: planForm.status || 'active',
+
+        // The terms the engine copies onto every subscription made against
+        // this opportunity. Empty means "not set", not zero.
+        payout_frequency: planForm.payout_frequency || 'at_maturity',
+        return_basis: planForm.return_basis || 'simple',
+        tenor_days: planForm.tenor_days === '' ? 0 : Number(planForm.tenor_days),
+        cap_minor: planForm.cap_amount === '' ? 0 : Math.round(Number(planForm.cap_amount) * 100),
+        opens_at: planForm.opens_at || null,
+        closes_at: planForm.closes_at || null,
+        property_id: planForm.property_id || null,
+        early_exit_allowed: Boolean(planForm.early_exit_allowed),
+        lock_in_days: planForm.lock_in_days === '' ? 0 : Number(planForm.lock_in_days),
+        penalty_type: planForm.early_exit_allowed ? (planForm.penalty_type || 'none') : 'none',
+        penalty_value: planForm.penalty_value === '' ? 0 : Number(planForm.penalty_value),
       };
 
       if (editingPlan) {
@@ -781,6 +841,141 @@ export default function InvestmentsPage() {
                     <option value="inactive">Inactive</option>
                   </Select>
                 </div>
+              </div>
+
+              {/*
+                ── The terms, which are the offer ──────────────────────────
+                A rate on its own is not one: the same 12% paid monthly and
+                compounding is a different sum from 12% paid once at maturity.
+                Everything below is copied onto each subscription at the moment
+                it is made, and cannot be changed for investors already in.
+              */}
+              <div className="space-y-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Terms</p>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Return is paid</label>
+                    <Select
+                      value={planForm.payout_frequency}
+                      onChange={(event) => setPlanForm((current) => ({ ...current, payout_frequency: event.target.value }))}
+                      className={INPUT_CLASS}
+                      options={FREQUENCY_OPTIONS}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Basis</label>
+                    <Select
+                      value={planForm.return_basis}
+                      onChange={(event) => setPlanForm((current) => ({ ...current, return_basis: event.target.value }))}
+                      className={INPUT_CLASS}
+                      options={BASIS_OPTIONS}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Committed for (days)</label>
+                    <input
+                      type="number" min="0"
+                      value={planForm.tenor_days}
+                      onChange={(event) => setPlanForm((current) => ({ ...current, tenor_days: event.target.value }))}
+                      className={INPUT_CLASS}
+                      placeholder="365"
+                    />
+                    <p className="mt-1 text-xs text-slate-400">The tenor runs from the day the investor’s money arrives.</p>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Raise cap</label>
+                    <input
+                      type="number" min="0" step="0.01"
+                      value={planForm.cap_amount}
+                      onChange={(event) => setPlanForm((current) => ({ ...current, cap_amount: event.target.value }))}
+                      className={INPUT_CLASS}
+                      placeholder="Leave blank for no ceiling"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Opens</label>
+                    <input
+                      type="date"
+                      value={planForm.opens_at}
+                      onChange={(event) => setPlanForm((current) => ({ ...current, opens_at: event.target.value }))}
+                      className={INPUT_CLASS}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Closes</label>
+                    <input
+                      type="date"
+                      value={planForm.closes_at}
+                      onChange={(event) => setPlanForm((current) => ({ ...current, closes_at: event.target.value }))}
+                      className={INPUT_CLASS}
+                    />
+                    {/* The window is not the tenor: an opportunity can be open
+                        for two weeks and run for two years. */}
+                    <p className="mt-1 text-xs text-slate-400">When it accepts money — not how long it runs.</p>
+                  </div>
+                </div>
+
+                <label className="flex items-start gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={planForm.early_exit_allowed}
+                    onChange={(event) => setPlanForm((current) => ({ ...current, early_exit_allowed: event.target.checked }))}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Allow investors to withdraw before maturity
+                    <span className="block text-xs text-slate-400">
+                      Off by default. Money raised against a development is normally committed for the full term.
+                    </span>
+                  </span>
+                </label>
+
+                {planForm.early_exit_allowed && (
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-700">Lock-in (days)</label>
+                      <input
+                        type="number" min="0"
+                        value={planForm.lock_in_days}
+                        onChange={(event) => setPlanForm((current) => ({ ...current, lock_in_days: event.target.value }))}
+                        className={INPUT_CLASS}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-700">Penalty</label>
+                      <Select
+                        value={planForm.penalty_type}
+                        onChange={(event) => setPlanForm((current) => ({ ...current, penalty_type: event.target.value }))}
+                        className={INPUT_CLASS}
+                        options={PENALTY_OPTIONS}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-700">
+                        {planForm.penalty_type === 'percentage_of_return' ? 'Percentage' : 'Amount'}
+                      </label>
+                      <input
+                        type="number" min="0" step="0.01"
+                        value={planForm.penalty_value}
+                        onChange={(event) => setPlanForm((current) => ({ ...current, penalty_value: event.target.value }))}
+                        className={INPUT_CLASS}
+                        disabled={['none', 'forfeit_all_return'].includes(planForm.penalty_type)}
+                      />
+                      {/* A penalty can take the return but never the capital —
+                          the server caps it, and this says so before anybody
+                          configures a fee larger than the return. */}
+                      <p className="mt-1 text-xs text-slate-400">Never takes capital.</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
