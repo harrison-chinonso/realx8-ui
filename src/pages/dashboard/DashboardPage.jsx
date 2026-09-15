@@ -214,7 +214,7 @@ function StaffDashboard() {
     totalStaff, totalRealtors,
     totalInvoiceAmount, collected, outstanding,
     oldestUnpaidDays, overdueCount,
-    rangedRevenue, momGrowth, momGrowthKind, ytdRevenue, monthlyRevenue,
+    rangedRevenue, momGrowth, momGrowthKind, ytdRevenue, weekComparison,
     qualifiedLeads, conversionRate,
     leadStatusMap, totalLeadsInRange,
     duePayments, reminders,
@@ -395,13 +395,32 @@ function StaffDashboard() {
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Revenue Trend</h2>
-              <p className="text-[11px] text-slate-400">Monthly paid revenue — last 12 months</p>
+              {/*
+                The comparison is stated in words as well as drawn, because the
+                number people repeat to each other is "up 12% on last week" —
+                and it is compared LIKE FOR LIKE, against last week up to the
+                same day. Against last week's full total this week would be
+                behind until Sunday evening, every week.
+              */}
+              <p className="text-[11px] text-slate-400">
+                This week vs last week, day for day
+                {weekComparison?.changePct != null && (
+                  <>
+                    {' · '}
+                    <span className={weekComparison.changePct >= 0 ? 'text-emerald-600' : 'text-rose-500'}>
+                      {weekComparison.changePct >= 0 ? '▲' : '▼'}{' '}
+                      {Math.abs(weekComparison.changePct).toFixed(1)}%
+                    </span>
+                    {` through ${weekComparison.throughDay}`}
+                  </>
+                )}
+              </p>
             </div>
             <Link to="/finance/reports" className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline">
               <ArrowUpRight size={12} /> Detailed Report
             </Link>
           </div>
-          <RevenueChart data={monthlyRevenue} />
+          <RevenueChart data={weekComparison} />
         </section>
       </Section>
 

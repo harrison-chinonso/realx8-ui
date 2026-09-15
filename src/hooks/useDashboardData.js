@@ -30,31 +30,109 @@ const inRange = (date, from, to) => {
 };
 
 // Monthly revenue buckets for the last 12 months (or within range)
-function buildMonthlyRevenue(invoices, fromDate, creditTxns = []) {
-  const months = [];
-  const now = new Date();
-  for (let i = 11; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push({ label: d.toLocaleString('default', { month: 'short', year: '2-digit' }), year: d.getFullYear(), month: d.getMonth(), amount: 0 });
-  }
-  // Paid invoices
+/** Monday first, because that is where the business week starts. */
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+/**
+ * Midnight on the Monday of whatever week a date falls in.
+ *
+ * Monday rather than Sunday because that is how the business week is reported
+ * almost everywhere outside the US, and because a week that straddles the
+ * weekend puts two quiet days in the middle of a bucket rather than splitting
+ * them across two.
+ */
+function startOfWeek(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  // getDay(): 0 is Sunday, so Sunday is six days into the week, not zero.
+  const daysSinceMonday = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - daysSinceMonday);
+  return d;
+}
+
+/**
+ * This week against last week, day for day.
+ *
+ * ── Why a comparison rather than a history ──────────────────────────────────
+ *
+ * A run of weekly totals answers "how have we been doing"; this answers "are we
+ * ahead or behind", which is the question somebody opens a dashboard on a
+ * Wednesday to ask. Monday sits against Monday and Tuesday against Tuesday, so
+ * the comparison holds even though the weeks are different lengths so far — the
+ * shape of a week is not flat, and comparing three days of this week against a
+ * whole week of last week would say nothing.
+ *
+ * ── This week stops at today ────────────────────────────────────────────────
+ *
+ * The days that have not happened are not plotted at all. Carrying the line
+ * along the bottom to Sunday would draw a cliff every week, and a cliff is what
+ * a collapse in sales looks like — the one reading the chart exists to prevent.
+ */
+function buildWeekComparison(invoices, creditTxns = []) {
+  const thisWeekStart = startOfWeek(new Date());
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+  /** How far into the week we are: Monday 0 … Sunday 6. */
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dayIndex = Math.round((today - thisWeekStart) / 86400000);
+
+  const days = WEEKDAYS.map((label, index) => ({
+    label,
+    current: 0,
+    previous: 0,
+    // Nothing has happened yet on these; the current line stops before them.
+    future: index > dayIndex,
+    today: index === dayIndex,
+  }));
+
+  const addTo = (date, amount) => {
+    if (!date) return;
+    const at = new Date(date);
+    at.setHours(0, 0, 0, 0);
+    const offsetThis = Math.round((at - thisWeekStart) / 86400000);
+    if (offsetThis >= 0 && offsetThis < 7) {
+      days[offsetThis].current += Number(amount) || 0;
+      return;
+    }
+    const offsetLast = Math.round((at - lastWeekStart) / 86400000);
+    if (offsetLast >= 0 && offsetLast < 7) {
+      days[offsetLast].previous += Number(amount) || 0;
+    }
+  };
+
   invoices
     .filter((inv) => norm(inv.status) === 'paid')
     .forEach((inv) => {
-      const d = getDate(inv, ['paid_at', 'payment_date', 'updated_at', 'createdAt', 'created_at']);
-      if (!d) return;
-      const slot = months.find((m) => m.year === d.getFullYear() && m.month === d.getMonth());
-      if (slot) slot.amount += Number(inv.amount || 0);
+      addTo(getDate(inv, ['paid_at', 'payment_date', 'updated_at', 'createdAt', 'created_at']), inv.amount);
     });
-  // Credit transactions
+
   creditTxns.forEach((txn) => {
-    const d = getDate(txn, ['transaction_date', 'date', 'createdAt', 'created_at']);
-    if (!d) return;
-    const slot = months.find((m) => m.year === d.getFullYear() && m.month === d.getMonth());
-    if (slot) slot.amount += Number(txn.amount || 0);
+    addTo(getDate(txn, ['transaction_date', 'date', 'createdAt', 'created_at']), txn.amount);
   });
-  return months;
+
+  /**
+   * The totals are compared LIKE FOR LIKE — last week only up to the same day.
+   * Against last week's full total, this week is behind until Sunday evening,
+   * which would make the figure useless on every day but one.
+   */
+  const currentToDate = days.filter((d) => !d.future).reduce((sum, d) => sum + d.current, 0);
+  const previousToDate = days.filter((d) => !d.future).reduce((sum, d) => sum + d.previous, 0);
+
+  return {
+    days,
+    currentToDate,
+    previousToDate,
+    previousFull: days.reduce((sum, d) => sum + d.previous, 0),
+    /** Null rather than 0% when there is nothing to compare against. */
+    changePct: previousToDate > 0
+      ? ((currentToDate - previousToDate) / previousToDate) * 100
+      : null,
+    throughDay: WEEKDAYS[Math.max(Math.min(dayIndex, 6), 0)],
+  };
 }
+
 
 export default function useDashboardData() {
   const getDateRange = useDashboardStore((s) => s.getDateRange);
@@ -271,7 +349,7 @@ export default function useDashboardData() {
       const collectionRate = collectionRateBand !== null ? collectionRateBand.toFixed(1) : null;
 
       // Monthly chart data (last 12 months, includes credit transactions)
-      const monthlyRevenue = buildMonthlyRevenue(allInvoices, from, creditTxns);
+      const weekComparison = buildWeekComparison(allInvoices, creditTxns);
 
       // ── Due payments (top 8 sorted by amount desc) ────────────────────
       const duePayments = allInvoices
@@ -439,7 +517,7 @@ export default function useDashboardData() {
         momGrowth,
         momGrowthKind, // 'pct' | 'from-zero' | 'no-baseline' — render each distinctly
         ytdRevenue,
-        monthlyRevenue,
+        weekComparison,
         totalCreditTxn,
 
         // Cash position band — collected + outstanding always reconcile to

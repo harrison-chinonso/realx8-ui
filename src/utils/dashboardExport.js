@@ -73,11 +73,21 @@ export const buildSections = (data, symbol) => {
     ],
   });
 
-  if (data.monthlyRevenue?.length) {
+  if (data.weekComparison?.days?.length) {
     sections.push({
-      title: 'Monthly revenue',
-      head: ['Month', 'Revenue'],
-      body: data.monthlyRevenue.map((m) => [m.label, money(m.amount, symbol)]),
+      title: 'This week vs last week',
+      head: ['Day', 'Last week', 'This week'],
+      /*
+       * A day that has not happened is left blank rather than written as zero.
+       * A spreadsheet outlives the screen it came from, and a reader months
+       * later cannot tell "no sales on Thursday" from "Thursday had not
+       * happened when this was exported".
+       */
+      body: data.weekComparison.days.map((d) => [
+        d.label,
+        money(d.previous, symbol),
+        d.future ? '—' : money(d.current, symbol),
+      ]),
     });
   }
 
