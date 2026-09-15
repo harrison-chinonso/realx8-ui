@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { myCommissionStatement, requestMyCommissionPayout } from '../../api/commissionApi';
 import { useCurrency } from '../../context/useAppearance';
 import Button from '../ui/Button';
+import useMyVerification from '../../hooks/useMyVerification';
+import VerificationRequiredNotice from '../common/VerificationRequiredNotice';
 
 /**
  * What a realtor has earned under the commission engine, and how they ask to be
@@ -40,6 +42,7 @@ const roleWord = (line) => (line.role === 'UPLINE'
     : line.role === 'REFERRER' ? 'Referral' : line.role);
 
 export default function MyEntitlementsPanel() {
+  const verification = useMyVerification();
   const fmt = useCurrency();
   const [statement, setStatement] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -116,7 +119,13 @@ export default function MyEntitlementsPanel() {
             The amount is confirmed once it has been approved.
           </p>
         </div>
-        {requestable.length > 0 && (
+        {/*
+          The button is withheld only on a KNOWN "not verified". While the
+          answer is loading, or if it could not be fetched, it stays — the
+          server refuses the request either way, and hiding it on a failed
+          request would invent a restriction nobody applied.
+        */}
+        {requestable.length > 0 && !verification.blocked && (
           <Button type="button" onClick={request} disabled={busy || !chosen.length}>
             {busy ? 'Requesting…' : chosen.length
               ? `Request payment for ${chosen.length}`
@@ -124,6 +133,19 @@ export default function MyEntitlementsPanel() {
           </Button>
         )}
       </div>
+
+      {/*
+        Shown whether or not anything is requestable yet. A realtor with no
+        released commission still needs to know verification is what stands
+        between them and being paid, rather than discovering it on the day they
+        first have something to claim.
+      */}
+      {verification.blocked && (
+        <VerificationRequiredNotice
+          status={verification.status}
+          activity="You cannot request a payout until your identity is verified."
+        />
+      )}
 
       {notice && (
         <p className={`rounded-lg px-3 py-2 text-sm ${

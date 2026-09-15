@@ -132,6 +132,45 @@ export default function ReceiptsPage() {
     setRejectNotes('');
   };
 
+  /**
+   * Open the review drawer for one submitted payment.
+   *
+   * Lost in "Remove the Add Receipt and New Payment Plan buttons", which took
+   * this function out along with the hand-entry form it also served, and left
+   * the Review button calling it. Nothing errored at render — the call sits
+   * inside an onClick — so the button simply did nothing when pressed, which is
+   * the failure mode a missing handler always has.
+   */
+  const openReview = (receipt) => {
+    setReviewing(receipt);
+    setCompanyReceipt(null);
+    setReceiptRequired(false);
+    setUploadError('');
+    setCreditAmount(String(receipt.amount ?? ''));
+    // Method starts EMPTY: it is the admin's reading of the proof, not the
+    // buyer's claim, so it has to be chosen rather than accepted by default.
+    setReviewMethod('');
+    // Seeded from what the buyer gave, as a starting point the admin corrects
+    // against the document itself.
+    setReviewReference(receipt.reference || '');
+    setReviewMethods(CONFIRMABLE_METHOD_FALLBACK);
+    // Served from the same constant the validation uses, so the picker cannot
+    // offer a method the server will refuse. Best effort — the fallback above
+    // stands if this receipt has no invoice or the call fails.
+    if (receipt.invoice_id) {
+      getPaymentOptions(receipt.invoice_id)
+        .then((res) => {
+          const served = res?.data?.confirmable_payment_methods;
+          if (Array.isArray(served) && served.length) setReviewMethods(served);
+          // Whether this company insists on its own receipt. The server enforces
+          // it regardless; this is so the screen can say so before the admin
+          // fills in the rest of the form and is refused at the end.
+          setReceiptRequired(Boolean(res?.data?.requires_company_receipt));
+        })
+        .catch(() => {});
+    }
+  };
+
   const handleVerify = async (event) => {
     event.preventDefault();
     if (!reviewing) return;

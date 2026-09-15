@@ -8,6 +8,8 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import useShareToken from '../../hooks/useShareToken';
 import useAuthStore from '../../store/authStore';
+import useMyVerification from '../../hooks/useMyVerification';
+import VerificationRequiredNotice from '../../components/common/VerificationRequiredNotice';
 
 const EMPTY = { data: [], pagination: { page: 1, totalPages: 1, total: 0 } };
 const PAGE_SIZE = 12;
@@ -18,6 +20,7 @@ const PAGE_SIZE = 12;
  * backing endpoint exposes reads only.
  */
 export default function ListedPropertiesPage() {
+  const verification = useMyVerification();
   const navigate = useNavigate();
   const noCompany = useAuthStore((s) => s.company_id) == null && !useAuthStore.getState().isSuperiorAdmin;
   /**
@@ -108,6 +111,18 @@ export default function ListedPropertiesPage() {
         </p>
       </div>
 
+      {/*
+        Said once, above the grid, rather than on every card — the reason is
+        about the person, not about any one property, and repeating it across
+        twenty cards would bury the properties themselves.
+      */}
+      {verification.blocked && (
+        <VerificationRequiredNotice
+          status={verification.status}
+          activity="You cannot share properties or refer clients until your identity is verified."
+        />
+      )}
+
       {shareError && <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{shareError}</div>}
 
       {share && <ShareLinkPanel share={share} onClose={() => setShare(null)} />}
@@ -125,7 +140,9 @@ export default function ListedPropertiesPage() {
               key={property.id}
               property={property}
               onOpen={() => navigate(`/properties/listed/${property.id}`)}
-              onShare={() => handleShare(property)}
+              // No share action at all while unverified: the link it produces
+              // would carry a code the server refuses to attribute.
+              onShare={verification.blocked ? undefined : () => handleShare(property)}
               summaryMode="units"
             />
           ))}

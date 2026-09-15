@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Button from '../ui/Button';
 import useShareToken from '../../hooks/useShareToken';
+import useMyVerification from '../../hooks/useMyVerification';
+import VerificationRequiredNotice from './VerificationRequiredNotice';
 
 /**
  * The realtor's personal sign-up link. Anyone registering through it is mapped
@@ -12,6 +14,25 @@ import useShareToken from '../../hooks/useShareToken';
 export default function ReferralLinkPanel({ realtorCode, companyCode }) {
   const [copied, setCopied] = useState(null);
   const { token, code, ready } = useShareToken();
+  const verification = useMyVerification();
+
+  /*
+   * The link itself is withheld, not merely the button.
+   *
+   * A referral link works by carrying the realtor's code, and the server will
+   * not attribute anybody who arrives on an unverified realtor's code. Showing
+   * the link and disabling Copy would leave it on screen to be typed out by
+   * hand — and every client who followed it would register attributed to
+   * nobody, which the realtor would discover weeks later.
+   */
+  if (verification.blocked) {
+    return (
+      <VerificationRequiredNotice
+        status={verification.status}
+        activity="Your referral link is not active until your identity is verified."
+      />
+    );
+  }
 
   if (!realtorCode) {
     return (
