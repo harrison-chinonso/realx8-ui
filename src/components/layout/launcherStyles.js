@@ -227,7 +227,16 @@ export const LAUNCHER_CSS = `
 /* ── Phone: full-bleed, tighter, and the second tier of type goes ───────── */
 @media (max-width: 639px) {
   .rx-panel { max-width: none; width: 100%; height: 100%; max-height: none; border-radius: 0; }
-  .rx-grid { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 7px; }
+  /*
+   * Two columns, stated rather than derived.
+   *
+   * auto-fill with a 112px minimum gave three on a 390px phone and two on a
+   * 360px one — so the layout changed between two handsets of the same size,
+   * which is the sort of inconsistency nobody can report but everybody notices.
+   * Two is the floor the pattern specifies, so two is what it says, at every
+   * width below the breakpoint.
+   */
+  .rx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .rx-ic { width: 38px; height: 38px; }
   /* Shorter, because the description that justified the height is gone. */
   .rx-tile { min-height: 112px; padding: 16px 8px 12px; }
