@@ -1,4 +1,5 @@
 import Badge from '../common/Badge';
+import { DASHBOARD_ROWS, capRows } from './dashboardRows';
 import { openReceipt } from '../../utils/receiptDocument';
 import { useAppearance } from '../../context/useAppearance';
 
@@ -9,7 +10,10 @@ const formatDate = (value) => {
 };
 
 /** Most recent transactions — date, amount, status. */
-export default function TransactionHistory({ title = 'Recent Transactions', rows = [], fmt, emptyText }) {
+export default function TransactionHistory({
+  title = 'Recent Transactions', rows = [], fmt, emptyText, limit = DASHBOARD_ROWS,
+}) {
+  const shown = capRows(rows, limit);
   const appearance = useAppearance();
 
   return (
@@ -27,7 +31,7 @@ export default function TransactionHistory({ title = 'Recent Transactions', rows
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {rows.map((row) => (
+            {shown.map((row) => (
               <tr key={row.id} className="hover:bg-slate-50">
                 <td className="whitespace-nowrap px-4 py-2.5 text-slate-500">{formatDate(row.date)}</td>
                 {/*
@@ -77,7 +81,7 @@ export default function TransactionHistory({ title = 'Recent Transactions', rows
                 </td>
               </tr>
             ))}
-            {!rows.length && (
+            {!shown.length && (
               <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">{emptyText || 'No transactions yet.'}</td></tr>
             )}
           </tbody>

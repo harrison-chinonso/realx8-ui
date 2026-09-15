@@ -1,4 +1,5 @@
 import { Building2, Home, UserRound } from 'lucide-react';
+import { DASHBOARD_ROWS, capRows } from './dashboardRows';
 
 /**
  * Who and what is actually earning.
@@ -23,8 +24,19 @@ const Bar = ({ value, max }) => (
  * bar, the same ordering and the same empty note. A second copy over there
  * would drift the moment either is touched.
  */
-export function Ranking({ icon: Icon, title, rows, fmt, emptyNote }) {
-  const max = rows?.length ? Math.max(...rows.map((r) => r.received)) : 0;
+export function Ranking({ icon: Icon, title, rows, fmt, emptyNote, limit = DASHBOARD_ROWS }) {
+  /*
+   * Capped here rather than at each of the four call sites — the three cards
+   * below and the platform admin's company ranking all draw through this, so
+   * one cap keeps them consistent with each other.
+   */
+  const shown = capRows(rows, limit);
+  /*
+   * The bar is scaled to the largest row SHOWN, not the largest that exists.
+   * Scaling to a row nobody can see would leave every visible bar short of the
+   * edge for no reason a reader could work out.
+   */
+  const max = shown.length ? Math.max(...shown.map((r) => r.received)) : 0;
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
@@ -33,11 +45,11 @@ export function Ranking({ icon: Icon, title, rows, fmt, emptyNote }) {
         <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
       </div>
 
-      {!rows?.length ? (
+      {!shown.length ? (
         <p className="py-6 text-center text-xs text-slate-400">{emptyNote}</p>
       ) : (
         <ol className="space-y-3">
-          {rows.map((row, index) => (
+          {shown.map((row, index) => (
             <li key={row.id} className="space-y-1">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="flex min-w-0 items-baseline gap-2">

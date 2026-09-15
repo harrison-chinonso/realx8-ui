@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { DASHBOARD_ROWS, capRows } from './dashboardRows';
 import { Trophy } from 'lucide-react';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -10,7 +11,8 @@ const day = (d) => {
     : date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 };
 
-export default function RealtorLeaderboard({ realtors = [], fmt, period, range }) {
+export default function RealtorLeaderboard({ realtors = [], fmt, period, range, limit = DASHBOARD_ROWS }) {
+  const rows = capRows(realtors, limit);
   // "LAST WEEK" alone does not say which week. Next to a zero that is
   // indistinguishable from missing data, so the actual dates are spelled out.
   const from = day(range?.from);
@@ -52,7 +54,7 @@ export default function RealtorLeaderboard({ realtors = [], fmt, period, range }
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {realtors.map((r, i) => (
+            {rows.map((r, i) => (
               <tr key={r.id} className="hover:bg-slate-50 transition-colors">
                 <td className="py-2.5 pr-2 text-base">{MEDALS[i] || <span className="text-xs font-bold text-slate-400">{i + 1}</span>}</td>
                 <td className="py-2.5 pr-3 font-medium text-slate-800">{r.name}</td>

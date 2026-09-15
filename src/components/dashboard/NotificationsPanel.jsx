@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { DASHBOARD_ROWS, capRows } from './dashboardRows';
 import { useNavigate } from 'react-router-dom';
 import { Bell, X } from 'lucide-react';
 import { markRead } from '../../api/notificationApi';
 
-export default function NotificationsPanel({ notifications = [], onDismiss }) {
+export default function NotificationsPanel({ notifications = [], onDismiss, limit = DASHBOARD_ROWS }) {
+  const shown = capRows(notifications, limit);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const count = notifications.length;
@@ -40,7 +42,7 @@ export default function NotificationsPanel({ notifications = [], onDismiss }) {
               {notifications.length === 0 && (
                 <div className="px-4 py-8 text-center text-xs text-slate-400">No new alerts</div>
               )}
-              {notifications.map((n) => (
+              {shown.map((n) => (
                 <div key={n.id} className="group flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors">
                   <span className="mt-0.5 text-base shrink-0">
                     {n.type === 'overdue' ? '🔴' : n.type === 'registration' ? '👤' : n.type === 'payment' ? '💳' : '🔔'}

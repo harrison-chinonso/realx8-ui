@@ -1,3 +1,4 @@
+import { DASHBOARD_ROWS, capRows } from './dashboardRows';
 const fmtDate = (raw) => {
   if (!raw) return '—';
   return new Date(raw).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -10,7 +11,8 @@ function PriorityDot({ days }) {
   return <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block" title={`${days}d left`} />;
 }
 
-export default function PaymentRemindersWidget({ reminders = [], fmt }) {
+export default function PaymentRemindersWidget({ reminders = [], fmt, limit = DASHBOARD_ROWS }) {
+  const rows = capRows(reminders, limit);
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <div className="mb-4">
@@ -34,7 +36,7 @@ export default function PaymentRemindersWidget({ reminders = [], fmt }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {reminders.map((r, i) => {
+            {rows.map((r, i) => {
               const customer = r.client?.name || r.customer_name || r.client_name || '—';
               const ref = r.invoice_id || r.invoice?.invoice_number || r.reference || '—';
               const days = r.daysLeft;

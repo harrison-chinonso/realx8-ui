@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { DASHBOARD_ROWS, capRows } from './dashboardRows';
 
 const fmtDate = (raw) => {
   if (!raw) return '—';
@@ -10,7 +11,8 @@ const getDateVal = (item, keys) => {
   return null;
 };
 
-export default function TopDuePaymentsTable({ invoices = [], fmt }) {
+export default function TopDuePaymentsTable({ invoices = [], fmt, limit = DASHBOARD_ROWS }) {
+  const rows = capRows(invoices, limit);
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
       <div className="mb-4 flex items-center justify-between">
@@ -36,7 +38,7 @@ export default function TopDuePaymentsTable({ invoices = [], fmt }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {invoices.map((inv) => {
+            {rows.map((inv) => {
               const ref = inv.invoice_id || inv.invoice_number || inv.id || '—';
               const formattedRef = typeof ref === 'string' && ref.startsWith('#') ? ref : `#${ref}`;
               const customer =

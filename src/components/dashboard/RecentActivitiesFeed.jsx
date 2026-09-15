@@ -1,11 +1,18 @@
 import { Link } from 'react-router-dom';
+import { DASHBOARD_ROWS, capRows } from './dashboardRows';
 
 const fmtDate = (d) => {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 };
 
-export default function RecentActivitiesFeed({ activities = [], recentSales = [], fmt }) {
+export default function RecentActivitiesFeed({
+  activities = [], recentSales = [], fmt, limit = DASHBOARD_ROWS,
+}) {
+  // Two lists side by side, so both are capped — one running longer than the
+  // other makes the panel look lopsided rather than informative.
+  const shownActivities = capRows(activities, limit);
+  const shownSales = capRows(recentSales, limit);
   return (
     <div className="grid gap-5 xl:grid-cols-2">
       {/* Activity Timeline */}
@@ -15,7 +22,7 @@ export default function RecentActivitiesFeed({ activities = [], recentSales = []
           <Link to="/notifications" className="text-xs font-medium text-blue-600 hover:underline">View all →</Link>
         </div>
         <div className="space-y-3">
-          {activities.slice(0, 8).map((a, i) => (
+          {shownActivities.map((a, i) => (
             <div key={i} className="flex items-start gap-3">
               <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm">
                 {a.icon}
@@ -41,7 +48,7 @@ export default function RecentActivitiesFeed({ activities = [], recentSales = []
           <Link to="/finance/transactions" className="text-xs font-medium text-blue-600 hover:underline">View all →</Link>
         </div>
         <div className="space-y-2">
-          {recentSales.map((s, i) => {
+          {shownSales.map((s, i) => {
             const title = s.title || s.property_name || s.name || `Invoice #${s.id}`;
             const client = s.client?.name || s.customer_name || s.client_name || '—';
             const date = s.createdAt || s.created_at;
