@@ -19,13 +19,24 @@ import Select from '../../components/ui/Select';
 import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
+/**
+ * `publishable: false` means the account can be connected but not posted to.
+ *
+ * socialPublisher has no implementation for TikTok or YouTube, and a
+ * text-and-image post is not something either platform accepts anyway. They are
+ * still worth connecting — impressionsSyncJob and socialInsightsFetcher both
+ * read from them — so they stay in the list, described rather than removed.
+ *
+ * Offering them as publish targets meant picking one, pressing Publish, and
+ * being told the post was published while it sat on no channel at all.
+ */
 const CHANNELS = [
-  { value: 'facebook', label: 'Facebook' },
-  { value: 'instagram', label: 'Instagram' },
-  { value: 'tiktok', label: 'TikTok' },
-  { value: 'youtube', label: 'YouTube' },
-  { value: 'linkedin', label: 'LinkedIn' },
-  { value: 'twitter', label: 'X (Twitter)' },
+  { value: 'facebook', label: 'Facebook', publishable: true },
+  { value: 'instagram', label: 'Instagram', publishable: true },
+  { value: 'tiktok', label: 'TikTok', publishable: false },
+  { value: 'youtube', label: 'YouTube', publishable: false },
+  { value: 'linkedin', label: 'LinkedIn', publishable: true },
+  { value: 'twitter', label: 'X (Twitter)', publishable: true },
 ];
 const CHANNEL_LABELS = CHANNELS.reduce((acc, channel) => ({ ...acc, [channel.value]: channel.label }), {});
 const STATUS_LABELS = {
@@ -300,7 +311,17 @@ export default function MediaPostsPage() {
     try {
       const response = await callback();
       setWorkflowModal({ type: '', post: null, scheduled_at: '', rejection_reason: '' });
-      if (response?.message || successMessage) setNotice(response?.message || successMessage);
+      /*
+       * A reply carrying `errors` is not a success, whatever its status code.
+       *
+       * Publishing to four channels and reaching three answers 200 — the post
+       * IS live — but showing that in the same green as a clean run is how
+       * "Published with 1 error(s)" came to be read as "published". If anything
+       * failed, it goes in the error line, where a failure belongs.
+       */
+      const message = response?.message || successMessage;
+      if (response?.errors?.length) setError(message || 'Some channels could not be published to.');
+      else if (message) setNotice(message);
       await loadPosts();
     } catch (actionError) {
       console.error(actionError);
@@ -508,13 +529,23 @@ export default function MediaPostsPage() {
             <label className="block text-sm font-medium text-slate-700">Target Channels<FieldMark /></label>
             <div className="grid gap-2 sm:grid-cols-2">
               {CHANNELS.map((channel) => (
-                <label key={channel.value} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
+                <label
+                  key={channel.value}
+                  title={channel.publishable ? undefined : 'Connected for analytics only — posts cannot be sent to this platform'}
+                  className={`flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm ${
+                    channel.publishable ? 'text-slate-700' : 'cursor-not-allowed bg-slate-50 text-slate-400'
+                  }`}
+                >
                   <input
                     type="checkbox"
                     checked={form.channels.includes(channel.value)}
                     onChange={() => handleToggleChannel(channel.value)}
+                    disabled={!channel.publishable}
                   />
                   <span>{channel.label}</span>
+                  {!channel.publishable && (
+                    <span className="ml-auto text-xs">analytics only</span>
+                  )}
                 </label>
               ))}
             </div>
