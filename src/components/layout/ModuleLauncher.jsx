@@ -4,7 +4,7 @@ import { ArrowLeft, Search, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
 import { LAUNCHER_CSS } from './launcherStyles';
-import { DESCRIPTIONS } from './launcherGroups';
+import { DESCRIPTIONS, orderClientTiles } from './launcherGroups';
 import { rememberVisit, recentVisits } from './recentScreens';
 
 /**
@@ -560,7 +560,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
                * give four tiles, each opening one or two screens.
                */
               <div className="rx-modules">
-                {rows.flatMap((row) => row.tiles).map((item, index) => (
+                {orderClientTiles(rows.flatMap((row) => row.tiles)).map((item, index) => (
                   <Tile
                     key={item.to}
                     innerRef={(node) => { tileRefs.current[index] = node; }}

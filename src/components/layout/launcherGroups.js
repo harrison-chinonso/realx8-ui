@@ -30,3 +30,42 @@ export const DESCRIPTIONS = {
   'My Portfolio': 'What you own',
   'Platform Admin': 'Tenants and platform',
 };
+
+/**
+ * The order a client's tiles are laid out in.
+ *
+ * Their launcher is flat — every screen they have, as eight tiles — and the
+ * order that falls out of navConfig is the order the MENU is declared in:
+ * Dashboard, then Properties, then the two screens they can see in Operations
+ * & Support, then their portfolio. That is the order the sections make sense in
+ * for staff, and the wrong one for a buyer, who wants what they own and what
+ * they owe before support and notifications.
+ *
+ * Declared here rather than by reordering navConfig, because navConfig's order
+ * is shared: putting Notifications above Support Centre for a client would move
+ * it for every member of staff too.
+ *
+ * Anything not listed keeps its navConfig position, after these.
+ */
+export const CLIENT_TILE_ORDER = [
+  '/',
+  '/properties/listed',
+  '/finance/my-properties',
+  '/finance/my-invoices',
+  '/finance/my-payments',
+  '/investments/portfolio',
+  '/notifications',
+  '/support',
+];
+
+/** Sorts a client's screens into CLIENT_TILE_ORDER, stably. */
+export const orderClientTiles = (tiles = []) => {
+  const rank = (item) => {
+    const index = CLIENT_TILE_ORDER.indexOf(item.to);
+    return index === -1 ? CLIENT_TILE_ORDER.length : index;
+  };
+  return tiles
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => (rank(a.item) - rank(b.item)) || (a.index - b.index))
+    .map((entry) => entry.item);
+};
