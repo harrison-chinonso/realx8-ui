@@ -102,12 +102,33 @@ export default function InvoicePickerModal({ open, userId, onClose, onSelect }) 
                 {/* min-w-0 lets the long half truncate; shrink-0 keeps the short
                     half whole, so a narrow screen clips the property name
                     rather than wrapping the status onto its own line. */}
-                <p className="min-w-0 truncate font-semibold text-slate-900">
-                  {row.invoice_id}
-                  {/* The property is what a buyer recognises the invoice by; the
-                      reference on its own means nothing to them. */}
-                  {row.property_name ? ` · ${row.property_name}` : ''}
-                </p>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-900">
+                    {row.invoice_id}
+                    {/* The property is what a buyer recognises the invoice by; the
+                        reference on its own means nothing to them. */}
+                    {row.property_name ? ` · ${row.property_name}` : ''}
+                  </p>
+                  {/*
+                    * And the unit under it.
+                    *
+                    * The property alone does not identify the invoice when
+                    * somebody is buying two things in the same development —
+                    * two rows reading "INV-0004 · The Loundasian" and
+                    * "INV-0005 · The Loundasian" are a coin toss. The unit is
+                    * what they were actually sold.
+                    *
+                    * On its own line rather than appended, so the reference and
+                    * the property keep the width they had and a long unit name
+                    * truncates on its own account.
+                    */}
+                  {(row.unit_label || row.quantity) && (
+                    <p className="truncate text-xs text-slate-500">
+                      {row.unit_label || 'Unit'}
+                      {row.quantity ? ` × ${row.quantity}` : ''}
+                    </p>
+                  )}
+                </div>
                 <span className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold ${STATE_TONE[row.state] || 'bg-slate-100 text-slate-600'}`}>
                   {STATE_LABEL[row.state] || row.state}
                 </span>
@@ -126,7 +147,7 @@ export default function InvoicePickerModal({ open, userId, onClose, onSelect }) 
                   className="ml-auto shrink-0 text-sm font-semibold hover:underline
                     after:absolute after:inset-0 after:rounded-xl after:content-['']"
                   style={{ color: 'var(--primary)' }}
-                  aria-label={`Pay invoice ${row.invoice_id}${row.property_name ? ` for ${row.property_name}` : ''}`}
+                  aria-label={`Pay invoice ${row.invoice_id}${row.property_name ? ` for ${row.property_name}` : ''}${row.unit_label ? `, ${row.unit_label}${row.quantity ? ` × ${row.quantity}` : ''}` : ''}`}
                 >
                   Pay →
                 </button>
