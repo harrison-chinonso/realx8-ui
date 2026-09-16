@@ -118,3 +118,37 @@ export function readableTextOn(background) {
   const INK = '#111827';
   return contrastRatio(WHITE, background) >= contrastRatio(INK, background) ? WHITE : INK;
 }
+
+/**
+ * `color`, darkened or lightened just far enough to be legible ON `background`.
+ *
+ * The counterpart to readableTextOn. That one answers "what text goes on this
+ * brand fill"; this one answers "can the brand colour BE the text" — which is
+ * the question every time a tenant colour is used for a label, a border or an
+ * outline button rather than as a fill behind something else.
+ *
+ * The answer for a pale brand colour is no, and the useful response is not to
+ * discard it but to walk its lightness toward the far side of the background
+ * until it passes. Hue and saturation are kept, so it still reads as the
+ * tenant's colour — a washed-out mint becomes a deeper mint, not grey.
+ *
+ * 4.5:1 is the WCAG AA floor for body text, and applying it here rather than at
+ * each call site is what makes "any colour is safe" true rather than true for
+ * the dark half of the range.
+ */
+export function readableOn(color, background = '#ffffff', min = 4.5) {
+  if (!/^#[0-9a-f]{6}$/i.test(color || '')) return color;
+  if (contrastRatio(color, background) >= min) return color;
+
+  const [h, s, l] = hexToHsl(color);
+  // Toward whichever end of the scale the background is NOT.
+  const towardLight = isDarkColor(background);
+
+  for (let step = 2; step <= 100; step += 2) {
+    const candidate = hslToHex(h, s, towardLight ? Math.min(l + step, 100) : Math.max(l - step, 0));
+    if (contrastRatio(candidate, background) >= min) return candidate;
+  }
+  // A fully saturated hue at either extreme can still fall short; at that point
+  // legibility wins over brand.
+  return towardLight ? '#ffffff' : '#111827';
+}

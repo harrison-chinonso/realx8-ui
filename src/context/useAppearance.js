@@ -17,6 +17,24 @@ export function useCurrency() {
  * Reads the *computed* variable rather than the raw setting, so it follows the
  * dark-mode brightening applyTheme performs on the tenant's brand color.
  */
+/**
+ * Text colour for elements filled with var(--secondary).
+ *
+ * The secondary counterpart of useOnPrimary, for the few places that need the
+ * value in JS rather than as a CSS variable.
+ */
+export function useOnSecondary() {
+  const appearance = useContext(AppearanceContext);
+  const [color, setColor] = useState('#ffffff');
+
+  useEffect(() => {
+    const secondary = getComputedStyle(document.documentElement).getPropertyValue('--secondary');
+    setColor(readableTextOn(secondary));
+  }, [appearance?.secondary_color, appearance?.dark_secondary_color, appearance?.dark_mode]);
+
+  return color;
+}
+
 export function useOnPrimary() {
   const appearance = useContext(AppearanceContext);
   const [color, setColor] = useState('#ffffff');

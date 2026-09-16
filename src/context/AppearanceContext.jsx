@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import client from '../api/client';
 import { fetchPlatformName } from '../api/userApi';
 import { FONT_CATALOGUE, fontStack } from '../config/fonts';
-import { brightenForDark } from '../utils/colorUtils';
+import { brightenForDark, readableOn, readableTextOn } from '../utils/colorUtils';
 import { AppearanceContext } from './appearanceContextRef';
 import useAuthStore from '../store/authStore';
 
@@ -63,6 +63,28 @@ function applyTheme({ primary_color, secondary_color, dark_primary_color, dark_s
   const sec = effectiveSecondary || '#0f172a';
   root.style.setProperty('--secondary', sec);
   root.style.setProperty('--secondary-rgb', hexToRgb(sec));
+
+  /*
+   * Two derived forms, so the secondary colour can be used without every call
+   * site re-deciding whether it is legible.
+   *
+   * --secondary-ink   text that goes ON a secondary fill.
+   * --secondary-read  the secondary colour itself, safe to use AS text, a
+   *                   border or an outline on the page background.
+   *
+   * The second is the one that matters. The default secondary is #0f172a and
+   * passes untouched, which is why the app has got away with assuming it — the
+   * Classic sidebar hard-codes white text over it to this day. A tenant who
+   * picks a pale colour gets 1.6:1 and an invisible interface, and the fix
+   * cannot be per component because the colour now appears in buttons, badges
+   * and table headers across every screen.
+   *
+   * Derived once here, against the page background of the mode actually in
+   * effect, rather than recomputed in each component.
+   */
+  const pageBg = isDark ? '#0b1220' : '#ffffff';
+  root.style.setProperty('--secondary-ink', readableTextOn(sec));
+  root.style.setProperty('--secondary-read', readableOn(sec, pageBg));
 
   const heading = font_heading || font_family || 'Tomato Grotesk';
   const body    = font_body    || font_family || 'Inter';
