@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { approveKyc, listKycSubmissions, rejectKyc } from '../../api/userApi';
+import { approveKyc, listKycSubmissions, rejectKyc, getSettings, upsertSetting } from '../../api/userApi';
+import { useCurrency } from '../../context/useAppearance';
+import Input from '../../components/ui/Input';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
@@ -61,6 +63,43 @@ export default function RealtorVerificationsPage() {
     }
   };
 
+  /*
+   * What a realtor pays to be verified.
+   *
+   * One verification, so one price per company — which is why this is a
+   * setting and the level-up fees are columns on the levels they price. It
+   * lives on this page rather than in Settings because a price is easiest to
+   * reason about beside the thing it charges for, and this is the screen an
+   * admin is already on when they think about verification at all.
+   *
+   * Kobo in the store, naira in the field: nobody prices verification in kobo.
+   */
+  const fmt = useCurrency();
+  const [fee, setFee] = useState('');
+  const [feeSaving, setFeeSaving] = useState(false);
+
+  useEffect(() => {
+    getSettings('realtor')
+      .then((response) => {
+        const minor = Number(response?.data?.verification_fee_minor || 0);
+        setFee(minor > 0 ? String(minor / 100) : '');
+      })
+      .catch(() => setFee(''));
+  }, []);
+
+  const saveFee = async () => {
+    setFeeSaving(true);
+    try {
+      const minor = fee === '' ? 0 : Math.round(Number(fee) * 100);
+      await upsertSetting({ key: 'verification_fee_minor', value: String(minor), group: 'realtor' });
+      setMessage({ type: 'success', text: minor > 0 ? `Verification fee set to ${fmt(minor / 100)}.` : 'Verification is now free.' });
+    } catch (saveError) {
+      setMessage({ type: 'error', text: saveError?.response?.data?.message || 'Could not save the fee.' });
+    } finally {
+      setFeeSaving(false);
+    }
+  };
+
   const pending = rows.filter((r) => r.status === 'pending').length;
 
   return (
@@ -71,6 +110,27 @@ export default function RealtorVerificationsPage() {
           Identity and address documents submitted by your realtors{pending ? ` — ${pending} awaiting review` : ''}.
         </p>
       </div>
+
+      <section className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+        <div className="flex flex-wrap items-end gap-3">
+          <Input
+            label="Verification fee"
+            type="number"
+            min="0"
+            step="0.01"
+            value={fee}
+            onChange={(event) => setFee(event.target.value)}
+            placeholder="0 — free"
+            containerClassName="w-44"
+          />
+          <Button type="button" variant="secondary" disabled={feeSaving} onClick={saveFee}>
+            {feeSaving ? 'Saving…' : 'Save fee'}
+          </Button>
+          <p className="text-xs text-slate-500">
+            Charged when a realtor submits for verification. Leave blank to charge nothing.
+          </p>
+        </div>
+      </section>
 
       {message && (
         <div className={`rounded-lg px-4 py-2 text-sm ${message.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>

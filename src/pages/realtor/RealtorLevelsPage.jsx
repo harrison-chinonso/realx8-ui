@@ -14,6 +14,7 @@ import Modal from '../../components/common/Modal';
 import VerificationBadge from '../../components/common/VerificationBadge';
 import Select from '../../components/ui/Select';
 import FieldMark from '../../components/ui/FieldMark';
+import { useCurrency } from '../../context/useAppearance';
 
 const asList = (response) => (Array.isArray(response) ? response : (response?.data ?? []));
 
@@ -30,7 +31,8 @@ export default function RealtorLevelsPage() {
   const [realtors, setRealtors] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ name: '', description: '', commission_percentage: '' });
+  const fmt = useCurrency();
+  const [form, setForm] = useState({ name: '', description: '', commission_percentage: '', levelup_fee: '' });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [review, setReview] = useState(null);   // { request, decision }
@@ -83,9 +85,12 @@ export default function RealtorLevelsPage() {
         name: form.name.trim(),
         description: form.description.trim() || null,
         commission_percentage: form.commission_percentage === '' ? 0 : Number(form.commission_percentage),
+        // Kobo on the wire; the field asks for naira, because nobody prices a
+        // level in kobo.
+        levelup_fee_minor: form.levelup_fee === '' ? 0 : Math.round(Number(form.levelup_fee) * 100),
       }),
       'Level added.',
-    ).then(() => setForm({ name: '', description: '', commission_percentage: '' }));
+    ).then(() => setForm({ name: '', description: '', commission_percentage: '', levelup_fee: '' }));
   };
 
   const ownIndex = (level) => ownLevels.findIndex((l) => l.id === level.id);
@@ -176,6 +181,11 @@ export default function RealtorLevelsPage() {
                   {level.description && <p className="truncate text-xs text-slate-500">{level.description}</p>}
                   <p className="text-[11px] text-slate-400">
                     {Number(level.commission_percentage || 0)}% commission ·{' '}
+                    {/* What a realtor pays to reach this level. Free is worth
+                        saying outright — a blank reads as "not configured". */}
+                    {Number(level.levelup_fee_minor || 0) > 0
+                      ? `${fmt(Number(level.levelup_fee_minor) / 100)} to level up`
+                      : 'free to level up'} ·{' '}
                     {realtors.filter((r) => r.realtor_level_id === level.id).length} realtor(s)
                   </p>
                 </div>
@@ -199,6 +209,20 @@ export default function RealtorLevelsPage() {
                           guard(() => updateRealtorLevel(level.id, { commission_percentage: next }), 'Commission updated.');
                         }}
                         className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
+                      />
+                      {/* Edited in place like the commission beside it, and in
+                          naira — the column is kobo. */}
+                      <input
+                        type="number" min="0" step="0.01"
+                        defaultValue={Number(level.levelup_fee_minor || 0) / 100}
+                        disabled={saving}
+                        title="Level-up fee"
+                        onBlur={(e) => {
+                          const next = Math.round(Number(e.target.value) * 100);
+                          if (next === Number(level.levelup_fee_minor || 0)) return;
+                          guard(() => updateRealtorLevel(level.id, { levelup_fee_minor: next }), 'Level-up fee updated.');
+                        }}
+                        className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
                       />
                       <Button
                         type="button" variant="secondary" size="sm" disabled={saving}
@@ -238,6 +262,15 @@ export default function RealtorLevelsPage() {
             value={form.commission_percentage}
             onChange={(e) => setForm((f) => ({ ...f, commission_percentage: e.target.value }))}
             placeholder="0"
+          />
+          {/* What a realtor pays to reach this level. Blank means free, which
+              is the right default: a company that has not thought about
+              charging should not start charging by accident. */}
+          <Input
+            label="Level-up fee" type="number" min="0" step="0.01"
+            value={form.levelup_fee}
+            onChange={(e) => setForm((f) => ({ ...f, levelup_fee: e.target.value }))}
+            placeholder="0 — free"
           />
           <Button type="submit" disabled={saving || !form.name.trim()}>Add Level</Button>
         </form>
