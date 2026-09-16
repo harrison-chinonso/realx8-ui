@@ -403,7 +403,7 @@ function FormField({ label, value, onChange, type = 'text', required }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-medium text-slate-600">
-        {label}{required && <span className="ml-0.5 text-rose-500">*</span>}<FieldMark required />
+        {label}<FieldMark required={Boolean(required)} />
       </label>
       <input
         type={type}

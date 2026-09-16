@@ -21,7 +21,7 @@ export default function CompanySelect({ value, onChange, required = true, label 
 
   return (
     <div className="space-y-1">
-      <label className="block text-sm font-medium text-slate-700">{label}{required && ' *'}<FieldMark required /></label>
+      <label className="block text-sm font-medium text-slate-700">{label}<FieldMark required={Boolean(required)} /></label>
       <div className="relative">
         <Select
           value={value}

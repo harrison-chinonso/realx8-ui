@@ -162,7 +162,7 @@ export default function CreatePropertyPage() {
           */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-slate-700">
-              Branch <span className="font-normal text-slate-400">(optional)</span><FieldMark />
+              Branch<FieldMark />
             </label>
             <div className="relative">
               <Select

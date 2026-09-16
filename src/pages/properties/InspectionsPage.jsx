@@ -308,7 +308,7 @@ export default function InspectionsPage() {
 
           {/* Lead */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Lead <span className="text-red-500">*</span><FieldMark required /></label>
+            <label className="block text-sm font-medium text-slate-700">Lead<FieldMark required /></label>
             <div className="flex gap-2">
               <Select value={scheduleForm.lead_id} onChange={handleLeadChange} required className={`${SELECT_CLASS} flex-1`}>
                 <option value="">Select lead...</option>
@@ -365,7 +365,7 @@ export default function InspectionsPage() {
 
           {/* Property */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Property <span className="text-red-500">*</span><FieldMark required /></label>
+            <label className="block text-sm font-medium text-slate-700">Property<FieldMark required /></label>
             <Select value={scheduleForm.property_id} onChange={handlePropertyChange} required className={SELECT_CLASS}>
               <option value="">Select property...</option>
               {propertyOptions.map((p) => (
@@ -399,11 +399,11 @@ export default function InspectionsPage() {
           {/* Date & Time */}
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">Date <span className="text-red-500">*</span><FieldMark required /></label>
+              <label className="block text-sm font-medium text-slate-700">Date<FieldMark required /></label>
               <input type="date" value={scheduleForm.scheduled_date} onChange={(e) => setScheduleForm((f) => ({ ...f, scheduled_date: e.target.value }))} required className={SELECT_CLASS} />
             </div>
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">Time <span className="text-red-500">*</span><FieldMark required /></label>
+              <label className="block text-sm font-medium text-slate-700">Time<FieldMark required /></label>
               <input type="time" value={scheduleForm.scheduled_time} onChange={(e) => setScheduleForm((f) => ({ ...f, scheduled_time: e.target.value }))} required className={SELECT_CLASS} />
             </div>
           </div>
@@ -444,7 +444,7 @@ export default function InspectionsPage() {
             </Select>
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Client Feedback <span className="text-red-500">*</span><FieldMark required /></label>
+            <label className="block text-sm font-medium text-slate-700">Client Feedback<FieldMark required /></label>
             <textarea rows={3} value={feedbackForm.client_feedback} onChange={(e) => setFeedbackForm((f) => ({ ...f, client_feedback: e.target.value }))} className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" required />
           </div>
           <div className="space-y-1">

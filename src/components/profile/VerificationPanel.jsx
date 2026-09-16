@@ -169,7 +169,7 @@ export default function VerificationPanel() {
             <h2 className="mb-3 text-sm font-semibold text-slate-900">Means of Identification</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Document type <span className="text-red-500">*</span><FieldMark /></span>
+                <span className="text-sm font-medium text-slate-700">Document type<FieldMark required /></span>
                 <Select value={form.id_type} onChange={set('id_type')} className={INPUT_CLASS}>
                   {ID_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </Select>
@@ -191,7 +191,7 @@ export default function VerificationPanel() {
             <h2 className="mb-3 text-sm font-semibold text-slate-900">Proof of Address</h2>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Document type <span className="text-red-500">*</span><FieldMark /></span>
+                <span className="text-sm font-medium text-slate-700">Document type<FieldMark required /></span>
                 <Select value={form.address_document_type} onChange={set('address_document_type')} className={INPUT_CLASS}>
                   {ADDRESS_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </Select>

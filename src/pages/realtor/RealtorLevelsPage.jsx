@@ -354,10 +354,10 @@ export default function RealtorLevelsPage() {
           <label className="block space-y-1">
             <span className="text-sm font-medium text-slate-700">
               {review?.decision === 'rejected' ? 'Reason for declining' : 'Note to the realtor'}
-              {review?.decision === 'rejected'
-                ? <span className="text-red-500"> *</span>
-                : <span className="ml-1 font-normal text-slate-400">(optional)</span>}
-            <FieldMark /></span>
+              {/* Required only when declining: a rejection has to say why, and a
+                  promotion does not. */}
+              <FieldMark required={review?.decision === 'rejected'} />
+            </span>
             <textarea
               rows={3}
               value={notes}

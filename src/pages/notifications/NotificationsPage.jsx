@@ -85,6 +85,10 @@ function MultiUserPicker({ users, selectedIds, onChange }) {
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium text-slate-700">
           Select Recipients
+          {/* This picker only renders for the "Select Specific Users" target,
+              and in that mode the send is refused without one — by the page,
+              and by the API, which answers 400 to an empty list. */}
+          <FieldMark required />
           {selectedIds.length > 0 && (
             <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
               {selectedIds.length} selected
@@ -109,6 +113,17 @@ function MultiUserPicker({ users, selectedIds, onChange }) {
         onChange={(e) => setSearch(e.target.value)}
         className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
       />
+
+      {/*
+        The requirement, before it becomes an error.
+        A disabled Send button with nothing explaining it is its own problem,
+        so the reason sits with the field it belongs to.
+      */}
+      {selectedIds.length === 0 && (
+        <p className="text-xs text-slate-500">
+          Choose at least one person to send this to.
+        </p>
+      )}
 
       {/* Selected chips */}
       {selectedIds.length > 0 && (
@@ -306,7 +321,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
 
         {templates.length > 0 && (
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Use Template (optional)<FieldMark /></label>
+            <label className="block text-sm font-medium text-slate-700">Use Template<FieldMark /></label>
             <Select
               value={form.template_id}
               onChange={(event) => {
@@ -332,11 +347,12 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Title<FieldMark /></label>
+            <label className="block text-sm font-medium text-slate-700">Title<FieldMark required /></label>
             <input
               value={form.title}
               onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
               placeholder="Notification title"
+              required
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             />
           </div>
@@ -403,17 +419,27 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
         )}
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Message<FieldMark /></label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Message<FieldMark required /></label>
           <textarea
             rows={3}
             value={form.body}
             onChange={(event) => setForm((current) => ({ ...current, body: event.target.value }))}
             placeholder="Write your notification message..."
+            required
             className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           />
         </div>
 
-        <Button onClick={handleSend} disabled={sending}>
+        {/*
+          Disabled rather than validated on click, for the one target where the
+          answer is already on screen. The other targets resolve their audience
+          server-side, so whether they are empty is not knowable here — those
+          still report after the press.
+        */}
+        <Button
+          onClick={handleSend}
+          disabled={sending || (form.target === 'specific' && form.user_ids.length === 0)}
+        >
           {sending ? 'Sending…' : 'Send Notification'}
         </Button>
       </div>

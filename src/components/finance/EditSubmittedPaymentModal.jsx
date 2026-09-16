@@ -123,10 +123,12 @@ export default function EditSubmittedPaymentModal({ receipt, onClose, onSaved })
           </label>
 
           <div className="space-y-1">
-            <span className="block text-sm font-medium text-slate-700">Proof of payment</span>
+            {/* canSave refuses without a document_url, so this is required
+                however the upload happens to be worded. */}
+            <span className="block text-sm font-medium text-slate-700">Proof of payment<FieldMark required /></span>
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-3 text-sm text-slate-500 hover:border-slate-400">
               <UploadCloud size={16} />
-              <span>{uploading ? 'Uploading…' : form.document_url ? 'Replace file' : 'Upload receipt or screenshot'}<FieldMark /></span>
+              <span>{uploading ? 'Uploading…' : form.document_url ? 'Replace file' : 'Upload receipt or screenshot'}</span>
               <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleUpload} disabled={uploading} />
             </label>
             {form.document_url && (
@@ -137,7 +139,7 @@ export default function EditSubmittedPaymentModal({ receipt, onClose, onSaved })
           </div>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Note (optional)<FieldMark /></span>
+            <span className="text-sm font-medium text-slate-700">Note<FieldMark /></span>
             <Input
               value={form.notes}
               onChange={(event) => setForm((f) => ({ ...f, notes: event.target.value }))}

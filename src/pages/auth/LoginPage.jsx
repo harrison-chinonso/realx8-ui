@@ -95,7 +95,7 @@ function Field({ label, type = 'text', value, onChange, placeholder, required, i
   if (light) {
     return (
       <div className="space-y-1.5">
-        <label className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">{label}<FieldMark required /></label>
+        <label className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">{label}<FieldMark required={Boolean(required)} /></label>
         <div className="flex items-center h-11 w-full rounded-lg border border-slate-200 bg-white pr-3 overflow-hidden transition-all focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100">
           <input
             type={inputType}
@@ -121,7 +121,7 @@ function Field({ label, type = 'text', value, onChange, placeholder, required, i
 
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{label}<FieldMark required /></label>
+      <label className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{label}<FieldMark required={Boolean(required)} /></label>
       <div className="flex items-center h-11 w-full rounded-lg border border-white/10 bg-white/5 pr-3 overflow-hidden transition-all focus-within:border-white/30 focus-within:bg-white/8">
         <input
           type={inputType}

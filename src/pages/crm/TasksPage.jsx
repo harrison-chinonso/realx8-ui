@@ -281,7 +281,7 @@ export default function TasksPage() {
               )}
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Title <span className="text-red-500">*</span><FieldMark required /></span>
+                <span className="text-sm font-medium text-slate-700">Title<FieldMark required /></span>
                 <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={INPUT_CLASS} required />
               </label>
 
@@ -310,7 +310,7 @@ export default function TasksPage() {
                 </label>
 
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Deal <span className="text-slate-400 font-normal">(optional)</span><FieldMark /></span>
+                  <span className="text-sm font-medium text-slate-700">Deal<FieldMark /></span>
                   <Select value={form.deal_id} onChange={(e) => setForm((f) => ({ ...f, deal_id: e.target.value }))} className={INPUT_CLASS}>
                     <option value="">— No deal —</option>
                     {deals.map((d) => (
@@ -320,7 +320,7 @@ export default function TasksPage() {
                 </label>
 
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Lead <span className="text-slate-400 font-normal">(optional)</span><FieldMark /></span>
+                  <span className="text-sm font-medium text-slate-700">Lead<FieldMark /></span>
                   <Select value={form.lead_id} onChange={(e) => setForm((f) => ({ ...f, lead_id: e.target.value }))} className={INPUT_CLASS}>
                     <option value="">— No lead —</option>
                     {leads.map((l) => (

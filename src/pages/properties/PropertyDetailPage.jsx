@@ -781,6 +781,17 @@ export default function PropertyDetailPage() {
                   <input type="file" onChange={handleDocumentFileChange} className={INPUT_CLASS} />
                 </label>
                 {/*
+                  * One OR the other, which neither mark can say on its own.
+                  *
+                  * The save refuses without a URL or a file, so calling both
+                  * required would be wrong — either one satisfies it — and
+                  * leaving both as "(optional)" understates it. The pair needs
+                  * a sentence.
+                  */}
+                <p className="md:col-span-2 -mt-1 text-xs text-slate-500">
+                  Give a link or upload a file — one of the two is needed.
+                </p>
+                {/*
                   * Sharing is decided when the document is added, as well as
                   * afterwards from the table. Unticked by default — the same
                   * fail-closed default the column and the database use.

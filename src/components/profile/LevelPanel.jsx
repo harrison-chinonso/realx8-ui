@@ -151,7 +151,7 @@ export default function LevelPanel() {
 
           <label className="block space-y-1">
             <span className="text-sm font-medium text-slate-700">
-              Why should you be upgraded? <span className="font-normal text-slate-400">(optional)</span>
+              Why should you be upgraded?
             <FieldMark /></span>
             <textarea
               rows={3}

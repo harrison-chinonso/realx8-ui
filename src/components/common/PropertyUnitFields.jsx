@@ -46,7 +46,7 @@ export default function PropertyUnitFields({ value, onChange }) {
     <div className="grid gap-4 md:grid-cols-5">
       <label className="block space-y-1">
         <span className="text-sm font-medium text-slate-700">
-          Unit Name <span className="font-normal text-slate-400">(optional)</span>
+          Unit Name
         <FieldMark /></span>
         <input value={value.name ?? ''} onChange={set('name')} className={INPUT_CLASS} placeholder="Corner Plot" />
       </label>

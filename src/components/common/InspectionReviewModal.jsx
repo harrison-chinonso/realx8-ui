@@ -85,10 +85,9 @@ export default function InspectionReviewModal({ open, inspection, decision, onCl
         <label className="block space-y-1">
           <span className="text-sm font-medium text-slate-700">
             {declining ? 'Reason for declining' : 'Note to the realtor'}
-            {declining
-              ? <span className="text-red-500"> *</span>
-              : <span className="ml-1 font-normal text-slate-400">(optional)</span>}
-          <FieldMark /></span>
+            {/* Required only when declining: a rejection has to say why. */}
+            <FieldMark required={declining} />
+          </span>
           <textarea
             rows={4}
             value={notes}

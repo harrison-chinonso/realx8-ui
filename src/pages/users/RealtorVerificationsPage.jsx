@@ -149,10 +149,9 @@ export default function RealtorVerificationsPage() {
           <label className="block space-y-1">
             <span className="text-sm font-medium text-slate-700">
               {review?.decision === 'rejected' ? 'Reason for rejection' : 'Note to the realtor'}
-              {review?.decision === 'rejected'
-                ? <span className="text-red-500"> *</span>
-                : <span className="ml-1 font-normal text-slate-400">(optional)</span>}
-            <FieldMark /></span>
+              {/* Required only when rejecting: a rejection has to say why. */}
+              <FieldMark required={review?.decision === 'rejected'} />
+            </span>
             <textarea
               rows={3}
               value={notes}

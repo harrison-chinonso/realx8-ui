@@ -333,11 +333,11 @@ function CompanyDetailsTab({ companyId, company, onToast, onCompanyUpdated }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Company Name <span className="text-rose-500">*</span><FieldMark required /></label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Company Name<FieldMark required /></label>
           <input type="text" value={form.name} onChange={set('name')} placeholder="Acme Corp" className={inputCls} required />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Billing Email <span className="text-rose-500">*</span><FieldMark required /></label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Billing Email<FieldMark required /></label>
           <input type="email" value={form.email} onChange={set('email')} placeholder="billing@company.com" className={inputCls} required />
         </div>
         <div>

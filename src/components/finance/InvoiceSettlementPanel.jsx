@@ -287,7 +287,7 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
           </p>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">How was it paid?<FieldMark /></span>
+            <span className="text-sm font-medium text-slate-700">How was it paid?<FieldMark required /></span>
             <Select value={confirmMethod} onChange={(e) => setConfirmMethod(e.target.value)}>
               <option value="">Select a method...</option>
               {methods.map((method) => (
@@ -297,7 +297,7 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Transaction reference<FieldMark /></span>
+            <span className="text-sm font-medium text-slate-700">Transaction reference<FieldMark required /></span>
             <input
               type="text"
               value={confirmReference}

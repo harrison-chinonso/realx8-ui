@@ -98,7 +98,7 @@ function Field({ label, type = 'text', value, onChange, placeholder, required })
 
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{label}<FieldMark required /></label>
+      <label className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{label}<FieldMark required={Boolean(required)} /></label>
       <div className="flex items-center h-11 w-full rounded-lg border border-white/10 bg-white/5 pr-3 overflow-hidden transition-all focus-within:border-white/30">
         <input
           type={inputType}
