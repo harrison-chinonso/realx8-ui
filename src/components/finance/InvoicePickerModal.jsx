@@ -122,10 +122,10 @@ export default function InvoicePickerModal({ open, userId, onClose, onSelect }) 
                     * the property keep the width they had and a long unit name
                     * truncates on its own account.
                     */}
-                  {(row.unit_label || row.quantity) && (
+                  {row.purchase && (
                     <p className="truncate text-xs text-slate-500">
-                      {row.unit_label || 'Unit'}
-                      {row.quantity ? ` × ${row.quantity}` : ''}
+                      {row.purchase.unit_label || 'Unit'}
+                      {row.purchase.quantity ? ` × ${row.purchase.quantity}` : ''}
                     </p>
                   )}
                 </div>
@@ -147,7 +147,7 @@ export default function InvoicePickerModal({ open, userId, onClose, onSelect }) 
                   className="ml-auto shrink-0 text-sm font-semibold hover:underline
                     after:absolute after:inset-0 after:rounded-xl after:content-['']"
                   style={{ color: 'var(--primary)' }}
-                  aria-label={`Pay invoice ${row.invoice_id}${row.property_name ? ` for ${row.property_name}` : ''}${row.unit_label ? `, ${row.unit_label}${row.quantity ? ` × ${row.quantity}` : ''}` : ''}`}
+                  aria-label={`Pay invoice ${row.invoice_id}${row.property_name ? ` for ${row.property_name}` : ''}${row.purchase?.unit_label ? `, ${row.purchase.unit_label}${row.purchase.quantity ? ` × ${row.purchase.quantity}` : ''}` : ''}`}
                 >
                   Pay →
                 </button>
