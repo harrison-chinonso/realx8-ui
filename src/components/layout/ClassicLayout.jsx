@@ -3,15 +3,15 @@
  * Mobile: sidebar hidden, toggled via hamburger → slides in as overlay.
  * Desktop (lg+): sidebar always visible.
  */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Menu, Bell, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, isNavItemVisible, filterNavItems } from './navConfig';
 import CollapsibleSection from './CollapsibleSection';
 import useAuthStore from '../../store/authStore';
+import useNavBadgeStore from '../../store/navBadgeStore';
 import { readableOn } from '../../utils/colorUtils';
 import { useAppearance } from '../../context/useAppearance';
-import { listNotifications } from '../../api/notificationApi';
 import Button from '../ui/Button';
 import ProfileToggle from '../common/ProfileToggle';
 import NavBadge from './NavBadge';
@@ -127,7 +127,10 @@ function ClassicSidebar({ open, onClose }) {
 }
 
 function ClassicHeader({ onMenuOpen }) {
-  const [count, setCount] = useState(0);
+  /* One count for the whole application — see navBadgeStore. Each layout
+     used to fetch its own, so marking everything read on the notifications
+     page left the bell showing the old number. */
+  const count = useNavBadgeStore((state) => state.counts.unreadNotifications) || 0;
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -147,12 +150,6 @@ function ClassicHeader({ onMenuOpen }) {
    * requires, so a tenant's colour still looks like their colour.
    */
   const sidebarBg = readableOn(secondary_color || '#0f172a', '#ffffff');
-
-  useEffect(() => {
-    listNotifications()
-      .then((r) => setCount((r.data || []).filter((n) => !n.is_read).length))
-      .catch(() => setCount(0));
-  }, []);
 
   return (
     <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 lg:px-6">

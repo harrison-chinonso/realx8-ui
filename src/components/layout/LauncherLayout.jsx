@@ -3,8 +3,8 @@ import { Link, NavLink } from 'react-router-dom';
 import { Bell, ChevronDown, Grid3x3, LogOut, User } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
+import useNavBadgeStore from '../../store/navBadgeStore';
 import { useAppearance, useOnPrimary } from '../../context/useAppearance';
-import { listNotifications } from '../../api/notificationApi';
 import ProfileToggle from '../common/ProfileToggle';
 import ModuleLauncher from './ModuleLauncher';
 import { consumeFreshLogin } from '../../lib/launcherGreeting';
@@ -30,6 +30,10 @@ import { consumeFreshLogin } from '../../lib/launcherGreeting';
  * all use.
  */
 export default function LauncherLayout({ children }) {
+  /* One count for the whole application — see navBadgeStore. Each layout
+     used to fetch its own, so marking everything read on the
+     notifications page left the bell showing the old number. */
+  const unread = useNavBadgeStore((state) => state.counts.unreadNotifications) || 0;
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -42,7 +46,6 @@ export default function LauncherLayout({ children }) {
 
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
   const launcherButtonRef = useRef(null);
   const menuRef = useRef(null);
 
@@ -60,12 +63,6 @@ export default function LauncherLayout({ children }) {
    */
   useEffect(() => {
     if (consumeFreshLogin()) setLauncherOpen(true);
-  }, []);
-
-  useEffect(() => {
-    listNotifications()
-      .then((response) => setUnread((response.data || []).filter((item) => !item.is_read).length))
-      .catch(() => setUnread(0));
   }, []);
 
   useEffect(() => {

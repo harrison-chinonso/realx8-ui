@@ -3,14 +3,13 @@
  * Light sidebar with brand-colored top band, user profile at bottom.
  * Mobile: sidebar hidden, toggled via hamburger button in content header.
  */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Menu, LogOut, User } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, isNavItemVisible, filterNavItems } from './navConfig';
 import CollapsibleSection from './CollapsibleSection';
 import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
-import { listNotifications } from '../../api/notificationApi';
 import ProfileToggle from '../common/ProfileToggle';
 import NavBadge from './NavBadge';
 
@@ -35,13 +34,6 @@ function BoldSidebar({ open, onClose }) {
     : NAV;
   const topBg = primary_color || '#2563eb';
   const avatarBg = secondary_color || '#0f172a';
-  const [notifCount, setNotifCount] = useState(0);
-
-  useEffect(() => {
-    listNotifications()
-      .then((r) => setNotifCount((r.data || []).filter((n) => !n.is_read).length))
-      .catch(() => {});
-  }, []);
 
   return (
     <>

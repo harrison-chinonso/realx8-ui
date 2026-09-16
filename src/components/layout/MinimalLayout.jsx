@@ -8,8 +8,8 @@ import { NavLink } from 'react-router-dom';
 import { Menu, Bell, ChevronDown, ChevronLeft, User, LogOut, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
+import useNavBadgeStore from '../../store/navBadgeStore';
 import { useAppearance } from '../../context/useAppearance';
-import { listNotifications } from '../../api/notificationApi';
 import Button from '../ui/Button';
 import ProfileToggle from '../common/ProfileToggle';
 import NavBadge from './NavBadge';
@@ -134,18 +134,15 @@ function MinimalSidebar({ expanded, onToggle, mobileOpen, onClose }) {
 }
 
 function MinimalHeader({ onMenuOpen }) {
-  const [count, setCount] = useState(0);
+  /* One count for the whole application — see navBadgeStore. Each layout
+     used to fetch its own, so marking everything read on the notifications
+     page left the bell showing the old number. */
+  const count = useNavBadgeStore((state) => state.counts.unreadNotifications) || 0;
   const [userOpen, setUserOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const menuRef = useRef(null);
-
-  useEffect(() => {
-    listNotifications()
-      .then((r) => setCount((r.data || []).filter((n) => !n.is_read).length))
-      .catch(() => setCount(0));
-  }, []);
 
   useEffect(() => {
     const handler = (e) => {

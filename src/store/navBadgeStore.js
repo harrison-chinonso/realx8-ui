@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { listReceipts, listPendingNotes } from '../api/financeApi';
+import { listNotifications } from '../api/notificationApi';
 
 /**
  * Counts of work waiting, for the badges on the sidebar.
@@ -87,6 +88,36 @@ const useNavBadgeStore = create((set, get) => ({
       // Leave the previous counts in place.
     } finally {
       set({ loading: false });
+    }
+  },
+
+  /**
+   * The bell's unread count.
+   *
+   * Separate from refresh() because the gate is different: that one is skipped
+   * unless a badged NAV item is visible, which depends on finance permissions,
+   * and the bell is shown to everyone who is signed in. Folding this into the
+   * same call would blank the bell for every user who cannot see the payment
+   * approvals queue.
+   *
+   * It lives in this store rather than in each layout because six layouts drew
+   * that badge, each fetching the count once in its own mount effect, and
+   * nothing told any of them when the notifications page marked everything
+   * read - so the badge sat there until a full page reload. One count, one
+   * fetch, and one place to clear it.
+   */
+  refreshNotifications: async ({ enabled = true } = {}) => {
+    if (!enabled) {
+      set((state) => ({ counts: { ...state.counts, unreadNotifications: 0 } }));
+      return;
+    }
+    try {
+      const response = await listNotifications();
+      const rows = response?.data ?? response ?? [];
+      const unread = Array.isArray(rows) ? rows.filter((row) => !row.is_read).length : 0;
+      set((state) => ({ counts: { ...state.counts, unreadNotifications: unread } }));
+    } catch {
+      // Best effort, like every other count here.
     }
   },
 

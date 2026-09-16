@@ -12,8 +12,8 @@ import { Menu, Bell, LogOut, User, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, isNavItemVisible, filterNavItems } from './navConfig';
 import CollapsibleSection from './CollapsibleSection';
 import useAuthStore from '../../store/authStore';
+import useNavBadgeStore from '../../store/navBadgeStore';
 import { useAppearance } from '../../context/useAppearance';
-import { listNotifications } from '../../api/notificationApi';
 import ProfileToggle from '../common/ProfileToggle';
 import NavBadge from './NavBadge';
 
@@ -152,14 +152,11 @@ function SidebarContent({ onNavigate }) {
 
 // ── Top bar (mobile hamburger + notifications) ────────────────
 function TopBar({ onMenuOpen }) {
-  const [count, setCount] = useState(0);
+  /* One count for the whole application — see navBadgeStore. Each layout
+     used to fetch its own, so marking everything read on the notifications
+     page left the bell showing the old number. */
+  const count = useNavBadgeStore((state) => state.counts.unreadNotifications) || 0;
   const { app_name, app_logo } = useAppearance();
-
-  useEffect(() => {
-    listNotifications()
-      .then((r) => setCount((r.data || []).filter((n) => !n.is_read).length))
-      .catch(() => setCount(0));
-  }, []);
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-4">

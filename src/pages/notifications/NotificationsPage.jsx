@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import useNavBadgeStore from '../../store/navBadgeStore';
 import {
   listNotifications,
   markRead,
@@ -707,6 +708,8 @@ function TemplatesPanel() {
 export default function NotificationsPage() {
   const user = useAuthStore((state) => state.user);
   const isSuperiorAdmin = useAuthStore((state) => state.isSuperiorAdmin);
+  const refreshNotifications = useNavBadgeStore((state) => state.refreshNotifications);
+  const clearBadge = useNavBadgeStore((state) => state.clear);
   const isAdmin = user && ['superior_admin', 'super_admin', 'admin'].includes(user.type);
 
   const [notifications, setNotifications] = useState([]);
@@ -740,14 +743,26 @@ export default function NotificationsPage() {
     if (isAdmin && tab === 'sent') fetchSent();
   }, [isAdmin, tab]);
 
+  /*
+   * The bell has to move with the list.
+   *
+   * The count behind it is shared - one store read by every layout - and
+   * marking things read here is the only place it changes without a page load.
+   * Without these two lines the badge kept its old number until a full reload,
+   * which read as the mark-as-read having silently failed.
+   */
   const handleMarkRead = async (id) => {
     await markRead(id);
     setNotifications((prev) => prev.map((notification) => notification.id === id ? { ...notification, is_read: true } : notification));
+    refreshNotifications();
   };
 
   const handleMarkAll = async () => {
     await markAllRead();
     setNotifications((prev) => prev.map((notification) => ({ ...notification, is_read: true })));
+    // Zeroed rather than re-fetched: nothing is unread by definition, and the
+    // badge should go as the rows do rather than one round trip later.
+    clearBadge('unreadNotifications');
   };
 
   const unreadCount = notifications.filter((notification) => !notification.is_read).length;

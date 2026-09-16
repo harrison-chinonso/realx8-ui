@@ -87,6 +87,7 @@ const POLL_MS = 60_000;
  */
 export function NavBadges() {
   const refresh = useNavBadgeStore((state) => state.refresh);
+  const refreshNotifications = useNavBadgeStore((state) => state.refreshNotifications);
   const hasPermission = useAuthStore((state) => state.hasPermission);
   const isSuperiorAdmin = useAuthStore((state) => state.isSuperiorAdmin);
   const userType = useAuthStore((state) => state.effectiveType());
@@ -98,6 +99,12 @@ export function NavBadges() {
     .flatMap((entry) => (entry.children ? entry.children : [entry]))
     .filter((entry) => entry.badge)
     .some((entry) => isNavItemVisible(entry, { hasPermission, isSuperiorAdmin, userType }));
+
+  useEffect(() => {
+    /* Ungated by `enabled`: that rule is about badged NAV items, and the bell
+       belongs to anybody signed in. */
+    refreshNotifications({ enabled: Boolean(token) });
+  }, [refreshNotifications, token]);
 
   useEffect(() => {
     refresh({ enabled });
