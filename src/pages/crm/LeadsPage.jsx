@@ -488,7 +488,7 @@ export default function LeadsPage() {
   };
 
   const handleDelete = async (lead) => {
-    if (!window.confirm(`Delete lead \"${lead.name || 'this lead'}\"?`)) return;
+    if (!window.confirm(`Delete lead "${lead.name || 'this lead'}"?`)) return;
 
     try {
       await deleteLead(lead.id);

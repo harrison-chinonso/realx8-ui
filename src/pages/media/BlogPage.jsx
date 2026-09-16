@@ -70,7 +70,7 @@ export default function BlogPage() {
       setArticles(normalizeItems(response));
     } catch (loadError) {
       console.error(loadError);
-      setError(err.userMessage);
+      setError(loadError.userMessage);
       setArticles([]);
     } finally {
       setLoading(false);

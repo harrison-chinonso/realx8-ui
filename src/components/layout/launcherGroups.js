@@ -21,7 +21,6 @@ export const DESCRIPTIONS = {
   'Operations & Support': 'Training, care, settings',
   'Realtor Hub': 'Your standing',
   // Sections flattened in the launcher show their screens, which need their own.
-  Investments: 'What you hold',
   'My Referrals': 'Who you brought in',
   'My Clients': 'Who you sell to',
   // Named after the one screen a realtor's Finance section holds.

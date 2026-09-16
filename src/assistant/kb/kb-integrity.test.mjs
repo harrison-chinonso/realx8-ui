@@ -39,7 +39,7 @@ for (const { file, text } of sources) {
     recipeCount += 1;
     if (!routes.has(match[1])) badRoutes.push(`${file} → ${match[1]}`);
   }
-  for (const match of text.matchAll(/^    id: '([^']+)'/gm)) ids.push(match[1]);
+  for (const match of text.matchAll(/^ {4}id: '([^']+)'/gm)) ids.push(match[1]);
 }
 
 check(`Every recipe route is a screen that exists (${recipeCount} checked)`,
@@ -50,7 +50,7 @@ check('No two recipes share an id', duplicates.length === 0, duplicates.join(', 
 
 /** A recipe with no keywords is unreachable by anything a person would type. */
 const withoutKeywords = sources.filter(({ text }) => {
-  const recipes = text.split(/^    id: '/m).slice(1);
+  const recipes = text.split(/^ {4}id: '/m).slice(1);
   return recipes.some((chunk) => !chunk.includes('keywords:'));
 });
 check('Every recipe has keywords', withoutKeywords.length === 0,

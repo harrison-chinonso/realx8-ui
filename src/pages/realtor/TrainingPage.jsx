@@ -100,7 +100,7 @@ export default function TrainingPage() {
       setProgress(getItems(progressResponse));
     } catch (loadError) {
       console.error(loadError);
-      setError(err.userMessage);
+      setError(loadError.userMessage);
     } finally {
       setLoading(false);
     }
@@ -209,7 +209,7 @@ export default function TrainingPage() {
       await loadData();
     } catch (deleteError) {
       console.error(deleteError);
-      setError(err.userMessage);
+      setError(deleteError.userMessage);
     }
   };
 
@@ -223,7 +223,7 @@ export default function TrainingPage() {
       await loadData();
     } catch (openError) {
       console.error(openError);
-      setError(err.userMessage);
+      setError(openError.userMessage);
     }
   };
 
@@ -245,7 +245,7 @@ export default function TrainingPage() {
       await loadData();
     } catch (submitError) {
       console.error(submitError);
-      setError(err.userMessage);
+      setError(submitError.userMessage);
     } finally {
       setSaving(false);
     }
@@ -258,7 +258,7 @@ export default function TrainingPage() {
       setCertificate(response?.data || null);
     } catch (certificateError) {
       console.error(certificateError);
-      setError(err.userMessage);
+      setError(certificateError.userMessage);
     }
   };
 

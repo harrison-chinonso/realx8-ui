@@ -53,7 +53,7 @@ export default function RecruitmentPage() {
       setRows(getItems(response));
     } catch (loadError) {
       console.error(loadError);
-      setError(err.userMessage);
+      setError(loadError.userMessage);
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,7 @@ export default function RecruitmentPage() {
       await loadData();
     } catch (deleteError) {
       console.error(deleteError);
-      setError(err.userMessage);
+      setError(deleteError.userMessage);
     }
   };
 

@@ -126,7 +126,7 @@ export default function MediaPostsPage() {
       setPosts(normalizeItems(response));
     } catch (loadError) {
       console.error(loadError);
-      setError(err.userMessage);
+      setError(loadError.userMessage);
       setPosts([]);
     } finally {
       setLoading(false);

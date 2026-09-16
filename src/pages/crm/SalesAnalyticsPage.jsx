@@ -42,7 +42,7 @@ export default function SalesAnalyticsPage() {
         });
       } catch (loadError) {
         console.error(loadError);
-        setError(err.userMessage);
+        setError(loadError.userMessage);
       } finally {
         setLoading(false);
       }

@@ -20,6 +20,7 @@
     "verify:dashboard-export": "node scripts/verify-dashboard-export.cjs",
     "verify:interop": "node scripts/verify-payload-interop.cjs",
     "lint:nav": "node scripts/lint-nav.js",
+    "lint": "eslint src",
     "assistant:build-kb": "node scripts/build-assistant-kb.mjs",
     "assistant:test": "node src/assistant/kb/kb-integrity.test.mjs && node src/assistant/assistant.test.mjs && node src/assistant/converse.test.mjs"
   },
@@ -38,8 +39,13 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.21",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "vite": "^5.4.19",
