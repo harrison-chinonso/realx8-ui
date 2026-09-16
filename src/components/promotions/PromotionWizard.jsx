@@ -142,6 +142,16 @@ export default function PromotionWizard({ existing = null, initialName = '', onS
     return () => clearTimeout(timer);
   }, [JSON.stringify(draft), JSON.stringify(testLines)]);
 
+  /*
+   * A promotion that is already out does not get published again.
+   *
+   * Editing a live one and pressing Publish asked the server to move ACTIVE to
+   * ACTIVE. The edit saved and the status call answered "An active promotion
+   * cannot become active", so the admin was shown a failure for work that had
+   * succeeded. The server treats that as a no-op now; this stops asking.
+   */
+  const isLive = ['ACTIVE', 'SCHEDULED'].includes(existing?.status);
+
   const save = async (publish = false) => {
     setSaving(true);
     setMessage(null);
@@ -151,10 +161,13 @@ export default function PromotionWizard({ existing = null, initialName = '', onS
         : await createPromotion(draft);
       const id = existing?.id || saved?.id;
 
-      if (publish) {
+      if (publish && !isLive) {
         await setPromotionStatus(id, draft.starts_at && new Date(draft.starts_at) > new Date() ? 'SCHEDULED' : 'ACTIVE');
       }
-      setMessage({ tone: 'success', text: publish ? 'Published.' : 'Saved as a draft.' });
+      setMessage({
+        tone: 'success',
+        text: isLive ? 'Changes saved.' : (publish ? 'Published.' : 'Saved as a draft.'),
+      });
       onSaved?.(id);
     } catch (error) {
       const data = error?.response?.data;
@@ -480,11 +493,16 @@ export default function PromotionWizard({ existing = null, initialName = '', onS
           )}
           <div className="ml-auto flex gap-2">
             <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-            <Button type="button" variant="secondary" onClick={() => save(false)} disabled={saving}>
-              {saving ? 'Saving…' : 'Save as draft'}
-            </Button>
+            {/* A live promotion has one action: save what changed. Offering
+                "Save as draft" beside it suggested a demotion the button does
+                not perform, and "Publish" a second launch it has already had. */}
+            {!isLive && (
+              <Button type="button" variant="secondary" onClick={() => save(false)} disabled={saving}>
+                {saving ? 'Saving…' : 'Save as draft'}
+              </Button>
+            )}
             <Button type="button" onClick={() => save(true)} disabled={saving || errors.length > 0}>
-              Publish
+              {isLive ? (saving ? 'Saving…' : 'Save changes') : 'Publish'}
             </Button>
           </div>
         </div>
