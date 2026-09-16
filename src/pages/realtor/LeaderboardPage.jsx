@@ -12,7 +12,10 @@ import Select from '../../components/ui/Select';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const MODAL_OVERLAY_CLASS = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4';
-const MODAL_CARD_CLASS = 'w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl';
+// Capped and scrollable, like Modal.jsx. A modal taller than the viewport
+// centres itself off both edges, and its submit button ends up out of
+// reach with nothing to scroll — the form can be filled in and not saved.
+const MODAL_CARD_CLASS = 'w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto';
 const MANAGER_ROLES = ['super_admin', 'admin', 'branch_manager'];
 const RANGE_OPTIONS = [
   { value: 'this_week', label: 'This Week' },

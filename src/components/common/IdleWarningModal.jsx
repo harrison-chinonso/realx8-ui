@@ -24,7 +24,7 @@ export default function IdleWarningModal({ visible, secondsLeft, onStayLoggedIn 
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
+      <div className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center max-h-[90vh] overflow-y-auto">
         <div className="text-4xl mb-3">⏱️</div>
         <h2 className="text-lg font-semibold text-gray-800 mb-2">Session Expiring Soon</h2>
         <p className="text-sm text-gray-500 mb-6">

@@ -19,7 +19,7 @@ import { enumLabel } from '../../utils/enumLabel';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const TEXTAREA_CLASS = `${INPUT_CLASS} resize-none`;
-const MODAL_OVERLAY_CLASS = 'fixed inset-0 bg-black/40 z-50 flex items-center justify-center';
+const MODAL_OVERLAY_CLASS = 'fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4';
 const MODAL_CARD_CLASS = 'bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto';
 const SAVE_BUTTON_CLASS = 'px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60';
 const CANCEL_BUTTON_CLASS = 'px-4 py-2 rounded-lg bg-slate-200 text-slate-700 text-sm font-medium';

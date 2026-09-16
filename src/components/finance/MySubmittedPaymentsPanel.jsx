@@ -221,7 +221,7 @@ export default function MySubmittedPaymentsPanel() {
           not mean, because "cancel" reads as "cancel the transfer". */}
       {cancelling && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 sm:items-center sm:p-4">
-          <div className="w-full max-w-sm rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-xl">
+          <div className="w-full max-w-sm rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-base font-semibold text-slate-900">Cancel this payment?</h3>
             <p className="mt-2 text-sm text-slate-600">
               {fmt(cancelling.amount)} will be withdrawn from review. It does not count toward your

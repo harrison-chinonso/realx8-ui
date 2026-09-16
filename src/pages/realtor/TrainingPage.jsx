@@ -19,7 +19,10 @@ import {
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const MODAL_OVERLAY_CLASS = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4';
-const MODAL_CARD_CLASS = 'w-full rounded-2xl bg-white p-6 shadow-xl';
+// Capped and scrollable, like Modal.jsx. A modal taller than the viewport
+// centres itself off both edges, and its submit button ends up out of
+// reach with nothing to scroll — the form can be filled in and not saved.
+const MODAL_CARD_CLASS = 'w-full rounded-2xl bg-white p-6 shadow-xl max-h-[90vh] overflow-y-auto';
 const MANAGER_ROLES = ['super_admin', 'admin', 'branch_manager'];
 const CATEGORY_OPTIONS = [
   { value: 'sales', label: 'Sales' },
@@ -399,7 +402,7 @@ export default function TrainingPage() {
 
         {showModal && (
           <div className={MODAL_OVERLAY_CLASS}>
-            <div className={`${MODAL_CARD_CLASS} max-w-4xl max-h-[92vh] overflow-y-auto`}>
+            <div className={`${MODAL_CARD_CLASS} max-w-4xl`}>
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">{editingModule ? 'Edit Module' : 'Create Module'}</h2>
@@ -659,7 +662,7 @@ export default function TrainingPage() {
 
       {showQuiz && selectedModule && (
         <div className={MODAL_OVERLAY_CLASS}>
-          <div className={`${MODAL_CARD_CLASS} max-w-3xl max-h-[92vh] overflow-y-auto`}>
+          <div className={`${MODAL_CARD_CLASS} max-w-3xl`}>
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">{selectedModule.title} Quiz</h2>
