@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Settings, X } from 'lucide-react';
+import { ArrowLeft, Search, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
 import { LAUNCHER_CSS } from './launcherStyles';
+import { DESCRIPTIONS } from './launcherGroups';
 import { rememberVisit, recentVisits } from './recentScreens';
 
 /**
@@ -17,19 +18,21 @@ import { rememberVisit, recentVisits } from './recentScreens';
  * so as an overlay the launcher is reachable from anywhere in one click and
  * costs nothing.
  *
- * ── Why every screen is on the page ─────────────────────────────────────────
+ * ── Two shapes, chosen by how much there is to show ─────────────────────────
  *
- * The tiles were sections, and opening one showed a second grid of the screens
- * inside it. That was the right trade while this was a 1060px card: 61 tiles
- * will not fit in a dialog, so the dialog showed twelve and charged a click
- * for the rest.
+ * GROUPED, for staff. One tile per module in four labelled bands, and opening
+ * one shows the screens inside it. An administrator can see 52 screens across
+ * a dozen menus; laid out at once that is a wall to be read rather than a menu
+ * to be scanned, and the twelve-tile top level is the thing that can be learned
+ * by position.
  *
- * It is a full page now, and a full page has the room. So the drill-in is gone
- * and the screens are simply there, in rows headed by the menu they belong to
- * — 61 tiles a scroll away rather than twelve tiles and a click away. Sixty-one
- * is a lot to lay out and nothing to scan, because the row headings are what
- * the eye travels, and they read the same as the sidebar in every other
- * template.
+ * FLAT, for realtors and clients. They see a handful of screens, and a drill-in
+ * over four tiles charges a click and a change of context to save nothing. Their
+ * screens are simply on the page, in rows headed by the menu they belong to.
+ *
+ * The split is `effectiveType`, the same value that decides whether the Settings
+ * tile exists — so a member of staff who switches to their realtor profile gets
+ * the realtor's launcher, which is the right answer for both.
  *
  * ── Nothing here is hand-listed ─────────────────────────────────────────────
  *
@@ -62,57 +65,63 @@ const useSections = () => {
       })
       .filter((section) => section.destinations.length > 0);
 
-    /**
-     * Settings, last, and the one tile written by hand — it has to be, because
-     * Settings is not a navConfig entry anywhere. Staff only, the same rule the
-     * other templates apply.
+    /*
+     * Settings used to be appended here by hand, because it was not a navConfig
+     * entry anywhere. It is one now — Operations & Support — so it arrives
+     * through the same filter as everything else, carrying its own permission
+     * rather than a user-type test copied from the other templates.
      */
-    if (!['realtor', 'client'].includes(userType)) {
-      const settings = { to: '/settings', label: 'Settings', icon: Settings };
-      sections.push({ section: 'Settings', items: [settings], destinations: [settings] });
-    }
-
     return sections;
   }, [hasPermission, isSuperiorAdmin, userType]);
 };
 
-/*
- * The 1–9,0 slot keys are gone with the drill-in.
+/**
+ * Slot keys in layout order: 1–9, then 0 for the tenth.
  *
- * A slot key is a promise that a position is worth memorising. That held for a
- * twelve-tile top level; across sixty-one screens in twelve rows, which ten get
- * a digit is an accident of what this particular user may see, and the badge
- * would appear on ten tiles and not the other fifty-one for no reason a person
- * could work out. Search and the arrow keys carry the keyboard now.
+ * Grouped mode only. A slot key promises a position is worth memorising, which
+ * holds for a twelve-tile top level and does not hold across a flat list of 52,
+ * where which ten get a digit is an accident of permissions.
  */
+const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
 /**
- * One tile — one screen. Identical to every other tile: no featured one, no
- * per-module colour, no counts. Only the words change.
+ * One tile. Identical to every other tile — no featured one, no per-module
+ * colour, no counts. Only the words change.
  *
- * The two-word description is gone with the drill-in. It existed to say what
- * "General" or "Media" held, which was a fair question of a tile that opened a
- * drawer; a tile that goes straight to Invoices has already answered it.
+ * A link when it goes somewhere, a button when it opens a drawer. The
+ * description is the two words saying what a module HOLDS, so it appears on the
+ * grouped tiles and not on a tile that already names the screen it opens.
  */
-function Tile({ icon: Icon, name, onOpen, to, innerRef, ...props }) {
-  return (
-    <Link ref={innerRef} to={to} className="rx-tile" onClick={onOpen} {...props}>
+function Tile({ icon: Icon, name, description, slot, onOpen, to, innerRef, ...props }) {
+  const body = (
+    <>
+      {slot && <span className="rx-slot" aria-hidden="true">{slot}</span>}
       {/* Decorative: the name is the accessible name. */}
       <span className="rx-ic"><Icon aria-hidden="true" strokeWidth={1.75} size={20} /></span>
       <span className="rx-name">{name}</span>
-    </Link>
+      {description && <span className="rx-desc">{description}</span>}
+    </>
   );
+
+  return to
+    ? <Link ref={innerRef} to={to} className="rx-tile" onClick={onOpen} {...props}>{body}</Link>
+    : <button ref={innerRef} type="button" className="rx-tile" onClick={onOpen} {...props}>{body}</button>;
 }
 
 export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   const [query, setQuery] = useState('');
+  const [section, setSection] = useState(null);
+  const [group, setGroup] = useState(null);
   const sections = useSections();
+  /* Staff get the grouped grid; realtors and clients get the flat rows. */
+  const userType = useAuthStore((s) => s.effectiveType());
+  const isGrouped = !['realtor', 'client'].includes(userType);
   const panelRef = useRef(null);
   const searchRef = useRef(null);
   const tileRefs = useRef([]);
 
   useEffect(() => {
-    if (open) { setQuery(''); searchRef.current?.focus(); }
+    if (open) { setQuery(''); setSection(null); setGroup(null); searchRef.current?.focus(); }
   }, [open]);
 
   const term = query.trim().toLowerCase();
@@ -160,6 +169,37 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   }, [onClose, returnFocusTo]);
 
   /**
+   * What is on screen now, in visual order — for the slot keys.
+   *
+   * Only grouped mode needs this: the flat rows have no drill-in levels to
+   * describe and no slot keys to resolve, and their arrow keys read the layout
+   * itself rather than an index.
+   */
+  const visibleTiles = useMemo(() => {
+    if (!isGrouped) return [];
+    if (term) return matches.map((item) => ({ kind: 'link', item }));
+    if (group) return group.children.map((item) => ({ kind: 'link', item }));
+    if (section) {
+      return section.items.map((item) => (item.children ? { kind: 'group', item } : { kind: 'link', item }));
+    }
+    return sections.map((entry) => ({ kind: 'section', item: entry }));
+  }, [isGrouped, term, matches, group, section, sections]);
+
+  const openTile = useCallback((tile) => {
+    if (tile.kind === 'group') { setGroup(tile.item); return; }
+    if (tile.kind === 'section') {
+      const entry = tile.item;
+      const only = entry.destinations.length === 1 ? entry.destinations[0] : null;
+      // A section holding one destination IS that destination.
+      if (only) { rememberVisit(only); close(); return; }
+      setSection(entry);
+      return;
+    }
+    rememberVisit(tile.item);
+    close();
+  }, [close]);
+
+  /**
    * Keyboard. The keycaps in the search row advertise this as keyboard-driven,
    * so it has to actually be one.
    */
@@ -168,6 +208,34 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
 
     const onKeyDown = (event) => {
       if (event.key === 'Escape') { event.stopPropagation(); close(); return; }
+
+      /*
+       * Slot keys jump straight to a module — but only while the search box is
+       * empty. Otherwise typing "2 bedroom" would navigate on the first
+       * keystroke, which is the kind of shortcut people disable the feature
+       * over.
+       */
+      if (!term && SLOT_KEYS.includes(event.key) && !event.metaKey && !event.ctrlKey) {
+        const index = SLOT_KEYS.indexOf(event.key);
+        const tile = visibleTiles[index];
+        const node = tileRefs.current[index];
+        if (tile) {
+          event.preventDefault();
+          /*
+           * Ask the RENDERED TILE what it is, rather than the data behind it.
+           *
+           * A section holding one destination is rendered as a link — the
+           * mouse path follows it and navigates. The keyboard path branched on
+           * `tile.kind` instead, saw 'section', and called openTile, which for
+           * a collapsed section only closes the launcher. Pressing 1 therefore
+           * dismissed the overlay and went nowhere, while clicking the same
+           * tile worked. One source of truth: if it is an anchor, click it.
+           */
+          if (node?.tagName === 'A') node.click();
+          else openTile(tile);
+          return;
+        }
+      }
 
       if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
         const nodes = tileRefs.current.filter(Boolean);
@@ -243,7 +311,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, close]);
+  }, [open, close, term, visibleTiles, openTile]);
 
   /**
    * Pick a glyph colour the accent can actually carry.
@@ -278,6 +346,29 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
    * One grid of screens. `offset` keeps tileRefs in visual order across the
    * rows, which is the order the arrow keys walk.
    */
+  const heading = [section?.section, group?.label].filter(Boolean).join(' → ');
+
+  /** A grid of tiles built from drill-in entries, which may open rather than go. */
+  const renderEntries = (tiles) => (
+    <div className="rx-grid">
+      {tiles.map((tile, index) => {
+        const entry = tile.item;
+        const isDrawer = tile.kind === 'group';
+        return (
+          <Tile
+            key={`${tile.kind}-${entry.label || entry.section}-${index}`}
+            innerRef={(node) => { tileRefs.current[index] = node; }}
+            icon={entry.icon}
+            name={entry.label}
+            to={isDrawer ? undefined : entry.to}
+            onOpen={() => openTile(tile)}
+            aria-label={isDrawer ? `${entry.label} — ${entry.children.length} screens` : undefined}
+          />
+        );
+      })}
+    </div>
+  );
+
   const renderTiles = (items, offset = 0) => (
     <div className="rx-grid">
       {items.map((item, index) => (
@@ -298,8 +389,18 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
       <style>{LAUNCHER_CSS}</style>
       <div className="absolute inset-0" onClick={close} aria-hidden="true" />
 
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Modules" className="rx-panel relative">
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Modules" className={`rx-panel relative${isGrouped ? ' rx-panel-grouped' : ''}`}>
         <div className="rx-search">
+          {(section || group) && !term && (
+            <button
+              type="button"
+              onClick={() => (group ? setGroup(null) : setSection(null))}
+              aria-label={group ? `Back to ${section?.section || 'the section'}` : 'Back to all modules'}
+              style={{ color: 'var(--rx-ink-3)', flexShrink: 0 }}
+            >
+              <ArrowLeft size={18} />
+            </button>
+          )}
           <Search aria-hidden="true" size={18} style={{ color: 'var(--rx-ink-3)', flexShrink: 0 }} />
           <input
             ref={searchRef}
@@ -335,7 +436,8 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
           </div>
         )}
 
-        <div className="rx-body">
+        {/* The module grid fills the page; every other view scrolls normally. */}
+        <div className={`rx-body${isGrouped && !term && !section && !group ? ' rx-body-modules' : ''}`}>
           <nav aria-label="Modules">
             {term ? (
               matches.length
@@ -350,16 +452,58 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
                   </div>
                 )
                 : <p className="rx-empty">Nothing matches “{query.trim()}”.</p>
+            ) : (section || group) ? (
+              /* Inside a module: the screens it holds, or the drawer's contents. */
+              <div className="rx-group">
+                <div className="rx-group-head">
+                  <span>{heading}</span><i /><span>{visibleTiles.length}</span>
+                </div>
+                {renderEntries(visibleTiles)}
+              </div>
+            ) : isGrouped ? (
+              /*
+               * Staff: one tile per module, filling the page — four across the
+               * top, four across the bottom.
+               *
+               * The four band headings that used to divide these are gone.
+               * They grouped the modules three, one, two and two, which cannot
+               * be laid out as two even rows of four, and a heading over a
+               * single tile was never doing much work.
+               *
+               * Order is navConfig's, which is the order the menu is declared
+               * in and the order it reads in every other template. The bands
+               * imposed one of their own — Marketing third, People & Access
+               * seventh — and with no headings left to explain it, it was just
+               * a shuffle.
+               */
+              <div className="rx-modules">
+                {sections.map((member, index) => {
+                  const only = member.destinations.length === 1 ? member.destinations[0] : null;
+                  // A section holding one destination is named after what it
+                  // OPENS — "General" that lands on Notifications is a tile that
+                  // lied about where it went.
+                  const name = only ? only.label : (member.section || 'More');
+                  const icon = (only || member.destinations[0]).icon;
+                  return (
+                    <Tile
+                      key={name}
+                      innerRef={(node) => { tileRefs.current[index] = node; }}
+                      icon={icon}
+                      name={name}
+                      description={DESCRIPTIONS[member.section] ?? DESCRIPTIONS[name]}
+                      slot={SLOT_KEYS[index]}
+                      to={only?.to}
+                      onOpen={() => openTile({ kind: 'section', item: member })}
+                      aria-label={only ? undefined : `${name} — ${member.destinations.length} screens`}
+                    />
+                  );
+                })}
+              </div>
             ) : (
               /*
-               * Every screen, under the menu it belongs to.
-               *
-               * The row label is the parent menu's name — the same name the
-               * sidebar gives it in the other five templates — so somebody who
-               * learned the menu in one of those can read this without
-               * translating. The count on the right says how many screens the
-               * row holds, which is the only thing the old section tile said
-               * that this does not say by simply showing them.
+               * Realtors and clients: every screen, under the menu it belongs
+               * to. They see a handful, so a drill-in over four tiles would
+               * charge a click and a change of context to save nothing.
                */
               rows.map((row) => (
                 <div className="rx-group" key={row.key}>

@@ -173,8 +173,73 @@ export const LAUNCHER_CSS = `
   gap: 9px;
 }
 
+/* ── The module grid: eight tiles, filling the page ──────────────────────────
+ *
+ * Four across the top and four across the bottom, each stretching to take its
+ * share of both the width and the height. This is the first thing seen after
+ * signing in and it is the whole of the navigation on this template, so it gets
+ * the page rather than sitting in a strip across the top of it.
+ *
+ * Rows are 1fr rather than auto: the tiles divide whatever height is left
+ * after the search row and the recent strip, so the grid is always exactly two
+ * rows deep and never leaves a band of empty page beneath itself.
+ */
+.rx-body-modules { display: flex; }
+.rx-body-modules > nav { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+/* Full width here, not the 1060px reading measure the other views use — eight
+   tiles at that width would be a strip down the middle of an empty page. */
+.rx-body-modules { padding-inline: max(18px, 3vw); }
+
+.rx-modules {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  /* A tenant with a ninth module gets a third row the same height as the
+     other two, rather than a short one tacked on the end. */
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 14px;
+  /* A floor for short windows, so two rows never squeeze to nothing. The body
+     scrolls past it rather than the tiles collapsing. */
+  min-height: 330px;
+}
+
+/*
+ * Centred, unlike the tiles everywhere else.
+ *
+ * The anchor-to-top rule exists because a stack of variable height drags its
+ * icon up and down the row. Here every tile holds the same three blocks and
+ * every row is the same height by construction, so centring cannot produce
+ * that drift — and a short stack pinned to the top of a 300px tile reads as a
+ * mistake.
+ */
+.rx-modules .rx-tile {
+  justify-content: center;
+  min-height: 0;
+  padding: 20px 14px;
+  gap: clamp(8px, 1vw, 14px);
+}
+
+/*
+ * The contents scale with the tile.
+ *
+ * At a fixed 54px the icon left most of a 390px-tall tile empty and the whole
+ * grid read as unfinished — eight small clusters adrift in eight large boxes.
+ * The clamps grow the icon and the type with the window and stop before either
+ * becomes a poster, so the tile feels filled at 1920 and stays legible at 820.
+ */
+.rx-modules .rx-ic {
+  width: clamp(48px, 4.4vw, 72px);
+  height: clamp(48px, 4.4vw, 72px);
+  border-radius: 14px;
+}
+.rx-modules .rx-ic svg { width: clamp(22px, 2vw, 32px); height: clamp(22px, 2vw, 32px); }
+.rx-modules .rx-name { font-size: clamp(14px, 1.15vw, 19px); max-width: none; }
+.rx-modules .rx-desc { font-size: clamp(11px, .85vw, 14px); max-width: 22ch; }
+
 /* ── Tile: filled at rest, outlined on hover ────────────────────────────── */
 .rx-tile {
+  position: relative;
   display: flex; flex-direction: column; align-items: center;
   /*
    * Anchored to the top, not centred.
@@ -261,6 +326,35 @@ export const LAUNCHER_CSS = `
   min-height: 2.5em;
 }
 
+/*
+ * Grouped mode only: the tile names a MODULE, so it carries the two words
+ * saying what that module holds, and reserves two lines for them whether they
+ * are used or not. Both text blocks reserved is what makes every tile the same
+ * height by construction rather than by a floor that needs re-tuning each time
+ * a label changes.
+ *
+ * The flat tile names a screen and needs neither, which is why it is 116px and
+ * this one is 158px rather than both compromising on one number.
+ */
+.rx-panel-grouped .rx-tile { min-height: 158px; padding: 22px 10px 16px; }
+.rx-desc {
+  font: 400 11px/1.3 system-ui, sans-serif; color: var(--rx-ink-3);
+  max-width: 14ch;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
+}
+
+/* The slot key, on hover only — texture when wanted, silence when not. */
+.rx-slot {
+  position: absolute; top: 7px; right: 8px;
+  font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--rx-ink-3);
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+.rx-tile:hover .rx-slot, .rx-tile:focus-visible .rx-slot { opacity: 1; }
+
 .rx-empty { padding: 42px 0; text-align: center; font-size: 13px; color: var(--rx-ink-3); }
 
 /* ── Phone: full-bleed, tighter, and the second tier of type goes ───────── */
@@ -272,6 +366,22 @@ export const LAUNCHER_CSS = `
  * Above 520 there is room for the three-column desktop grid at its proper
  * proportions, so that is where the switch belongs.
  */
+/*
+ * Two per row on a smaller screen.
+ *
+ * Four columns stop working well before the phone breakpoint: at 900px each
+ * module tile is about 200px wide, which is narrower than the two-line names
+ * it has to hold. Two columns and four rows keeps every tile wide enough to
+ * read, and the grid still fills the page because the rows stay 1fr.
+ */
+@media (max-width: 900px) {
+  .rx-modules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+    min-height: 520px;
+  }
+}
+
 @media (max-width: 519px) {
   /*
    * Two columns, stated rather than derived.
@@ -285,12 +395,21 @@ export const LAUNCHER_CSS = `
   .rx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .rx-ic { width: 38px; height: 38px; }
   .rx-tile { min-height: 104px; padding: 14px 8px 11px; }
-  .rx-keys { display: none; }
+  /* A description is a luxury at this width; the name is not. Stated for the
+     grouped tile too, whose two-class selector would otherwise outrank this. */
+  .rx-panel-grouped .rx-tile { min-height: 104px; padding: 14px 8px 11px; }
+  .rx-modules { gap: 9px; min-height: 420px; }
+  .rx-modules .rx-tile { padding: 14px 10px; }
+  .rx-modules .rx-ic { width: 42px; height: 42px; }
+  .rx-modules .rx-ic svg { width: 20px; height: 20px; }
+  .rx-modules .rx-name { font-size: 13px; }
+  .rx-body-modules { padding-inline: 12px; }
+  .rx-desc, .rx-keys { display: none; }
   .rx-body { padding: 12px 12px 18px; }
   .rx-search, .rx-recent { padding-left: 12px; padding-right: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rx-tile, .rx-ic, .rx-search { transition: none; }
+  .rx-tile, .rx-ic, .rx-search, .rx-slot { transition: none; }
 }
 `;
