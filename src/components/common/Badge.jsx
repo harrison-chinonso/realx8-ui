@@ -11,7 +11,11 @@ const TONES = {
   positive: 'bg-success-surface text-success',
   caution:  'bg-warning-surface text-warning',
   negative: 'bg-danger-surface text-danger',
-  neutral:  'bg-surface-sunken text-content-muted',
+  /* The only tone that can carry brand. success/warning/danger mean
+     something, and repainting those in a tenant colour would say a thing
+     about the record that is not true. Neutral means nothing in
+     particular, so it is free to be the company's. */
+  neutral:  'badge-secondary',
   info:     'bg-primary-soft text-primary',
 };
 

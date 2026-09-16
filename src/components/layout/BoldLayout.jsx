@@ -138,8 +138,11 @@ function BoldSidebar({ open, onClose }) {
           </NavLink>
           )}
           <div className="flex items-center gap-3 rounded-xl bg-white px-3 py-2.5 shadow-sm mt-1">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
-              style={{ backgroundColor: avatarBg }}>
+            {/* One glyph, so the ink flips rather than the fill being deepened —
+                which keeps the tenant's exact colour. --secondary-ink is white
+                or near-black, whichever the colour can actually carry. */}
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+              style={{ backgroundColor: avatarBg, color: 'var(--secondary-ink, #fff)' }}>
               {(user?.name || 'U').charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">

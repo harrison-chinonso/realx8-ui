@@ -9,6 +9,7 @@ import { Menu, Bell, X, Settings } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, isNavItemVisible, filterNavItems } from './navConfig';
 import CollapsibleSection from './CollapsibleSection';
 import useAuthStore from '../../store/authStore';
+import { readableOn } from '../../utils/colorUtils';
 import { useAppearance } from '../../context/useAppearance';
 import { listNotifications } from '../../api/notificationApi';
 import Button from '../ui/Button';
@@ -23,7 +24,19 @@ function ClassicSidebar({ open, onClose }) {
   const allNav = isSuperiorAdmin
     ? [...SUPERIOR_ADMIN_NAV, ...NAV.map((s) => ({ ...s, items: s.items.filter((i) => !i.hideForSuperior) }))]
     : NAV;
-  const sidebarBg = secondary_color || '#0f172a';
+  /*
+   * Deepened if it needs to be.
+   *
+   * The white text on this surface is hard-coded in a dozen class names
+   * below, so the background has to be dark enough to carry it. It always
+   * has been by luck: the default is #0f172a at 17.8:1. A tenant who set a
+   * pale secondary got white on pale — around 1.6:1 — and a navigation they
+   * could not read, with no warning anywhere that the colour had a floor.
+   *
+   * readableOn keeps the hue and walks the lightness only as far as 4.5:1
+   * requires, so a tenant's colour still looks like their colour.
+   */
+  const sidebarBg = readableOn(secondary_color || '#0f172a', '#ffffff');
 
   return (
     <>
@@ -121,7 +134,19 @@ function ClassicHeader({ onMenuOpen }) {
   const userType = useAuthStore((s) => s.effectiveType());
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const { app_name, secondary_color } = useAppearance();
-  const sidebarBg = secondary_color || '#0f172a';
+  /*
+   * Deepened if it needs to be.
+   *
+   * The white text on this surface is hard-coded in a dozen class names
+   * below, so the background has to be dark enough to carry it. It always
+   * has been by luck: the default is #0f172a at 17.8:1. A tenant who set a
+   * pale secondary got white on pale — around 1.6:1 — and a navigation they
+   * could not read, with no warning anywhere that the colour had a floor.
+   *
+   * readableOn keeps the hue and walks the lightness only as far as 4.5:1
+   * requires, so a tenant's colour still looks like their colour.
+   */
+  const sidebarBg = readableOn(secondary_color || '#0f172a', '#ffffff');
   // The other layouts carry Settings in their user menu; this one did not, and
   // relied on the sidebar's Account section for it. Mirrors the nav rule so
   // realtors and clients still cannot reach company settings.

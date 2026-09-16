@@ -265,7 +265,7 @@ export default function Table({
       <div className="hidden overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200 sm:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50">
+            <thead className="thead-secondary">
               <tr>
                 {columns.map((column, i) => (
                   <th key={column.key ?? column.accessor ?? i}

@@ -139,9 +139,62 @@ aside {
 .focus\:ring-blue-400:focus { --tw-ring-color: rgba(var(--primary-rgb), 0.55) !important; }
 .focus\:ring-blue-500:focus { --tw-ring-color: rgb(var(--primary-rgb)) !important; }
 
-/* ── Dynamic secondary colour overrides (ALL slate-800+ → secondary) ─────── */
-.bg-secondary   { background-color: var(--secondary) !important; }
-.text-secondary { color: var(--secondary) !important; }
+/* ── The secondary colour, as supporting UI ──────────────────────────────────
+ *
+ * `.bg-secondary` and `.text-secondary` used to live here and were applied to
+ * nothing at all — the colour was collected in Settings, themed into a
+ * variable, and then read by exactly two places in the whole application: the
+ * Classic sidebar and the Bold avatar. On four of the six templates a tenant
+ * could set it and see no change anywhere.
+ *
+ * It now has one stated job. Primary is the main action; secondary is what
+ * supports it — the outline button beside it, the status pill with no meaning
+ * of its own, the head of a table.
+ *
+ * Every rule below takes either a low-opacity tint of the raw colour, which is
+ * safe at any luminance because nothing reads text off it, or --secondary-read,
+ * which is the colour walked to a 4.5:1 floor against the page background.
+ * Neither can produce an unreadable screen, whatever the tenant picks.
+ */
+.badge-secondary {
+  background-color: rgba(var(--secondary-rgb), .10);
+  color: var(--secondary-read, var(--content));
+}
+.thead-secondary {
+  background-color: rgba(var(--secondary-rgb), .05);
+  border-bottom: 1px solid rgba(var(--secondary-rgb), .16);
+}
+
+/* ── The Launcher template's top bar ─────────────────────────────────────────
+ *
+ * This template has no sidebar, so the bar is the only chrome it owns — which
+ * is why it was the one place a tenant could set a secondary colour and still
+ * see a plain white application.
+ *
+ * Everything inside derives from `currentColor`, which is --secondary-ink:
+ * white or near-black, whichever the bar can actually carry. That is what lets
+ * the same rules work for a near-black bar and a pale one without a second set
+ * of classes or a JS branch — the hover wash is a mix of the ink itself, so it
+ * lightens a dark bar and darkens a light one.
+ */
+.rx-topbar {
+  background-color: var(--secondary);
+  color: var(--secondary-ink, #fff);
+  border-bottom: 1px solid rgba(var(--secondary-rgb), .35);
+}
+.rx-topbar-btn {
+  color: inherit;
+  transition: background-color .12s ease, opacity .12s ease;
+}
+/* Plain grey first, so a browser without color-mix still gets a hover state. */
+.rx-topbar-btn:hover { background-color: rgba(128, 128, 128, .18); }
+.rx-topbar-btn:hover { background-color: color-mix(in srgb, currentColor 14%, transparent); }
+.rx-topbar-dim { opacity: .78; }
+.rx-topbar-btn:hover .rx-topbar-dim, .rx-topbar-btn:hover.rx-topbar-dim { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rx-topbar-btn { transition: none; }
+}
 
 /* ── @layer component button classes using CSS vars ─────────────────────── */
 .btn-var:hover:not(:disabled) {

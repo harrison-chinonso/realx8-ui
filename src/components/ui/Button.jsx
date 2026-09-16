@@ -38,7 +38,15 @@ export default function Button({
   // is a runtime CSS variable rather than a build-time Tailwind class.
   const styles = {
     primary:   { backgroundColor: 'var(--primary)', color: onPrimary },
-    secondary: { backgroundColor: 'var(--surface)', color: 'var(--content)', border: '1px solid var(--line-strong)' },
+    /* The outline button beside a primary one. --secondary-read carries the
+       4.5:1 floor, so a pale brand colour is deepened rather than rendered
+       as invisible text on white. Falls back to the old neutral ink if the
+       theme has not been applied yet. */
+    secondary: {
+      backgroundColor: 'var(--surface)',
+      color: 'var(--secondary-read, var(--content))',
+      border: '1px solid rgba(var(--secondary-rgb, 15, 23, 42), .38)',
+    },
     ghost:     { backgroundColor: 'transparent', color: 'var(--content-muted)' },
     link:      { backgroundColor: 'transparent', color: 'var(--primary)' },
     danger:    { backgroundColor: 'var(--danger)', color: '#fff' },
