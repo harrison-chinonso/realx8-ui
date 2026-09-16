@@ -4,7 +4,7 @@ import { ArrowLeft, Search, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
 import { LAUNCHER_CSS } from './launcherStyles';
-import { DESCRIPTIONS, orderClientTiles } from './launcherGroups';
+import { DESCRIPTIONS, orderTiles } from './launcherGroups';
 import { rememberVisit, recentVisits } from './recentScreens';
 
 /**
@@ -204,6 +204,9 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
     }];
   }), [sections, userType]);
 
+  /* Staff keep navConfig's order; a realtor's is declared — see launcherGroups. */
+  const orderedModuleTiles = useMemo(() => orderTiles(moduleTiles, userType), [moduleTiles, userType]);
+
   const close = useCallback(() => {
     onClose();
     returnFocusTo?.current?.focus();
@@ -223,8 +226,8 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
     if (section) {
       return section.items.map((item) => (item.children ? { kind: 'group', item } : { kind: 'link', item }));
     }
-    return moduleTiles;
-  }, [isGrouped, term, matches, group, section, moduleTiles]);
+    return orderedModuleTiles;
+  }, [isGrouped, term, matches, group, section, orderedModuleTiles]);
 
   const openTile = useCallback((tile) => {
     if (tile.kind === 'group') { setGroup(tile.item); return; }
@@ -522,7 +525,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
                * a shuffle.
                */
               <div className="rx-modules">
-                {moduleTiles.map((tile, index) => {
+                {orderedModuleTiles.map((tile, index) => {
                   // A tile that GOES somewhere takes its own words; only a tile
                   // that opens a drawer speaks for the section behind it. A
                   // realtor's Finance holds one screen, My Commissions, and was
@@ -560,7 +563,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
                * give four tiles, each opening one or two screens.
                */
               <div className="rx-modules">
-                {orderClientTiles(rows.flatMap((row) => row.tiles)).map((item, index) => (
+                {orderTiles(rows.flatMap((row) => row.tiles), userType).map((item, index) => (
                   <Tile
                     key={item.to}
                     innerRef={(node) => { tileRefs.current[index] = node; }}

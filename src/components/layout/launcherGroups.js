@@ -32,40 +32,64 @@ export const DESCRIPTIONS = {
 };
 
 /**
- * The order a client's tiles are laid out in.
+ * The order the launcher lays tiles out in, per user type.
  *
- * Their launcher is flat — every screen they have, as eight tiles — and the
- * order that falls out of navConfig is the order the MENU is declared in:
- * Dashboard, then Properties, then the two screens they can see in Operations
- * & Support, then their portfolio. That is the order the sections make sense in
- * for staff, and the wrong one for a buyer, who wants what they own and what
- * they owe before support and notifications.
+ * What falls out of navConfig is the order the MENU is declared in, which is
+ * the right order for staff and the wrong one for the two roles whose tiles are
+ * mostly their own things. A buyer wants what they own and what they owe before
+ * support and notifications; a realtor wants their people and their money
+ * before the pipeline and the back office.
  *
- * Declared here rather than by reordering navConfig, because navConfig's order
- * is shared: putting Notifications above Support Centre for a client would move
- * it for every member of staff too.
+ * Declared here rather than by reordering navConfig, because that order is
+ * shared: moving Notifications above Support Centre for a client would move it
+ * for every member of staff too.
  *
- * Anything not listed keeps its navConfig position, after these.
+ * An entry matches a tile by its PATH or by its NAME. Paths are the stabler
+ * handle and are used wherever a tile goes somewhere; a realtor's grid also
+ * holds tiles that open a module rather than a screen, and those have a name
+ * and no path. Anything unlisted keeps its navConfig position, after these.
  */
-export const CLIENT_TILE_ORDER = [
-  '/',
-  '/properties/listed',
-  '/finance/my-properties',
-  '/finance/my-invoices',
-  '/finance/my-payments',
-  '/investments/portfolio',
-  '/notifications',
-  '/support',
-];
+export const TILE_ORDER = {
+  client: [
+    '/',
+    '/properties/listed',
+    '/finance/my-properties',
+    '/finance/my-invoices',
+    '/finance/my-payments',
+    '/investments/portfolio',
+    '/notifications',
+    '/support',
+  ],
+  realtor: [
+    'Dashboard',
+    'Properties',
+    'My Referrals',
+    'My Clients',
+    'My Commissions',
+    'Investments',
+    'Sales & CRM',
+    'Operations & Support',
+  ],
+};
 
-/** Sorts a client's screens into CLIENT_TILE_ORDER, stably. */
-export const orderClientTiles = (tiles = []) => {
-  const rank = (item) => {
-    const index = CLIENT_TILE_ORDER.indexOf(item.to);
-    return index === -1 ? CLIENT_TILE_ORDER.length : index;
+/**
+ * Sort tiles into the order declared for this user type.
+ *
+ * Stable: two tiles the list does not mention keep the order they arrived in,
+ * so an unlisted screen appears where navConfig put it rather than jumping to
+ * the front.
+ */
+export const orderTiles = (tiles = [], userType = null) => {
+  const order = TILE_ORDER[userType];
+  if (!order) return tiles;
+  const rank = (tile) => {
+    const byPath = tile.to ? order.indexOf(tile.to) : -1;
+    if (byPath !== -1) return byPath;
+    const byName = order.indexOf(tile.name ?? tile.label);
+    return byName === -1 ? order.length : byName;
   };
   return tiles
-    .map((item, index) => ({ item, index }))
-    .sort((a, b) => (rank(a.item) - rank(b.item)) || (a.index - b.index))
-    .map((entry) => entry.item);
+    .map((tile, index) => ({ tile, index }))
+    .sort((a, b) => (rank(a.tile) - rank(b.tile)) || (a.index - b.index))
+    .map((entry) => entry.tile);
 };
