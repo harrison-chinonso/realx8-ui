@@ -5,7 +5,7 @@
  */
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Menu, Bell, X, Settings } from 'lucide-react';
+import { Menu, Bell, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, isNavItemVisible, filterNavItems } from './navConfig';
 import CollapsibleSection from './CollapsibleSection';
 import useAuthStore from '../../store/authStore';
@@ -147,11 +147,6 @@ function ClassicHeader({ onMenuOpen }) {
    * requires, so a tenant's colour still looks like their colour.
    */
   const sidebarBg = readableOn(secondary_color || '#0f172a', '#ffffff');
-  // The other layouts carry Settings in their user menu; this one did not, and
-  // relied on the sidebar's Account section for it. Mirrors the nav rule so
-  // realtors and clients still cannot reach company settings.
-  const canSeeSettings = isSuperiorAdmin
-    || (hasPermission('settings.appearance.manage') && !['realtor', 'client'].includes(userType));
 
   useEffect(() => {
     listNotifications()
@@ -192,16 +187,9 @@ function ClassicHeader({ onMenuOpen }) {
           <div className="font-semibold text-slate-800">{user?.name || 'Guest'}</div>
           <div className="text-slate-500 capitalize">{user?.type}</div>
         </NavLink>
-        {canSeeSettings && (
-          <NavLink
-            to="/settings"
-            title={isSuperiorAdmin ? 'Global Settings' : 'Settings'}
-            aria-label={isSuperiorAdmin ? 'Global Settings' : 'Settings'}
-            className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
-          >
-            <Settings size={18} />
-          </NavLink>
-        )}
+        {/* Settings is a nav item now, in Operations & Support. It used to be
+            hand-linked here with a guard written out per layout - six copies
+            of one rule. */}
         <Button onClick={logout} size="sm" style={{ backgroundColor: sidebarBg }} className="opacity-90 hover:opacity-100 lg:px-4 lg:py-2 lg:text-sm">
           Logout
         </Button>

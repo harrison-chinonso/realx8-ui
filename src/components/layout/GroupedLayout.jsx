@@ -8,7 +8,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Menu, Bell, LogOut, User, Settings, X } from 'lucide-react';
+import { Menu, Bell, LogOut, User, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, isNavItemVisible, filterNavItems } from './navConfig';
 import CollapsibleSection from './CollapsibleSection';
 import useAuthStore from '../../store/authStore';
@@ -22,8 +22,6 @@ function SidebarContent({ onNavigate }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const userType = useAuthStore((s) => s.effectiveType());
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
-  // Company settings are staff-only; realtors and clients get Profile alone.
-  const canSeeSettings = !['realtor', 'client'].includes(useAuthStore((s) => s.effectiveType()));
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { app_name, app_logo } = useAppearance();
@@ -127,13 +125,9 @@ function SidebarContent({ onNavigate }) {
             My Profile
           </NavLink>
         )}
-        {!isSuperiorAdmin && canSeeSettings && !accountItems.find((i) => i.to === '/settings') && (
-          <NavLink to="/settings" onClick={onNavigate}
-            className="flex items-center gap-3 rounded-lg px-4 py-[10px] text-[14px] font-medium leading-[1.5] text-slate-500 hover:bg-white hover:text-slate-800 transition-colors">
-            <Settings className="h-4 w-4 shrink-0" />
-            Settings
-          </NavLink>
-        )}
+        {/* Settings is a nav item now, in Operations & Support. It used to be
+            hand-linked here with a guard written out per layout - six copies
+            of one rule. */}
 
         {/* User card */}
         <div className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm mt-1">

@@ -22,7 +22,7 @@ import {
   GraduationCap, Trophy, Megaphone, Award,
   UserRound, MessageSquare, Calendar, ThumbsUp,
   HelpCircle, Bell,
-  Globe, Building, ScrollText,
+  Globe, Building, ScrollText, Settings,
 } from 'lucide-react';
 
 export const SUPERIOR_ADMIN_NAV = [
@@ -48,28 +48,28 @@ export const SUPERIOR_ADMIN_NAV = [
  * them. A flag on the section cannot come adrift from the section's name.
  */
 export const NAV = [
-  // ── Dashboard ──────────────────────────────────────────────────────────────
+  // ── 1. Dashboard ──────────────────────────────────────────────────────────
   {
-    section: null,
+    section: 'Dashboard',
+    primary: true,
     items: [{ to: '/', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard.view' }],
   },
 
-  // ── 2. User Management ────────────────────────────────────────────────────
+  // ── 2. People & Access ────────────────────────────────────────────────────
   {
-    section: 'User Management',
+    section: 'People & Access',
     primary: true,
     items: [
-      { to: '/users/employees', label: 'Staff',               icon: UserCheck,  permission: 'users.manage' },
-      { to: '/users/clients',   label: 'Clients',             icon: Briefcase,  permission: 'users.manage' },
+      { to: '/users/employees', label: 'Staff',   icon: UserCheck, permission: 'users.manage' },
+      { to: '/users/clients',   label: 'Clients', icon: Briefcase, permission: 'users.manage' },
       /**
        * Everything about realtors, in one place.
        *
        * These were four siblings of Staff and Clients, which put "Realtor
-       * Levels" and "Realtor Verifications" at the same level as the people
-       * they apply to and made User Management a list of nine where three
-       * items began with the same word. Grouped, the section reads as the three
-       * kinds of person a company manages — staff, clients, realtors — with the
-       * realtor machinery folded underneath.
+       * Levels" and "Realtor Verification" at the same level as the people they
+       * apply to. Grouped, the section reads as the three kinds of person a
+       * company manages — staff, clients, realtors — with the realtor machinery
+       * folded underneath.
        *
        * Each child keeps its own permission: the leaderboard is visible to
        * anyone who may read it, which is not the same set as the people who may
@@ -78,53 +78,74 @@ export const NAV = [
       {
         label: 'Realtor', icon: UserCog,
         children: [
-          { to: '/users/realtors',      label: 'Realtors',             icon: UserCog,    permission: 'users.manage' },
-          { to: '/realtor/levels',      label: 'Realtor Levels',       icon: Trophy,     permission: 'users.manage' },
+          { to: '/users/realtors',      label: 'Realtors',             icon: UserCog,     permission: 'users.manage' },
+          { to: '/realtor/levels',      label: 'Realtor Levels',       icon: Trophy,      permission: 'users.manage' },
+          { to: '/users/verifications', label: 'Realtor Verification', icon: ShieldCheck, permission: 'users.manage', hideForSuperior: true },
           // Staff-facing. Realtors hold this permission too and would otherwise
           // see the leaderboard here AND in their own Realtor Hub — the exact
           // double listing the split was made to avoid.
-          { to: '/realtor/leaderboard', label: 'Realtor Leaderboard',  icon: Trophy,     permission: 'realtors.leaderboard.view', hideForTypes: ['realtor', 'client'] },
-          { to: '/users/verifications', label: 'Realtor Verification', icon: ShieldCheck, permission: 'users.manage', hideForSuperior: true },
+          { to: '/realtor/leaderboard', label: 'Realtor Leaderboard',  icon: Trophy,      permission: 'realtors.leaderboard.view', hideForTypes: ['realtor', 'client'] },
         ],
       },
-      { to: '/roles',           label: 'Roles & Permissions', icon: ShieldCheck, permission: 'roles.view' },
+      { to: '/roles',      label: 'Roles & Permissions', icon: ShieldCheck, permission: 'roles.view' },
       /**
        * Hidden from anyone without `audit.view`, which is nobody by default
        * except the platform administrator — the permission is granted per role
        * on the Roles screen, deliberately, because who may read who-did-what is
        * an owner's decision rather than a default.
        */
-      { to: '/audit-logs',      label: 'Audit Trail',         icon: ScrollText,  permission: 'audit.view' },
+      { to: '/audit-logs', label: 'Audit Trail',         icon: ScrollText,  permission: 'audit.view' },
       // A realtor's own people live here too. Every item above is gated on
       // users.manage, which realtors lack, so they see only these two.
-      { to: '/realtor/referrals', label: 'My Referrals', icon: Share2,     permission: null, showForTypes: ['realtor'] },
-      { to: '/realtor/clients',   label: 'My Clients',   icon: UserCheck,  permission: null, showForTypes: ['realtor'] },
+      { to: '/realtor/referrals', label: 'My Referrals', icon: Share2,    permission: null, showForTypes: ['realtor'] },
+      { to: '/realtor/clients',   label: 'My Clients',   icon: UserCheck, permission: null, showForTypes: ['realtor'] },
     ],
   },
 
-  // ── 3. Property ───────────────────────────────────────────────────────────
+  // ── 3. Properties ─────────────────────────────────────────────────────────
   {
-    section: 'Property',
+    section: 'Properties',
     primary: true,
     items: [
-      { to: '/properties',             label: 'Property Listing',   icon: Building2,     permission: 'properties.view', hideForTypes: ['realtor', 'client'] },
-      { to: '/promotions', label: 'Promotions and Offers', icon: Tag, permission: 'promotions.view' },
-      { to: '/properties/types',       label: 'Property Setup',     icon: Wrench,        permission: 'properties.manage' },
+      { to: '/properties',             label: 'Property Listing',     icon: Building2,     permission: 'properties.view', hideForTypes: ['realtor', 'client'] },
+      { to: '/properties/types',       label: 'Property Setup',       icon: Wrench,        permission: 'properties.manage' },
+      { to: '/properties/inspections', label: 'Property Inspection',  icon: ClipboardList, permission: 'properties.inspections.view' },
       // Offices, and which properties each one runs. Staff only: a buyer or a
       // realtor has no use for a company's internal org structure.
-      { to: '/branches',               label: 'Branches',           icon: Landmark,      permission: 'properties.view', hideForTypes: ['realtor', 'client'] },
-      { to: '/properties/listed',      label: 'Listed Properties',  icon: LayoutList,    permission: null, showForTypes: ['realtor', 'client'] },
-      { to: '/properties/inspections', label: 'Property Inspection',icon: ClipboardList, permission: 'properties.inspections.view' },
+      { to: '/branches',               label: 'Branches',             icon: Landmark,      permission: 'properties.view', hideForTypes: ['realtor', 'client'] },
+      { to: '/promotions',             label: 'Promotions & Offers',  icon: Tag,           permission: 'promotions.view' },
+      { to: '/properties/listed',      label: 'Listed Properties',    icon: LayoutList,    permission: null, showForTypes: ['realtor', 'client'] },
     ],
   },
-  // ── 4. Finance ────────────────────────────────────────────────────────────
-  // Directly after Property: the two are used together all day — you look at a
-  // unit, then at what has been invoiced and paid for it — and everything else
-  // is visited far less often.
-  //
-  // Invoicing and Payments used to be top-level sections of their own. They are
-  // sub-menus here so everything money-related hangs off a single Finance entry:
-  // Finance → Invoicing → All Invoices.
+
+  // ── 4. Sales & CRM ────────────────────────────────────────────────────────
+  {
+    section: 'Sales & CRM',
+    primary: true,
+    items: [
+      { to: '/crm/leads',          label: 'Manage Leads',     icon: Target,      permission: 'crm.leads.view' },
+      { to: '/crm/deals',          label: 'Manage Deals',     icon: Handshake,   permission: 'crm.deals.view' },
+      { to: '/crm/pipelines',      label: 'Pipeline',         icon: GitBranch,   permission: 'crm.pipelines.manage' },
+      { to: '/crm/tasks',          label: 'Tasks',            icon: CheckSquare, permission: 'crm.tasks.view' },
+      { to: '/crm/sources-labels', label: 'Sources & Labels', icon: Tags,        permission: 'crm.leads.view' },
+      /*
+       * "Realtor Performance", not "Realtor Leaderboard".
+       *
+       * Two different screens carried that one name: this, which ranks agents
+       * by sales and flags the ones at risk, and /realtor/leaderboard, which is
+       * the standing a realtor sees. Identical labels on different destinations
+       * send people to the wrong screen and give the assistant nothing to tell
+       * them apart. This one is about performance and who needs attention,
+       * which is a different question from who is winning.
+       */
+      { to: '/crm/agent-performance', label: 'Realtor Performance', icon: Award,     permission: 'crm.analytics.view' },
+      { to: '/crm/analytics',         label: 'Analytics & Reports', icon: BarChart2, permission: 'crm.analytics.view' },
+    ],
+  },
+
+  // ── 5. Finance ────────────────────────────────────────────────────────────
+  // Invoicing, Payments and Commission are sub-menus so everything money-related
+  // hangs off a single Finance entry: Finance → Invoicing → All Invoices.
   {
     section: 'Finance',
     primary: true,
@@ -133,7 +154,7 @@ export const NAV = [
         label: 'Invoicing', icon: FileText,
         children: [
           { to: '/finance/invoices',     label: 'All Invoices', icon: FileText,    permission: 'finance.invoices.view' },
-          { to: '/finance/invoices/due', label: 'Due Invoice',  icon: AlertCircle, permission: 'finance.invoices.view' },
+          { to: '/finance/invoices/due', label: 'Due Invoices', icon: AlertCircle, permission: 'finance.invoices.view' },
         ],
       },
       {
@@ -148,7 +169,7 @@ export const NAV = [
            * They read from different tables and neither can show the other's
            * rows, which is why the first has no Pending tab.
            */
-          { to: '/finance/transactions',  label: 'All Payments',      icon: CreditCard, permission: 'finance.invoices.view' },
+          { to: '/finance/transactions', label: 'All Payments', icon: CreditCard, permission: 'finance.invoices.view' },
           /**
            * `badge` names a count in navBadgeStore; the pill is drawn only when
            * that count is above zero. `badgeLabel` completes the sentence a
@@ -160,31 +181,17 @@ export const NAV = [
             permission: 'finance.commissions.view',
             badge: 'pendingApprovals', badgeLabel: 'payments awaiting approval',
           },
+          { to: '/finance/payment-plans',     label: 'Payment Plans',     icon: CalendarDays, permission: 'finance.invoices.view' },
+          { to: '/finance/installment-plans', label: 'Installment Plans', icon: CalendarDays, permission: 'finance.installment-plans.view' },
+          { to: '/finance/payment-reminders', label: 'Payment Reminders', icon: Bell,         permission: 'finance.payment-reminders.manage' },
           // Lives with the payment settings it configures: these are the accounts
           // buyers are shown for a bank deposit.
-          { to: '/finance/bank-accounts', label: 'Bank Accounts',     icon: Landmark,   permission: 'finance.bank-accounts.manage' },
-          { to: '/finance/payment-plans', label: 'Payment Plans',     icon: CalendarDays, permission: 'finance.invoices.view' },
-          { to: '/finance/installment-plans', label: 'Installment Plans',  icon: CalendarDays, permission: 'finance.installment-plans.view' },
-          { to: '/finance/payment-reminders', label: 'Payment Reminders',  icon: Bell,         permission: 'finance.payment-reminders.manage' },
+          { to: '/finance/bank-accounts',     label: 'Bank Accounts',     icon: Landmark,     permission: 'finance.bank-accounts.manage' },
         ],
       },
       {
         label: 'Commission', icon: DollarSign,
         children: [
-          /**
-           * The ENGINE comes first, because it is the system a company
-           * configures and the one that decides what a sale pays.
-           *
-           * Ordering matters more here than it looks. "Commissions" below is
-           * the LEGACY flat-rate payable list, and it used to sit at the top of
-           * this menu — where, being the first entry and named almost
-           * identically to "Commission Plans", it read as though it were the
-           * commission feature. It reads an entirely different table
-           * (`commissions`) from the engine (`commission_entitlements`), so a
-           * company on the engine sees it permanently empty and concludes the
-           * engine is not there.
-           */
-          { to: '/finance/commission-plans', label: 'Plans', icon: DollarSign, permission: 'finance.commissions.manage' },
           /**
            * Running a payout is what moves money, so it is gated on manage.
            * Reading what the engine has cost is not, which is why analytics
@@ -192,7 +199,16 @@ export const NAV = [
            * need the permission that changes what it will be.
            */
           { to: '/finance/commission-payouts', label: 'Payouts', icon: DollarSign, permission: 'finance.commissions.manage' },
-          { to: '/finance/commission-analytics', label: 'Analytics', icon: DollarSign, permission: 'finance.commissions.view' },
+          { to: '/finance/commission-plans',   label: 'Plans',   icon: DollarSign, permission: 'finance.commissions.manage' },
+          /*
+           * "Commission Analytics", not "Financial Analytics".
+           *
+           * It reports on commissions and nothing else. A name promising
+           * company-wide figures would send an admin here for revenue or cash
+           * position and leave them concluding the numbers were missing —
+           * the same trap two identically named realtor screens set above.
+           */
+          { to: '/finance/commission-analytics', label: 'Commission Analytics', icon: DollarSign, permission: 'finance.commissions.view' },
           /**
            * The older flat-rate payables are deliberately NOT in this menu.
            *
@@ -208,18 +224,10 @@ export const NAV = [
            * set them. Put this entry back if such a company needs it.
            */
           /**
-           * ONE entry for the earner, not two.
-           *
-           * There used to be "My Commissions" (the flat-rate list) and "My
-           * Commission Statement" (the engine's). Exactly one system pays a
-           * given sale, so whichever menu item a realtor picked, there was a
-           * good chance of landing on the empty one and concluding their
-           * commission had gone missing — which is exactly what happened.
-           *
-           * The statement now carries both, including the request-payment
-           * action the flat-rate list had. /commissions/mine still works if
-           * linked to directly; it simply is not somewhere the menu sends
-           * anybody.
+           * ONE entry for the earner, not two. The statement carries both the
+           * engine's entitlements and the flat-rate list, including the
+           * request-payment action. /commissions/mine still works if linked to
+           * directly; it simply is not somewhere the menu sends anybody.
            */
           { to: '/finance/my-commission', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
         ],
@@ -233,139 +241,109 @@ export const NAV = [
        * to its own kind.
        */
       {
-        to: '/finance/credit-notes', label: 'Credit Note', icon: FileMinus,
+        to: '/finance/credit-notes', label: 'Credit Notes', icon: FileMinus,
         permission: 'finance.credit-notes.manage',
         badge: 'pendingNotes', badgeLabel: 'notes awaiting approval',
       },
       {
-        to: '/finance/debit-notes', label: 'Debit Note', icon: FilePlus,
+        to: '/finance/debit-notes', label: 'Debit Notes', icon: FilePlus,
         permission: 'finance.debit-notes.manage',
         badge: 'pendingNotes', badgeLabel: 'notes awaiting approval',
       },
-      { to: '/finance/taxes',             label: 'Taxes',             icon: Tag,          permission: 'finance.taxes.manage' },
-      { to: '/finance/reports',           label: 'Report',            icon: FolderOpen,   permission: 'finance.reports.view' },
+      { to: '/finance/taxes',   label: 'Taxes',   icon: Tag,        permission: 'finance.taxes.manage' },
+      { to: '/finance/reports', label: 'Reports', icon: FolderOpen, permission: 'finance.reports.view' },
     ],
   },
 
-  // ── 5. Investments ────────────────────────────────────────────────────────
+  // ── 6. Investments ────────────────────────────────────────────────────────
   {
     section: 'Investments',
+    primary: true,
     items: [
-      { to: '/investments/retention-alerts', label: 'Manage Schedule', icon: Calendar,     permission: 'investments.view' },
       // Was two entries on the same route ("Manage Plans" / "All Investments"),
       // both landing on the page's Plans tab. Plans and Investments are tabs there.
-      { to: '/investments',                  label: 'Investments',     icon: ListTree,     permission: 'investments.view' },
+      { to: '/investments',                  label: 'Investments',     icon: ListTree, permission: 'investments.view' },
+      { to: '/investments/retention-alerts', label: 'Manage Schedule', icon: Calendar, permission: 'investments.view' },
     ],
   },
 
-  // ── 6. Leads & Deals ──────────────────────────────────────────────────────
+  // ── 7. Marketing & Content ────────────────────────────────────────────────
   {
-    section: 'Leads & Deals',
+    section: 'Marketing & Content',
     primary: true,
     items: [
-      { to: '/crm/leads',           label: 'Manage Leads',      icon: Target,     permission: 'crm.leads.view' },
-      { to: '/crm/deals',           label: 'Manage Deals',      icon: Handshake,  permission: 'crm.deals.view' },
-      { to: '/crm/tasks',           label: 'Tasks',             icon: CheckSquare, permission: 'crm.tasks.view' },
-      { to: '/crm/pipelines',       label: 'Pipeline',          icon: GitBranch,  permission: 'crm.pipelines.manage' },
-      { to: '/crm/sources-labels',  label: 'Sources & Labels',  icon: Tags,       permission: 'crm.leads.view' },
-      { to: '/crm/analytics',       label: 'Analytics/Reports', icon: BarChart2,  permission: 'crm.analytics.view' },
-      // Reachable only by clicking through the dashboard widget until now.
-      /*
-       * "Realtor Performance", not "Realtor Leaderboard".
+      { to: '/media/posts',           label: 'Content Posts',         icon: FileEdit,  permission: 'media.view' },
+      { to: '/media/blog',            label: 'Blog',                  icon: Newspaper, permission: 'media.blog.manage' },
+      { to: '/media/social-accounts', label: 'Social Media Accounts', icon: Link2,     permission: 'media.schedule' },
+      { to: '/media/analytics',       label: 'Marketing Analytics',   icon: LineChart, permission: 'media.analytics.view' },
+    ],
+  },
+
+  // ── 8. Operations & Support ───────────────────────────────────────────────
+  // Training, the front desk, customer care and the system's own settings were
+  // four separate sections of two to four items each. They are the things a
+  // company runs rather than the things it sells, and as one section they stop
+  // padding the menu with headings shorter than the lists beneath them.
+  {
+    section: 'Operations & Support',
+    primary: true,
+    items: [
+      { to: '/realtor/training',       label: 'Training & LMS',            icon: GraduationCap, permission: 'realtors.training.view' },
+      { to: '/realtor/recruitment',    label: 'Recruitment',               icon: Megaphone,     permission: 'realtors.recruitment.view' },
+      { to: '/front-desk',             label: 'Visitor Log & Attendance',  icon: UserRound,     permission: 'frontdesk.visitors.manage' },
+      { to: '/support',                label: 'Support Centre',            icon: HelpCircle,    permission: 'support.view' },
+      { to: '/care',                   label: 'VIP Clients',               icon: ThumbsUp,      permission: 'care.view' },
+      { to: '/care/communications',    label: 'Messaging',                 icon: MessageSquare, permission: 'care.view' },
+      { to: '/care/alerts',            label: 'Scheduled Alerts',          icon: Calendar,      permission: 'care.view' },
+      { to: '/notifications',          label: 'Notifications',             icon: Bell,          permission: 'notifications.view' },
+      // System-wide, not finance-specific: it configures every notifiable
+      // event across every module, which is why it sits here rather than under
+      // Finance where the purchase-journey version of it started.
+      { to: '/settings/notifications', label: 'Notification Settings',     icon: Bell,          permission: 'finance.purchase-notifications.manage' },
+      /**
+       * Company settings, in the menu at last.
        *
-       * Two different screens carried that one name: this, which ranks agents
-       * by sales and flags the ones at risk, and /realtor/leaderboard, which is
-       * the standing a realtor sees. Identical labels on different destinations
-       * send people to the wrong screen and give the assistant nothing to tell
-       * them apart. This one is about performance and who needs attention,
-       * which is a different question from who is winning.
+       * Every one of the six layouts used to link this from its own user menu,
+       * each with its own hand-written guard, and navConfig did not know the
+       * screen existed. Six copies of one rule is five chances for them to
+       * drift, and the launcher template had to hand-add a Settings tile for
+       * the same reason. The permission and the type check below are the rule
+       * ClassicLayout carried, which was the strictest of the six.
        */
-      { to: '/crm/agent-performance', label: 'Realtor Performance', icon: Award,    permission: 'crm.analytics.view' },
+      { to: '/settings', label: 'Settings', icon: Settings, permission: 'settings.appearance.manage', hideForTypes: ['realtor', 'client'] },
     ],
   },
 
-  // ── 7. Media ──────────────────────────────────────────────────────────────
-  {
-    section: 'Media',
-    primary: true,
-    items: [
-      { to: '/media/posts',           label: 'Content Posts',        icon: FileEdit,  permission: 'media.view' },
-      { to: '/media/blog',            label: 'Blog',                 icon: Newspaper, permission: 'media.blog.manage' },
-      { to: '/media/social-accounts', label: 'Social Media Accounts',icon: Link2,     permission: 'media.schedule' },
-      { to: '/media/analytics',       label: 'Analytics',            icon: LineChart, permission: 'media.analytics.view' },
-    ],
-  },
-  
-  // ── 9. Realtor Hub ───────────────────────────────────────────────────────
+  /**
+   * ── Outside the eight ─────────────────────────────────────────────────────
+   *
+   * Everything below is scoped to a role with `showForTypes`, so a member of
+   * staff sees none of it and the eight groups above are the whole menu for
+   * them. A realtor manages nobody and a client sells nothing; sending either
+   * into an administration section for their own standing or their own invoices
+   * would be the wrong door.
+   */
   {
     section: 'Realtor Hub',
     items: [
-      { to: '/realtor/training',    label: 'Training & LMS', icon: GraduationCap, permission: 'realtors.training.view' },
-      /**
-       * A realtor's own standing, in a realtor's own section.
-       *
-       * The management view of this lives under User Management → Realtor,
-       * where staff administering realtors will look for it. But a realtor
-       * manages nobody, and sending them into an administration section to see
-       * their own ranking is the wrong door — so this entry exists for them
-       * alone. `showForTypes` keeps the two apart: nobody sees the leaderboard
-       * listed twice.
-       */
-      { to: '/realtor/leaderboard', label: 'Leaderboard',    icon: Trophy,        permission: 'realtors.leaderboard.view', showForTypes: ['realtor'] },
-      { to: '/realtor/recruitment', label: 'Recruitment',    icon: Megaphone,     permission: 'realtors.recruitment.view' },
+      { to: '/realtor/leaderboard',   label: 'Leaderboard', icon: Trophy,     permission: 'realtors.leaderboard.view', showForTypes: ['realtor'] },
       // Scoped server-side to the holder's own investments.
-      { to: '/investments/portfolio', label: 'Investments',   icon: TrendingUp,    permission: 'investments.own.view', showForTypes: ['realtor'] },
+      { to: '/investments/portfolio', label: 'Investments', icon: TrendingUp, permission: 'investments.own.view',      showForTypes: ['realtor'] },
     ],
   },
 
-  // ── Client portfolio ──────────────────────────────────────────────────────
   {
     section: 'My Portfolio',
     items: [
       // Browse plans, subscribe, and track returns. Own-scoped server-side.
-      { to: '/investments/portfolio', label: 'Investments', icon: TrendingUp, permission: 'investments.own.view', showForTypes: ['client'] },
+      { to: '/investments/portfolio', label: 'Investments',   icon: TrendingUp, permission: 'investments.own.view', showForTypes: ['client'] },
       // Separate paths, not ?status= variants on one path: NavLink matches on
       // pathname, so sibling query-string links would all highlight together.
-      // All / Due / Pending are tabs inside the invoices page.
       // First in the client's group: the property is what they think they own;
       // the invoice is how it was billed.
-      { to: '/finance/my-properties', label: 'My Properties', icon: Building2, permission: null, showForTypes: ['client'] },
-      { to: '/finance/my-invoices',   label: 'My Invoices', icon: FileText,   permission: null, showForTypes: ['client'] },
-      { to: '/finance/my-payments',   label: 'My Payments', icon: CreditCard, permission: null, showForTypes: ['client'] },
-    ],
-  },
-
-  // ── 10. Front Desk ────────────────────────────────────────────────────────
-  {
-    section: 'Front Desk',
-    items: [
-      { to: '/front-desk', label: 'Visitor Log & Attendance', icon: UserRound, permission: 'frontdesk.visitors.manage' },
-    ],
-  },
-
-  // ── 11. Customer Care ─────────────────────────────────────────────────────
-  {
-    section: 'Customer Care',
-    items: [
-      // These previously all pointed at /care and landed on the same VIP tab.
-      // Each now goes to the section it names; "Feedback/Report" is gone
-      // because no such view exists — it was a mislabelled link to VIP Clients.
-      { to: '/support',              label: 'Support Centre',    icon: HelpCircle,    permission: 'support.view' },
-      { to: '/care',                 label: 'VIP Clients',       icon: ThumbsUp,      permission: 'care.view' },
-      { to: '/care/communications',  label: 'Messaging',         icon: MessageSquare, permission: 'care.view' },
-      { to: '/care/alerts',          label: 'Scheduled Alerts',  icon: Calendar,      permission: 'care.view' },
-    ],
-  },
-
-  // ── 12. General ───────────────────────────────────────────────────────────
-  {
-    section: 'General',
-    items: [
-      { to: '/notifications', label: 'Notification',  icon: Bell,       permission: 'notifications.view' },
-      // System-wide, not finance-specific: it configures every notifiable
-      // event across every module, which is why it sits here rather than under
-      // Finance where the purchase-journey version of it started.
-      { to: '/settings/notifications', label: 'Notification Settings', icon: Bell, permission: 'finance.purchase-notifications.manage' },
+      { to: '/finance/my-properties', label: 'My Properties', icon: Building2,  permission: null, showForTypes: ['client'] },
+      { to: '/finance/my-invoices',   label: 'My Invoices',   icon: FileText,   permission: null, showForTypes: ['client'] },
+      { to: '/finance/my-payments',   label: 'My Payments',   icon: CreditCard, permission: null, showForTypes: ['client'] },
     ],
   },
 

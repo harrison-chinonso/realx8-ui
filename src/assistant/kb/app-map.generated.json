@@ -2,8 +2,8 @@
   {
     "route": "/",
     "label": "Dashboard",
-    "section": "Platform Admin",
-    "trail": "Platform Admin → Dashboard",
+    "section": "Dashboard",
+    "trail": "Dashboard → Dashboard",
     "permissions": [
       "dashboard.view"
     ],
@@ -16,8 +16,8 @@
   {
     "route": "/audit-logs",
     "label": "Audit Trail",
-    "section": "User Management",
-    "trail": "User Management → Realtor → Audit Trail",
+    "section": "People & Access",
+    "trail": "People & Access → Realtor → Audit Trail",
     "permissions": [
       "audit.view"
     ],
@@ -30,8 +30,8 @@
   {
     "route": "/branches",
     "label": "Branches",
-    "section": "Property",
-    "trail": "Property → Branches",
+    "section": "Properties",
+    "trail": "Properties → Branches",
     "permissions": [
       "properties.view"
     ],
@@ -47,8 +47,8 @@
   {
     "route": "/care",
     "label": "VIP Clients",
-    "section": "Customer Care",
-    "trail": "Customer Care → VIP Clients",
+    "section": "Operations & Support",
+    "trail": "Operations & Support → VIP Clients",
     "permissions": [
       "care.view"
     ],
@@ -61,8 +61,8 @@
   {
     "route": "/care/alerts",
     "label": "Scheduled Alerts",
-    "section": "Customer Care",
-    "trail": "Customer Care → Scheduled Alerts",
+    "section": "Operations & Support",
+    "trail": "Operations & Support → Scheduled Alerts",
     "permissions": [
       "care.view"
     ],
@@ -75,8 +75,8 @@
   {
     "route": "/care/communications",
     "label": "Messaging",
-    "section": "Customer Care",
-    "trail": "Customer Care → Messaging",
+    "section": "Operations & Support",
+    "trail": "Operations & Support → Messaging",
     "permissions": [
       "care.view"
     ],
@@ -113,8 +113,8 @@
   {
     "route": "/crm/agent-performance",
     "label": "Realtor Performance",
-    "section": "Leads & Deals",
-    "trail": "Leads & Deals → Realtor Performance",
+    "section": "Sales & CRM",
+    "trail": "Sales & CRM → Realtor Performance",
     "permissions": [
       "crm.analytics.view"
     ],
@@ -126,9 +126,9 @@
   },
   {
     "route": "/crm/analytics",
-    "label": "Analytics/Reports",
-    "section": "Leads & Deals",
-    "trail": "Leads & Deals → Analytics/Reports",
+    "label": "Analytics & Reports",
+    "section": "Sales & CRM",
+    "trail": "Sales & CRM → Analytics & Reports",
     "permissions": [
       "crm.analytics.view"
     ],
@@ -141,8 +141,8 @@
   {
     "route": "/crm/deals",
     "label": "Manage Deals",
-    "section": "Leads & Deals",
-    "trail": "Leads & Deals → Manage Deals",
+    "section": "Sales & CRM",
+    "trail": "Sales & CRM → Manage Deals",
     "permissions": [
       "crm.deals.view"
     ],
@@ -155,8 +155,8 @@
   {
     "route": "/crm/leads",
     "label": "Manage Leads",
-    "section": "Leads & Deals",
-    "trail": "Leads & Deals → Manage Leads",
+    "section": "Sales & CRM",
+    "trail": "Sales & CRM → Manage Leads",
     "permissions": [
       "crm.leads.view"
     ],
@@ -169,8 +169,8 @@
   {
     "route": "/crm/pipelines",
     "label": "Pipeline",
-    "section": "Leads & Deals",
-    "trail": "Leads & Deals → Pipeline",
+    "section": "Sales & CRM",
+    "trail": "Sales & CRM → Pipeline",
     "permissions": [
       "crm.pipelines.manage"
     ],
@@ -183,8 +183,8 @@
   {
     "route": "/crm/sources-labels",
     "label": "Sources & Labels",
-    "section": "Leads & Deals",
-    "trail": "Leads & Deals → Sources & Labels",
+    "section": "Sales & CRM",
+    "trail": "Sales & CRM → Sources & Labels",
     "permissions": [
       "crm.leads.view"
     ],
@@ -197,8 +197,8 @@
   {
     "route": "/crm/tasks",
     "label": "Tasks",
-    "section": "Leads & Deals",
-    "trail": "Leads & Deals → Tasks",
+    "section": "Sales & CRM",
+    "trail": "Sales & CRM → Tasks",
     "permissions": [
       "crm.tasks.view"
     ],
@@ -224,9 +224,9 @@
   },
   {
     "route": "/finance/commission-analytics",
-    "label": "Analytics",
+    "label": "Commission Analytics",
     "section": "Finance",
-    "trail": "Finance → Commission → Analytics",
+    "trail": "Finance → Commission → Commission Analytics",
     "permissions": [
       "finance.commissions.view"
     ],
@@ -266,9 +266,9 @@
   },
   {
     "route": "/finance/credit-notes",
-    "label": "Credit Note",
+    "label": "Credit Notes",
     "section": "Finance",
-    "trail": "Finance → Commission → Credit Note",
+    "trail": "Finance → Commission → Credit Notes",
     "permissions": [
       "finance.credit-notes.manage"
     ],
@@ -280,9 +280,9 @@
   },
   {
     "route": "/finance/debit-notes",
-    "label": "Debit Note",
+    "label": "Debit Notes",
     "section": "Finance",
-    "trail": "Finance → Commission → Debit Note",
+    "trail": "Finance → Commission → Debit Notes",
     "permissions": [
       "finance.debit-notes.manage"
     ],
@@ -336,9 +336,9 @@
   },
   {
     "route": "/finance/invoices/due",
-    "label": "Due Invoice",
+    "label": "Due Invoices",
     "section": "Finance",
-    "trail": "Finance → Invoicing → Due Invoice",
+    "trail": "Finance → Invoicing → Due Invoices",
     "permissions": [
       "finance.invoices.view"
     ],
@@ -434,9 +434,9 @@
   },
   {
     "route": "/finance/reports",
-    "label": "Report",
+    "label": "Reports",
     "section": "Finance",
-    "trail": "Finance → Commission → Report",
+    "trail": "Finance → Commission → Reports",
     "permissions": [
       "finance.reports.view"
     ],
@@ -491,8 +491,8 @@
   {
     "route": "/front-desk",
     "label": "Visitor Log & Attendance",
-    "section": "Front Desk",
-    "trail": "Front Desk → Visitor Log & Attendance",
+    "section": "Operations & Support",
+    "trail": "Operations & Support → Visitor Log & Attendance",
     "permissions": [
       "frontdesk.visitors.manage"
     ],
@@ -549,9 +549,9 @@
   },
   {
     "route": "/media/analytics",
-    "label": "Analytics",
-    "section": "Media",
-    "trail": "Media → Analytics",
+    "label": "Marketing Analytics",
+    "section": "Marketing & Content",
+    "trail": "Marketing & Content → Marketing Analytics",
     "permissions": [
       "media.analytics.view"
     ],
@@ -564,8 +564,8 @@
   {
     "route": "/media/blog",
     "label": "Blog",
-    "section": "Media",
-    "trail": "Media → Blog",
+    "section": "Marketing & Content",
+    "trail": "Marketing & Content → Blog",
     "permissions": [
       "media.blog.manage"
     ],
@@ -578,8 +578,8 @@
   {
     "route": "/media/posts",
     "label": "Content Posts",
-    "section": "Media",
-    "trail": "Media → Content Posts",
+    "section": "Marketing & Content",
+    "trail": "Marketing & Content → Content Posts",
     "permissions": [
       "media.view"
     ],
@@ -592,8 +592,8 @@
   {
     "route": "/media/social-accounts",
     "label": "Social Media Accounts",
-    "section": "Media",
-    "trail": "Media → Social Media Accounts",
+    "section": "Marketing & Content",
+    "trail": "Marketing & Content → Social Media Accounts",
     "permissions": [
       "media.schedule"
     ],
@@ -605,9 +605,9 @@
   },
   {
     "route": "/notifications",
-    "label": "Notification",
-    "section": "General",
-    "trail": "General → Notification",
+    "label": "Notifications",
+    "section": "Operations & Support",
+    "trail": "Operations & Support → Notifications",
     "permissions": [
       "notifications.view"
     ],
@@ -631,9 +631,9 @@
   },
   {
     "route": "/promotions",
-    "label": "Promotions and Offers",
-    "section": "Property",
-    "trail": "Property → Promotions and Offers",
+    "label": "Promotions & Offers",
+    "section": "Properties",
+    "trail": "Properties → Promotions & Offers",
     "permissions": [
       "promotions.view"
     ],
@@ -646,8 +646,8 @@
   {
     "route": "/properties",
     "label": "Property Listing",
-    "section": "Property",
-    "trail": "Property → Property Listing",
+    "section": "Properties",
+    "trail": "Properties → Property Listing",
     "permissions": [
       "properties.view"
     ],
@@ -663,8 +663,8 @@
   {
     "route": "/properties/create",
     "label": "Create",
-    "section": "Property",
-    "trail": "Property → Property Listing → Create",
+    "section": "Properties",
+    "trail": "Properties → Property Listing → Create",
     "permissions": [
       "properties.view"
     ],
@@ -680,8 +680,8 @@
   {
     "route": "/properties/inspections",
     "label": "Property Inspection",
-    "section": "Property",
-    "trail": "Property → Property Inspection",
+    "section": "Properties",
+    "trail": "Properties → Property Inspection",
     "permissions": [
       "properties.inspections.view"
     ],
@@ -694,8 +694,8 @@
   {
     "route": "/properties/listed",
     "label": "Listed Properties",
-    "section": "Property",
-    "trail": "Property → Listed Properties",
+    "section": "Properties",
+    "trail": "Properties → Listed Properties",
     "permissions": [],
     "showForTypes": [
       "realtor",
@@ -709,8 +709,8 @@
   {
     "route": "/properties/types",
     "label": "Property Setup",
-    "section": "Property",
-    "trail": "Property → Property Setup",
+    "section": "Properties",
+    "trail": "Properties → Property Setup",
     "permissions": [
       "properties.manage"
     ],
@@ -723,8 +723,8 @@
   {
     "route": "/realtor/clients",
     "label": "My Clients",
-    "section": "User Management",
-    "trail": "User Management → Realtor → My Clients",
+    "section": "People & Access",
+    "trail": "People & Access → Realtor → My Clients",
     "permissions": [],
     "showForTypes": [
       "realtor"
@@ -737,8 +737,8 @@
   {
     "route": "/realtor/leaderboard",
     "label": "Realtor Leaderboard",
-    "section": "User Management",
-    "trail": "User Management → Realtor → Realtor Leaderboard",
+    "section": "People & Access",
+    "trail": "People & Access → Realtor → Realtor Leaderboard",
     "permissions": [
       "realtors.leaderboard.view"
     ],
@@ -751,8 +751,8 @@
   {
     "route": "/realtor/levels",
     "label": "Realtor Levels",
-    "section": "User Management",
-    "trail": "User Management → Realtor → Realtor Levels",
+    "section": "People & Access",
+    "trail": "People & Access → Realtor → Realtor Levels",
     "permissions": [
       "users.manage"
     ],
@@ -765,8 +765,8 @@
   {
     "route": "/realtor/recruitment",
     "label": "Recruitment",
-    "section": "Realtor Hub",
-    "trail": "Realtor Hub → Recruitment",
+    "section": "Operations & Support",
+    "trail": "Operations & Support → Recruitment",
     "permissions": [
       "realtors.recruitment.view"
     ],
@@ -779,8 +779,8 @@
   {
     "route": "/realtor/referrals",
     "label": "My Referrals",
-    "section": "User Management",
-    "trail": "User Management → Realtor → My Referrals",
+    "section": "People & Access",
+    "trail": "People & Access → Realtor → My Referrals",
     "permissions": [],
     "showForTypes": [
       "realtor"
@@ -793,8 +793,8 @@
   {
     "route": "/realtor/training",
     "label": "Training & LMS",
-    "section": "Realtor Hub",
-    "trail": "Realtor Hub → Training & LMS",
+    "section": "Operations & Support",
+    "trail": "Operations & Support → Training & LMS",
     "permissions": [
       "realtors.training.view"
     ],
@@ -845,8 +845,8 @@
   {
     "route": "/roles",
     "label": "Roles & Permissions",
-    "section": "User Management",
-    "trail": "User Management → Realtor → Roles & Permissions",
+    "section": "People & Access",
+    "trail": "People & Access → Realtor → Roles & Permissions",
     "permissions": [
       "roles.view"
     ],
@@ -859,20 +859,25 @@
   {
     "route": "/settings",
     "label": "Settings",
-    "section": null,
-    "trail": "Settings",
-    "permissions": [],
+    "section": "Operations & Support",
+    "trail": "Operations & Support → Settings",
+    "permissions": [
+      "settings.appearance.manage"
+    ],
     "showForTypes": [],
-    "hideForTypes": [],
+    "hideForTypes": [
+      "realtor",
+      "client"
+    ],
+    "hideForSuperior": false,
     "superiorAdminOnly": false,
-    "unverified": true,
-    "source": "route"
+    "source": "nav"
   },
   {
     "route": "/settings/notifications",
     "label": "Notification Settings",
-    "section": "General",
-    "trail": "General → Notification Settings",
+    "section": "Operations & Support",
+    "trail": "Operations & Support → Notification Settings",
     "permissions": [
       "finance.purchase-notifications.manage"
     ],
@@ -945,8 +950,8 @@
   {
     "route": "/support",
     "label": "Support Centre",
-    "section": "Customer Care",
-    "trail": "Customer Care → Support Centre",
+    "section": "Operations & Support",
+    "trail": "Operations & Support → Support Centre",
     "permissions": [
       "support.view"
     ],
@@ -971,8 +976,8 @@
   {
     "route": "/users/clients",
     "label": "Clients",
-    "section": "User Management",
-    "trail": "User Management → Clients",
+    "section": "People & Access",
+    "trail": "People & Access → Clients",
     "permissions": [
       "users.manage"
     ],
@@ -985,8 +990,8 @@
   {
     "route": "/users/employees",
     "label": "Staff",
-    "section": "User Management",
-    "trail": "User Management → Staff",
+    "section": "People & Access",
+    "trail": "People & Access → Staff",
     "permissions": [
       "users.manage"
     ],
@@ -999,8 +1004,8 @@
   {
     "route": "/users/realtors",
     "label": "Realtors",
-    "section": "User Management",
-    "trail": "User Management → Realtor → Realtors",
+    "section": "People & Access",
+    "trail": "People & Access → Realtor → Realtors",
     "permissions": [
       "users.manage"
     ],
@@ -1013,8 +1018,8 @@
   {
     "route": "/users/verifications",
     "label": "Realtor Verification",
-    "section": "User Management",
-    "trail": "User Management → Realtor → Realtor Verification",
+    "section": "People & Access",
+    "trail": "People & Access → Realtor → Realtor Verification",
     "permissions": [
       "users.manage"
     ],

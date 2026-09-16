@@ -5,7 +5,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Menu, Bell, ChevronDown, ChevronLeft, User, Settings, LogOut, X } from 'lucide-react';
+import { Menu, Bell, ChevronDown, ChevronLeft, User, LogOut, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
@@ -18,8 +18,6 @@ function MinimalSidebar({ expanded, onToggle, mobileOpen, onClose }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const userType = useAuthStore((s) => s.effectiveType());
-  // Company settings are staff-only; realtors and clients get Profile alone.
-  const canSeeSettings = !['realtor', 'client'].includes(userType);
   const { app_logo, app_name } = useAppearance();
   const allNav = isSuperiorAdmin
     ? [...SUPERIOR_ADMIN_NAV, ...NAV.map((s) => ({ ...s, items: s.items.filter((i) => !i.hideForSuperior) }))]
@@ -194,12 +192,9 @@ function MinimalHeader({ onMenuOpen }) {
                 className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                 <User className="h-4 w-4 shrink-0" /> My Profile
               </NavLink>
-              {!isSuperiorAdmin && canSeeSettings && (
-              <NavLink to="/settings" onClick={() => setUserOpen(false)}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                <Settings className="h-4 w-4 shrink-0" /> Settings
-              </NavLink>
-              )}
+        {/* Settings is a nav item now, in Operations & Support. It used to be
+            hand-linked here with a guard written out per layout - six copies
+            of one rule. */}
               <div className="my-1 border-t border-slate-100" />
               <Button onClick={logout} variant="danger" size="sm" className="w-full justify-start px-4 py-2">
                 <LogOut className="h-4 w-4 shrink-0" /> Logout
