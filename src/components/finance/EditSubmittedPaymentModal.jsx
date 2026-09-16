@@ -6,6 +6,7 @@ import Modal from '../common/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import MoneyInput from '../ui/MoneyInput';
+import FieldMark from '../ui/FieldMark';
 
 /**
  * Correcting a payment the buyer has already submitted.
@@ -113,7 +114,7 @@ export default function EditSubmittedPaymentModal({ receipt, onClose, onSaved })
           />
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Bank reference</span>
+            <span className="text-sm font-medium text-slate-700">Bank reference<FieldMark /></span>
             <Input
               value={form.reference}
               onChange={(event) => setForm((f) => ({ ...f, reference: event.target.value }))}
@@ -125,7 +126,7 @@ export default function EditSubmittedPaymentModal({ receipt, onClose, onSaved })
             <span className="block text-sm font-medium text-slate-700">Proof of payment</span>
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-3 text-sm text-slate-500 hover:border-slate-400">
               <UploadCloud size={16} />
-              <span>{uploading ? 'Uploading…' : form.document_url ? 'Replace file' : 'Upload receipt or screenshot'}</span>
+              <span>{uploading ? 'Uploading…' : form.document_url ? 'Replace file' : 'Upload receipt or screenshot'}<FieldMark /></span>
               <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleUpload} disabled={uploading} />
             </label>
             {form.document_url && (
@@ -136,7 +137,7 @@ export default function EditSubmittedPaymentModal({ receipt, onClose, onSaved })
           </div>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Note (optional)</span>
+            <span className="text-sm font-medium text-slate-700">Note (optional)<FieldMark /></span>
             <Input
               value={form.notes}
               onChange={(event) => setForm((f) => ({ ...f, notes: event.target.value }))}

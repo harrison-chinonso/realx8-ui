@@ -11,6 +11,7 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import Badge from '../../components/common/Badge';
 import { useCurrency } from '../../context/useAppearance';
+import FieldMark from '../../components/ui/FieldMark';
 
 const getItems = (response) => response?.data ?? response ?? [];
 
@@ -256,7 +257,7 @@ export default function InstallmentPlansPage() {
             <legend className="px-1 text-sm font-medium text-slate-700">Plan charge</legend>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Type</span>
+                <span className="text-sm font-medium text-slate-700">Type<FieldMark /></span>
                 <Select value={form.surcharge_type} onChange={set('surcharge_type')}>
                   <option value="none">No charge</option>
                   <option value="percentage">Percentage of the purchase</option>
@@ -276,7 +277,7 @@ export default function InstallmentPlansPage() {
               )}
             </div>
             <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">Rounding</span>
+              <span className="text-sm font-medium text-slate-700">Rounding<FieldMark /></span>
               <Select value={form.rounding_rule} onChange={set('rounding_rule')}>
                 {Object.entries(ROUNDING_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>{label}</option>
@@ -305,7 +306,7 @@ export default function InstallmentPlansPage() {
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Late fee</span>
+                <span className="text-sm font-medium text-slate-700">Late fee<FieldMark /></span>
                 <Select value={form.default_fee_type} onChange={set('default_fee_type')}>
                   <option value="none">No late fee</option>
                   <option value="percentage">Percentage of the amount outstanding</option>
@@ -326,7 +327,7 @@ export default function InstallmentPlansPage() {
             </div>
             {form.default_fee_type !== 'none' && (
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Applies</span>
+                <span className="text-sm font-medium text-slate-700">Applies<FieldMark /></span>
                 <Select value={form.default_fee_recurrence} onChange={set('default_fee_recurrence')}>
                   <option value="once">Once, when the grace period elapses</option>
                   <option value="monthly">Every 30 days while the installment is unpaid</option>
@@ -438,7 +439,7 @@ function UnitAssignmentModal({ plan, onClose, onChanged }) {
         </p>
 
         <label className="block space-y-1">
-          <span className="text-sm font-medium text-slate-700">Property</span>
+          <span className="text-sm font-medium text-slate-700">Property<FieldMark /></span>
           <Select value={propertyId} onChange={(e) => setPropertyId(e.target.value)}>
             <option value="">Select a property...</option>
             {properties.map((property) => (

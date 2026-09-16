@@ -8,6 +8,7 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import CompanySelect from '../../components/common/CompanySelect';
 import useAuthStore from '../../store/authStore';
+import FieldMark from '../../components/ui/FieldMark';
 
 /**
  * The audit trail.
@@ -266,7 +267,7 @@ export default function AuditLogPage() {
           />
         )}
         <label className="space-y-1">
-          <span className="block text-sm font-medium text-slate-700">Area</span>
+          <span className="block text-sm font-medium text-slate-700">Area<FieldMark /></span>
           <Select value={filters.module} onChange={setFilter('module')}>
             <option value="">All areas</option>
             {facets.modules.filter((m) => m.module).map((m) => (
@@ -275,7 +276,7 @@ export default function AuditLogPage() {
           </Select>
         </label>
         <label className="space-y-1">
-          <span className="block text-sm font-medium text-slate-700">Action</span>
+          <span className="block text-sm font-medium text-slate-700">Action<FieldMark /></span>
           <Select value={filters.action} onChange={setFilter('action')}>
             <option value="">All actions</option>
             {facets.actions.map((a) => (
@@ -286,7 +287,7 @@ export default function AuditLogPage() {
           </Select>
         </label>
         <label className="space-y-1">
-          <span className="block text-sm font-medium text-slate-700">Performed by</span>
+          <span className="block text-sm font-medium text-slate-700">Performed by<FieldMark /></span>
           <Select value={filters.actor_id} onChange={setFilter('actor_id')}>
             <option value="">Anyone</option>
             {facets.actors.filter((a) => a.actor_id).map((a) => (

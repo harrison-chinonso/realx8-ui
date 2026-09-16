@@ -10,6 +10,7 @@ import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
 import { useCurrency } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const EMPTY_FORM = {
   credit_note_id: '',
@@ -247,7 +248,7 @@ export default function CreditNotesPage() {
           />
           <MoneyInput label="Amount" value={form.amount} onChange={(amount) => setForm((current) => ({ ...current, amount }))} required />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Tax</span>
+            <span className="text-sm font-medium text-slate-700">Tax<FieldMark /></span>
             <Select
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               value={form.tax_id}
@@ -262,7 +263,7 @@ export default function CreditNotesPage() {
             </Select>
           </label>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Description</span>
+            <span className="text-sm font-medium text-slate-700">Description<FieldMark /></span>
             <textarea
               rows={4}
               value={form.description}

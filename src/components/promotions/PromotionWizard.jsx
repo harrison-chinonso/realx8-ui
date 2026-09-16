@@ -10,6 +10,7 @@ import Select from '../ui/Select';
 import MoneyInput from '../ui/MoneyInput';
 import PromotionTypeFields from './PromotionTypeFields';
 import { numberOrUndefined } from '../../utils/numberField';
+import FieldMark, { requiredFromChildren } from '../ui/FieldMark';
 
 /**
  * Setting up a campaign, one decision at a time.
@@ -57,7 +58,11 @@ const BLANK = {
 
 const Field = ({ label, hint, children }) => (
   <label className="block space-y-1">
-    <span className="text-sm font-medium text-slate-700">{label}</span>
+    <span className="text-sm font-medium text-slate-700">
+      {label}
+      {/* Read off the control this wraps, so the mark cannot disagree with it. */}
+      <FieldMark required={requiredFromChildren(children)} />
+    </span>
     {children}
     {hint && <span className="block text-xs text-slate-500">{hint}</span>}
   </label>
@@ -495,7 +500,7 @@ export default function PromotionWizard({ existing = null, initialName = '', onS
         </div>
 
         <label className="block space-y-1">
-          <span className="text-xs font-medium text-slate-600">Try it with this many of each</span>
+          <span className="text-xs font-medium text-slate-600">Try it with this many of each<FieldMark /></span>
           <input
             type="number" min="1" max="20" value={testQuantity}
             onChange={(e) => setTestQuantity(Math.max(Number(e.target.value) || 1, 1))}

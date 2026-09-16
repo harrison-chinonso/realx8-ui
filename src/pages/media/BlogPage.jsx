@@ -7,6 +7,7 @@ import ActionsMenu from '../../components/common/ActionsMenu';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const CATEGORY_OPTIONS = ['Market Updates', 'Investment Tips', 'Property Spotlight', 'Company News', 'Lifestyle'];
@@ -256,7 +257,7 @@ export default function BlogPage() {
       <Modal open={showModal} onClose={closeModal} title={editingArticle ? 'Edit Blog Article' : 'Create Blog Article'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Title</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Title<FieldMark required /></label>
             <input
               required
               value={form.title}
@@ -267,7 +268,7 @@ export default function BlogPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Category</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Category<FieldMark /></label>
               <Select
                 value={form.category}
                 onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))}
@@ -279,7 +280,7 @@ export default function BlogPage() {
               </Select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Status<FieldMark /></label>
               <Select
                 value={form.status}
                 onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}
@@ -293,7 +294,7 @@ export default function BlogPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Tags</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Tags<FieldMark /></label>
             <input
               value={form.tags}
               onChange={(event) => setForm((current) => ({ ...current, tags: event.target.value }))}
@@ -303,7 +304,7 @@ export default function BlogPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Excerpt</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Excerpt<FieldMark /></label>
             <textarea
               rows={3}
               value={form.excerpt}
@@ -315,7 +316,7 @@ export default function BlogPage() {
 
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Cover Image</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Cover Image<FieldMark /></label>
               <div
                 className="cursor-pointer rounded-lg border-2 border-dashed border-slate-600 p-6 text-center transition-colors hover:border-slate-400"
                 onClick={() => fileInputRef.current?.click()}
@@ -346,7 +347,7 @@ export default function BlogPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Content</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Content<FieldMark /></label>
             <textarea
               rows={8}
               value={form.content}

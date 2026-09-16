@@ -10,6 +10,7 @@ import Badge from '../../components/common/Badge';
 import { useCurrency } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
 import { enumLabel } from '../../utils/enumLabel';
+import FieldMark from '../../components/ui/FieldMark';
 
 const EMPTY_FORM = { date: '', description: '', amount: '', type: 'credit', reference: '', company_id: '' };
 const getItems = (response) => response?.data ?? response ?? [];
@@ -174,7 +175,7 @@ export default function TransactionsPage() {
           <Input label="Description" value={form.description} onChange={handleChange('description')} required />
           <MoneyInput label="Amount" value={form.amount} onChange={(amount) => setForm((current) => ({ ...current, amount }))} required />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Type</span>
+            <span className="text-sm font-medium text-slate-700">Type<FieldMark /></span>
             <Select value={form.type} onChange={handleChange('type')}>
               <option value="credit">{enumLabel('credit')}</option>
               <option value="debit">{enumLabel('debit')}</option>

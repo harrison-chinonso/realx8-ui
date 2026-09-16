@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import VerificationPanel from '../../components/profile/VerificationPanel';
 import LevelPanel from '../../components/profile/LevelPanel';
+import FieldMark from '../../components/ui/FieldMark';
 
 function PersonalDetailsTab() {
   const user = useAuthStore((state) => state.user);
@@ -54,15 +55,15 @@ function PersonalDetailsTab() {
         </div>
       )}
       <div>
-        <label className="mb-1 block text-sm font-medium">Full name</label>
+        <label className="mb-1 block text-sm font-medium">Full name<FieldMark required /></label>
         <Input name="name" value={form.name} onChange={handleChange} required />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Email</label>
+        <label className="mb-1 block text-sm font-medium">Email<FieldMark required /></label>
         <Input type="email" name="email" value={form.email} onChange={handleChange} required />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Phone</label>
+        <label className="mb-1 block text-sm font-medium">Phone<FieldMark /></label>
         <Input name="phone" value={form.phone} onChange={handleChange} />
       </div>
       <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</Button>
@@ -115,11 +116,11 @@ function SecurityTab() {
         </div>
       )}
       <div>
-        <label className="mb-1 block text-sm font-medium">New password</label>
+        <label className="mb-1 block text-sm font-medium">New password<FieldMark /></label>
         <Input type="password" name="password" value={form.password} onChange={handleChange} autoComplete="new-password" />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">Confirm password</label>
+        <label className="mb-1 block text-sm font-medium">Confirm password<FieldMark /></label>
         <Input type="password" name="confirm" value={form.confirm} onChange={handleChange} autoComplete="new-password" />
       </div>
       <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Change password'}</Button>

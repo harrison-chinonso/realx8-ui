@@ -9,6 +9,7 @@ import Badge from '../../components/common/Badge';
 import { useCurrency } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
 import { enumLabel } from '../../utils/enumLabel';
+import FieldMark from '../../components/ui/FieldMark';
 
 const EMPTY_FORM = { name: '', total_amount: '', installments: '', frequency: 'monthly', description: '' };
 const getItems = (response) => response?.data ?? response ?? [];
@@ -142,7 +143,7 @@ export default function PaymentPlansPage() {
           <MoneyInput label="Total Amount" value={form.total_amount} onChange={(total_amount) => setForm((current) => ({ ...current, total_amount }))} required />
           <Input label="Installments" type="number" min="1" value={form.installments} onChange={handleChange('installments')} required />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Frequency</span>
+            <span className="text-sm font-medium text-slate-700">Frequency<FieldMark /></span>
             <Select value={form.frequency} onChange={handleChange('frequency')}>
               <option value="monthly">{enumLabel('monthly')}</option>
               <option value="quarterly">{enumLabel('quarterly')}</option>
@@ -150,7 +151,7 @@ export default function PaymentPlansPage() {
             </Select>
           </label>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Description</span>
+            <span className="text-sm font-medium text-slate-700">Description<FieldMark /></span>
             <textarea
               rows={4}
               value={form.description}

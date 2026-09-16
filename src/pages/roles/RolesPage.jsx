@@ -18,6 +18,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const ROLE_FORM = { name: '', display_name: '', description: '' };
 const PERMISSION_FORM = { name: '', display_name: '', module: '', description: '' };
@@ -291,7 +292,7 @@ export default function RolesPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <Input label="Search users" value={userSearch} onChange={(event) => setUserSearch(event.target.value)} placeholder="Type name or email" />
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Select user</span>
+                  <span className="text-sm font-medium text-slate-700">Select user<FieldMark /></span>
                   <Select
                     value={selectedUserId}
                     onChange={(event) => setSelectedUserId(event.target.value)}
@@ -365,7 +366,7 @@ export default function RolesPage() {
             onChange={(event) => setRoleForm((current) => ({ ...current, display_name: event.target.value }))}
           />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Description</span>
+            <span className="text-sm font-medium text-slate-700">Description<FieldMark /></span>
             <textarea
               value={roleForm.description}
               onChange={(event) => setRoleForm((current) => ({ ...current, description: event.target.value }))}
@@ -393,7 +394,7 @@ export default function RolesPage() {
             onChange={(event) => setPermissionForm((current) => ({ ...current, display_name: event.target.value }))}
           />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Module</span>
+            <span className="text-sm font-medium text-slate-700">Module<FieldMark /></span>
             <input
               list="permission-modules"
               value={permissionForm.module}
@@ -405,7 +406,7 @@ export default function RolesPage() {
             </datalist>
           </label>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Description</span>
+            <span className="text-sm font-medium text-slate-700">Description<FieldMark /></span>
             <textarea
               value={permissionForm.description}
               onChange={(event) => setPermissionForm((current) => ({ ...current, description: event.target.value }))}

@@ -8,6 +8,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const tabs = [
   { id: 'visitors', label: 'Visitor Log' },
@@ -176,7 +177,7 @@ export default function FrontDeskPage() {
         <div className="space-y-4">
           <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Filter by date</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Filter by date<FieldMark /></label>
               <input type="date" value={visitorDate} onChange={(event) => setVisitorDate(event.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
             </div>
             <Button onClick={() => setShowVisitorModal(true)}>+ New Visitor</Button>
@@ -208,11 +209,11 @@ export default function FrontDeskPage() {
           <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 lg:flex-row lg:items-end lg:justify-between">
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Start date</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Start date<FieldMark /></label>
                 <input type="date" value={attendanceRange.start} onChange={(event) => setAttendanceRange((current) => ({ ...current, start: event.target.value }))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">End date</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">End date<FieldMark /></label>
                 <input type="date" value={attendanceRange.end} onChange={(event) => setAttendanceRange((current) => ({ ...current, end: event.target.value }))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
               </div>
             </div>
@@ -255,7 +256,7 @@ export default function FrontDeskPage() {
           <Input label="Purpose of Visit" value={visitorForm.purpose} onChange={(event) => setVisitorForm((current) => ({ ...current, purpose: event.target.value }))} required />
           <Input label="Host Staff Member" value={visitorForm.host_name} onChange={(event) => setVisitorForm((current) => ({ ...current, host_name: event.target.value }))} required />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Note</span>
+            <span className="text-sm font-medium text-slate-700">Note<FieldMark /></span>
             <textarea rows={3} value={visitorForm.note} onChange={(event) => setVisitorForm((current) => ({ ...current, note: event.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
           </label>
           <div className="flex gap-2 pt-2">
@@ -275,7 +276,7 @@ export default function FrontDeskPage() {
             <Input label="Check-out Time" type="time" value={attendanceForm.check_out_time} onChange={(event) => setAttendanceForm((current) => ({ ...current, check_out_time: event.target.value }))} />
           </div>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Status</span>
+            <span className="text-sm font-medium text-slate-700">Status<FieldMark /></span>
             <Select value={attendanceForm.status} onChange={(event) => setAttendanceForm((current) => ({ ...current, status: event.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
               <option value="present">Present</option>
               <option value="late">Late</option>

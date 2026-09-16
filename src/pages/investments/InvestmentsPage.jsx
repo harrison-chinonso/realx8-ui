@@ -28,6 +28,7 @@ import {
   updateInvestmentPlan,
 } from '../../api/investmentApi';
 import { listProperties } from '../../api/propertyApi';
+import FieldMark from '../../components/ui/FieldMark';
 
 const TABS = ['Plans', 'Investments', 'Categories', 'Periods'];
 // Disabled inputs must LOOK disabled. The penalty amount is already
@@ -803,7 +804,7 @@ export default function InvestmentsPage() {
 
             <form onSubmit={handleSavePlan} className="space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Name</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Name<FieldMark required /></label>
                 <input
                   value={planForm.name}
                   onChange={(event) => setPlanForm((current) => ({ ...current, name: event.target.value }))}
@@ -813,7 +814,7 @@ export default function InvestmentsPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Category</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Category<FieldMark /></label>
                 <Select
                   value={planForm.category_id}
                   onChange={(event) => setPlanForm((current) => ({ ...current, category_id: event.target.value }))}
@@ -827,7 +828,7 @@ export default function InvestmentsPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Period</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Period<FieldMark /></label>
                 <Select
                   value={planForm.period_id}
                   onChange={(event) => setPlanForm((current) => ({ ...current, period_id: event.target.value }))}
@@ -852,7 +853,7 @@ export default function InvestmentsPage() {
               */}
               {properties.length > 0 && (
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Property</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Property<FieldMark /></label>
                   <Select
                     value={planForm.property_id}
                     onChange={(event) => setPlanForm((current) => ({ ...current, property_id: event.target.value }))}
@@ -869,7 +870,7 @@ export default function InvestmentsPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Min Amount</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Min Amount<FieldMark required /></label>
                   <input
                     type="number"
                     min="0"
@@ -881,7 +882,7 @@ export default function InvestmentsPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Max Amount</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Max Amount<FieldMark required /></label>
                   <input
                     type="number"
                     min="0"
@@ -896,7 +897,7 @@ export default function InvestmentsPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Return Rate (%)</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Return Rate (%)<FieldMark required /></label>
                   <input
                     type="number"
                     min="0"
@@ -908,7 +909,7 @@ export default function InvestmentsPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Status<FieldMark /></label>
                   <Select
                     value={planForm.status}
                     onChange={(event) => setPlanForm((current) => ({ ...current, status: event.target.value }))}
@@ -932,7 +933,7 @@ export default function InvestmentsPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Return is paid</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Return is paid<FieldMark /></label>
                     <Select
                       value={planForm.payout_frequency}
                       onChange={(event) => setPlanForm((current) => ({ ...current, payout_frequency: event.target.value }))}
@@ -941,7 +942,7 @@ export default function InvestmentsPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Basis</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Basis<FieldMark /></label>
                     <Select
                       value={planForm.return_basis}
                       onChange={(event) => setPlanForm((current) => ({ ...current, return_basis: event.target.value }))}
@@ -956,7 +957,7 @@ export default function InvestmentsPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Committed for (days)</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Committed for (days)<FieldMark /></label>
                     <input
                       type="number" min="0"
                       value={planForm.tenor_days}
@@ -967,7 +968,7 @@ export default function InvestmentsPage() {
                     <p className="mt-1 text-xs text-slate-400">The tenor runs from the day the investor’s money arrives.</p>
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Raise cap</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Raise cap<FieldMark /></label>
                     <input
                       type="number" min="0" step="0.01"
                       value={planForm.cap_amount}
@@ -980,7 +981,7 @@ export default function InvestmentsPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Opens</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Opens<FieldMark /></label>
                     <input
                       type="date"
                       value={planForm.opens_at}
@@ -989,7 +990,7 @@ export default function InvestmentsPage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Closes</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Closes<FieldMark /></label>
                     <input
                       type="date"
                       value={planForm.closes_at}
@@ -1023,7 +1024,7 @@ export default function InvestmentsPage() {
                 {planForm.early_exit_allowed && (
                   <div className="grid gap-4 sm:grid-cols-3">
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-slate-700">Lock-in (days)</label>
+                      <label className="mb-1 block text-sm font-medium text-slate-700">Lock-in (days)<FieldMark /></label>
                       <input
                         type="number" min="0"
                         value={planForm.lock_in_days}
@@ -1033,7 +1034,7 @@ export default function InvestmentsPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-slate-700">Penalty</label>
+                      <label className="mb-1 block text-sm font-medium text-slate-700">Penalty<FieldMark /></label>
                       <Select
                         value={planForm.penalty_type}
                         onChange={(event) => setPlanForm((current) => ({ ...current, penalty_type: event.target.value }))}
@@ -1043,7 +1044,7 @@ export default function InvestmentsPage() {
                     </div>
                     <div>
                       <label className="mb-1 block text-sm font-medium text-slate-700">
-                        {planForm.penalty_type === 'percentage_of_return' ? 'Percentage' : 'Amount'}
+                        {planForm.penalty_type === 'percentage_of_return' ? 'Percentage' : 'Amount'}<FieldMark />
                       </label>
                       <input
                         type="number" min="0" step="0.01"
@@ -1087,7 +1088,7 @@ export default function InvestmentsPage() {
 
             <form onSubmit={handleCreateInvestment} className="space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">User ID</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">User ID<FieldMark required /></label>
                 <input
                   type="number"
                   min="1"
@@ -1099,7 +1100,7 @@ export default function InvestmentsPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Plan</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Plan<FieldMark required /></label>
                 <Select
                   value={investmentForm.plan_id}
                   onChange={(event) => setInvestmentForm((current) => ({ ...current, plan_id: event.target.value }))}
@@ -1114,7 +1115,7 @@ export default function InvestmentsPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Amount</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Amount<FieldMark required /></label>
                 <input
                   type="number"
                   min="0"
@@ -1145,7 +1146,7 @@ export default function InvestmentsPage() {
 
             <form onSubmit={handleCreatePayout} className="space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Payout Amount</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Payout Amount<FieldMark required /></label>
                 <input
                   type="number"
                   min="0"
@@ -1187,7 +1188,7 @@ export default function InvestmentsPage() {
       <Modal open={Boolean(cashOutFor)} onClose={closeCashOutModal} title="Request Cash-Out" size="sm">
         <form onSubmit={handleRequestCashOut} className="space-y-4">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Notes</span>
+            <span className="text-sm font-medium text-slate-700">Notes<FieldMark /></span>
             <textarea
               rows={4}
               value={cashOutNotes}

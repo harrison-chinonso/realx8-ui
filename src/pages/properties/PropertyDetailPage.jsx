@@ -35,6 +35,7 @@ import Select from '../../components/ui/Select';
 import PropertyInstallmentPlansPanel from '../../components/properties/PropertyInstallmentPlansPanel';
 import { usePermission } from '../../hooks/usePermission';
 import { enumLabel } from '../../utils/enumLabel';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const emptyAmenityForm = { name: '', description: '' };
@@ -398,7 +399,7 @@ export default function PropertyDetailPage() {
             {isAdminReviewer && (
               <div className="w-full max-w-xl space-y-3">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-amber-900">Review Notes</span>
+                  <span className="text-sm font-medium text-amber-900">Review Notes<FieldMark /></span>
                   <textarea
                     rows={3}
                     value={approvalNotes}
@@ -760,7 +761,7 @@ export default function PropertyDetailPage() {
                   placeholder="Title Deed"
                 />
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Type</span>
+                  <span className="text-sm font-medium text-slate-700">Type<FieldMark /></span>
                   <Select className={INPUT_CLASS} value={documentForm.type} onChange={(event) => setDocumentForm((current) => ({ ...current, type: event.target.value }))}>
                     <option value="deed">Deed</option>
                     <option value="survey">Survey</option>
@@ -776,7 +777,7 @@ export default function PropertyDetailPage() {
                   placeholder="https://..."
                 />
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Upload File</span>
+                  <span className="text-sm font-medium text-slate-700">Upload File<FieldMark /></span>
                   <input type="file" onChange={handleDocumentFileChange} className={INPUT_CLASS} />
                 </label>
                 {/*

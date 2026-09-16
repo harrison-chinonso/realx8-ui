@@ -14,6 +14,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ChevronDown, X } from 'lucide-react';
+import FieldMark from '../ui/FieldMark';
 
 export default function EntitySearchSelect({
   label,
@@ -76,7 +77,7 @@ export default function EntitySearchSelect({
     <div ref={ref} className="relative">
       {label && (
         <label className="mb-1 block text-sm font-medium text-slate-700">
-          {label}{required && <span className="ml-0.5 text-rose-500">*</span>}
+          {label}<FieldMark required={Boolean(required)} />
         </label>
       )}
 

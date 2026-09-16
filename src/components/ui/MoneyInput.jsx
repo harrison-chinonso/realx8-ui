@@ -1,4 +1,5 @@
 import { useAppearance } from '../../context/useAppearance';
+import FieldMark from './FieldMark';
 
 /** Groups the integer part with commas, preserving a partially typed decimal. */
 const withCommas = (raw) => {
@@ -35,13 +36,20 @@ export default function MoneyInput({
   placeholder = '0.00',
   ...props
 }) {
+  // Left in ...props so the input still receives it; read here for the mark.
+  const { required } = props;
   // The sign, not the ISO code — matches how amounts are displayed.
   const { currencySymbol, currency } = useAppearance();
   const code = currencySymbol || currency || 'USD';
 
   return (
     <label className="block space-y-1">
-      {label && <span className="text-sm font-medium text-content">{label}</span>}
+      {label && (
+        <span className="text-sm font-medium text-content">
+          {label}
+          <FieldMark required={Boolean(required)} />
+        </span>
+      )}
       <div className="relative">
         <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-xs font-semibold text-content-subtle">
           {code}

@@ -7,6 +7,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import EntitySearchSelect from '../../components/common/EntitySearchSelect';
+import FieldMark from '../../components/ui/FieldMark';
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
 const STATUSES   = ['open', 'in_progress', 'resolved', 'closed'];
@@ -142,11 +143,11 @@ export default function SupportPage() {
             <div className="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 text-sm text-rose-700">{error}</div>
           )}
           <div>
-            <label className="mb-1 block text-sm font-medium">Subject</label>
+            <label className="mb-1 block text-sm font-medium">Subject<FieldMark required /></label>
             <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Description</label>
+            <label className="mb-1 block text-sm font-medium">Description<FieldMark required /></label>
             <textarea
               className="w-full rounded-lg border border-slate-300 p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               rows={4}
@@ -156,7 +157,7 @@ export default function SupportPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Priority</label>
+            <label className="mb-1 block text-sm font-medium">Priority<FieldMark /></label>
             <Select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
               {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
             </Select>

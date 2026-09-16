@@ -16,6 +16,7 @@ import {
   listTrainingProgress,
   getTrainingCertificate,
 } from '../../api/trainingApi';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const MODAL_OVERLAY_CLASS = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4';
@@ -361,7 +362,7 @@ export default function TrainingPage() {
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Filter by Realtor</span>
+                  <span className="text-sm font-medium text-slate-700">Filter by Realtor<FieldMark /></span>
                   <Select
                     value={progressFilters.realtor_id}
                     onChange={(event) => setProgressFilters((current) => ({ ...current, realtor_id: event.target.value }))}
@@ -374,7 +375,7 @@ export default function TrainingPage() {
                   </Select>
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Filter by Module</span>
+                  <span className="text-sm font-medium text-slate-700">Filter by Module<FieldMark /></span>
                   <Select
                     value={progressFilters.module_id}
                     onChange={(event) => setProgressFilters((current) => ({ ...current, module_id: event.target.value }))}
@@ -414,11 +415,11 @@ export default function TrainingPage() {
               <form onSubmit={handleSaveModule} className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium text-slate-700">Title</span>
+                    <span className="text-sm font-medium text-slate-700">Title<FieldMark required /></span>
                     <input required value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className={INPUT_CLASS} />
                   </label>
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium text-slate-700">Category</span>
+                    <span className="text-sm font-medium text-slate-700">Category<FieldMark /></span>
                     <Select value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} className={INPUT_CLASS}>
                       {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </Select>
@@ -427,11 +428,11 @@ export default function TrainingPage() {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium text-slate-700">Duration</span>
+                    <span className="text-sm font-medium text-slate-700">Duration<FieldMark required /></span>
                     <input required value={form.duration} onChange={(event) => setForm((current) => ({ ...current, duration: event.target.value }))} className={INPUT_CLASS} placeholder="e.g. 45 mins" />
                   </label>
                   <label className="block space-y-1">
-                    <span className="text-sm font-medium text-slate-700">Status</span>
+                    <span className="text-sm font-medium text-slate-700">Status<FieldMark /></span>
                     <Select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))} className={INPUT_CLASS}>
                       {STATUS_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </Select>
@@ -439,17 +440,17 @@ export default function TrainingPage() {
                 </div>
 
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Description</span>
+                  <span className="text-sm font-medium text-slate-700">Description<FieldMark /></span>
                   <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className={`${INPUT_CLASS} min-h-28`} />
                 </label>
 
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Video URL</span>
+                  <span className="text-sm font-medium text-slate-700">Video URL<FieldMark /></span>
                   <input value={form.video_url} onChange={(event) => setForm((current) => ({ ...current, video_url: event.target.value }))} className={INPUT_CLASS} placeholder="https://youtube.com/watch?v=..." />
                 </label>
 
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Resource Links</span>
+                  <span className="text-sm font-medium text-slate-700">Resource Links<FieldMark /></span>
                   <textarea value={form.resource_links} onChange={(event) => setForm((current) => ({ ...current, resource_links: event.target.value }))} className={`${INPUT_CLASS} min-h-24`} placeholder="One URL per line" />
                 </label>
 
@@ -516,7 +517,7 @@ export default function TrainingPage() {
                           ))}
                         </div>
                         <label className="block space-y-1">
-                          <span className="text-sm font-medium text-slate-700">Correct Answer</span>
+                          <span className="text-sm font-medium text-slate-700">Correct Answer<FieldMark /></span>
                           <Select
                             value={question.correct_index}
                             onChange={(event) => setForm((current) => ({

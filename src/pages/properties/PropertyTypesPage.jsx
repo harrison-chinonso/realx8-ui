@@ -9,6 +9,7 @@ import Table from '../../components/common/Table';
 import Modal from '../../components/common/Modal';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import FieldMark from '../../components/ui/FieldMark';
 
 const EMPTY_FORM = { name: '', description: '' };
 
@@ -158,7 +159,7 @@ export default function PropertyTypesPage() {
             required
           />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Description</span>
+            <span className="text-sm font-medium text-slate-700">Description<FieldMark /></span>
             <textarea
               rows={4}
               value={form.description}

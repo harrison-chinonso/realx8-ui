@@ -9,6 +9,7 @@ import Button from '../../components/ui/Button';
 import CompanySelect from '../../components/common/CompanySelect';
 import useAuthStore from '../../store/authStore';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const TEXTAREA_CLASS = `${INPUT_CLASS} resize-none`;
@@ -280,18 +281,18 @@ export default function TasksPage() {
               )}
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Title <span className="text-red-500">*</span></span>
+                <span className="text-sm font-medium text-slate-700">Title <span className="text-red-500">*</span><FieldMark required /></span>
                 <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} className={INPUT_CLASS} required />
               </label>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Due Date</span>
+                  <span className="text-sm font-medium text-slate-700">Due Date<FieldMark /></span>
                   <input type="date" value={form.due_date} onChange={(e) => setForm((f) => ({ ...f, due_date: e.target.value }))} className={INPUT_CLASS} />
                 </label>
 
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Priority</span>
+                  <span className="text-sm font-medium text-slate-700">Priority<FieldMark /></span>
                   <Select value={form.priority} onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))} className={INPUT_CLASS}>
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -300,7 +301,7 @@ export default function TasksPage() {
                 </label>
 
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Status</span>
+                  <span className="text-sm font-medium text-slate-700">Status<FieldMark /></span>
                   <Select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className={INPUT_CLASS}>
                     <option value="pending">Pending</option>
                     <option value="in_progress">In Progress</option>
@@ -309,7 +310,7 @@ export default function TasksPage() {
                 </label>
 
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Deal <span className="text-slate-400 font-normal">(optional)</span></span>
+                  <span className="text-sm font-medium text-slate-700">Deal <span className="text-slate-400 font-normal">(optional)</span><FieldMark /></span>
                   <Select value={form.deal_id} onChange={(e) => setForm((f) => ({ ...f, deal_id: e.target.value }))} className={INPUT_CLASS}>
                     <option value="">— No deal —</option>
                     {deals.map((d) => (
@@ -319,7 +320,7 @@ export default function TasksPage() {
                 </label>
 
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Lead <span className="text-slate-400 font-normal">(optional)</span></span>
+                  <span className="text-sm font-medium text-slate-700">Lead <span className="text-slate-400 font-normal">(optional)</span><FieldMark /></span>
                   <Select value={form.lead_id} onChange={(e) => setForm((f) => ({ ...f, lead_id: e.target.value }))} className={INPUT_CLASS}>
                     <option value="">— No lead —</option>
                     {leads.map((l) => (
@@ -333,7 +334,7 @@ export default function TasksPage() {
                 <p className="text-sm font-semibold text-slate-700">Assign Task</p>
 
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-600">1. Select Role Type</span>
+                  <span className="text-sm font-medium text-slate-600">1. Select Role Type<FieldMark /></span>
                   <Select value={form.assigned_role} onChange={handleRoleChange} className={INPUT_CLASS}>
                     <option value="">— Choose a role —</option>
                     {ASSIGNABLE_ROLES.map((r) => (
@@ -343,7 +344,7 @@ export default function TasksPage() {
                 </label>
 
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-600">2. Select User</span>
+                  <span className="text-sm font-medium text-slate-600">2. Select User<FieldMark /></span>
                   <Select
                     value={form.assigned_to}
                     onChange={(e) => setForm((f) => ({ ...f, assigned_to: e.target.value }))}
@@ -371,7 +372,7 @@ export default function TasksPage() {
               </div>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Description</span>
+                <span className="text-sm font-medium text-slate-700">Description<FieldMark /></span>
                 <textarea rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className={TEXTAREA_CLASS} />
               </label>
 

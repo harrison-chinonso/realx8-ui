@@ -7,6 +7,7 @@ import Modal from '../common/Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import MoneyInput from '../ui/MoneyInput';
+import FieldMark from '../ui/FieldMark';
 
 /**
  * How a buyer pays an invoice.
@@ -248,7 +249,7 @@ export default function PayInvoiceModal({ invoiceId, open, onClose, onSubmitted 
               </span>
               <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-3 text-sm text-slate-500 hover:border-slate-400">
                 <UploadCloud size={16} />
-                <span>{uploading ? 'Uploading…' : form.document_url ? 'Replace file' : 'Upload receipt or screenshot'}</span>
+                <span>{uploading ? 'Uploading…' : form.document_url ? 'Replace file' : 'Upload receipt or screenshot'}<FieldMark /></span>
                 <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleUpload} disabled={uploading} />
               </label>
               {form.document_url && (

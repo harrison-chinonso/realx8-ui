@@ -3,6 +3,7 @@ import { approveNote, rejectNote, settleNote } from '../../api/financeApi';
 import { usePermission } from '../../hooks/usePermission';
 import Button from '../ui/Button';
 import Modal from '../common/Modal';
+import FieldMark from '../ui/FieldMark';
 
 /**
  * The approve / refuse / settle buttons on a credit or debit note.
@@ -71,7 +72,7 @@ export default function NoteApprovalActions({ kind, note, onChanged }) {
       <Modal open={rejecting} onClose={() => setRejecting(false)} title="Refuse this note">
         <form onSubmit={submitRejection} className="space-y-3">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Why are you refusing it?</span>
+            <span className="text-sm font-medium text-slate-700">Why are you refusing it?<FieldMark /></span>
             <textarea
               rows={4}
               autoFocus

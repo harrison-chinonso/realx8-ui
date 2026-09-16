@@ -19,6 +19,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import { useCurrency } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const EMPTY_COMMISSION_FORM = { employee_id: '', title: '', type: 'fixed', amount: '' };
@@ -331,7 +332,7 @@ export default function CommissionsPage() {
             </div>
             <form onSubmit={handleCreateRule} className="grid gap-4 md:grid-cols-2">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Product Type</span>
+                <span className="text-sm font-medium text-slate-700">Product Type<FieldMark /></span>
                 <Select className={INPUT_CLASS} value={ruleForm.product_type} onChange={(event) => setRuleForm((current) => ({ ...current, product_type: event.target.value }))}>
                   <option value="land">Land</option>
                   <option value="house">House</option>
@@ -341,7 +342,7 @@ export default function CommissionsPage() {
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Realtor Level</span>
+                <span className="text-sm font-medium text-slate-700">Realtor Level<FieldMark /></span>
                 {/*
                   The company's OWN levels, not three fixed names. This was a
                   hardcoded premium/professional/basic list matched against the
@@ -370,7 +371,7 @@ export default function CommissionsPage() {
               </label>
 
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Type</span>
+                <span className="text-sm font-medium text-slate-700">Type<FieldMark /></span>
                 <Select className={INPUT_CLASS} value={ruleForm.type} onChange={(event) => setRuleForm((current) => ({ ...current, type: event.target.value }))}>
                   <option value="fixed">Fixed</option>
                   <option value="percentage">Percentage</option>
@@ -420,7 +421,7 @@ export default function CommissionsPage() {
             required
           />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Type</span>
+            <span className="text-sm font-medium text-slate-700">Type<FieldMark /></span>
             <Select className={INPUT_CLASS} value={commissionForm.type} onChange={(event) => setCommissionForm((current) => ({ ...current, type: event.target.value }))}>
               <option value="fixed">Fixed</option>
               <option value="percentage">Percentage</option>

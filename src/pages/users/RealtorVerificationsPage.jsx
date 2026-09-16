@@ -3,6 +3,7 @@ import { approveKyc, listKycSubmissions, rejectKyc } from '../../api/userApi';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
+import FieldMark from '../../components/ui/FieldMark';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -151,7 +152,7 @@ export default function RealtorVerificationsPage() {
               {review?.decision === 'rejected'
                 ? <span className="text-red-500"> *</span>
                 : <span className="ml-1 font-normal text-slate-400">(optional)</span>}
-            </span>
+            <FieldMark /></span>
             <textarea
               rows={3}
               value={notes}

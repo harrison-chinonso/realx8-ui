@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { listUsers } from '../../api/userApi';
 import EntitySearchSelect from '../common/EntitySearchSelect';
 import Select from '../ui/Select';
+import FieldMark from '../ui/FieldMark';
 
 /**
  * Picks the user a credit or debit note is raised against, in two steps: what
@@ -40,7 +41,7 @@ export default function PartySelect({ partyType, userId, onChange, required = fa
   return (
     <div className="space-y-3">
       <label className="block space-y-1">
-        <span className="text-sm font-medium text-slate-700">Raised against</span>
+        <span className="text-sm font-medium text-slate-700">Raised against<FieldMark /></span>
         <Select
           value={type}
           onChange={(e) => onChange({ party_type: e.target.value, client_id: '' })}

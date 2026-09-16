@@ -9,6 +9,7 @@ import Select from '../ui/Select';
 import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentMethods';
 import { enumLabel } from '../../utils/enumLabel';
 import { uploadMediaFiles } from '../../api/mediaApi';
+import FieldMark from '../ui/FieldMark';
 
 /**
  * Staff-side settlement for one invoice: review the buyer's proof of payment,
@@ -245,7 +246,7 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
           </p>
           <MoneyInput label="Amount received" value={amount} onChange={setAmount} error={amountError} />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">How was it paid?</span>
+            <span className="text-sm font-medium text-slate-700">How was it paid?<FieldMark /></span>
             <Select value={instalmentMethod} onChange={(e) => setInstalmentMethod(e.target.value)}>
               {methods.map((method) => (
                 <option key={method} value={method}>{METHOD_LABELS[method] || method}</option>
@@ -286,7 +287,7 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
           </p>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">How was it paid?</span>
+            <span className="text-sm font-medium text-slate-700">How was it paid?<FieldMark /></span>
             <Select value={confirmMethod} onChange={(e) => setConfirmMethod(e.target.value)}>
               <option value="">Select a method...</option>
               {methods.map((method) => (
@@ -296,7 +297,7 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Transaction reference</span>
+            <span className="text-sm font-medium text-slate-700">Transaction reference<FieldMark /></span>
             <input
               type="text"
               value={confirmReference}

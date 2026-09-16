@@ -6,6 +6,7 @@ import { downloadUrl } from '../../utils/downloadUrl';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
+import FieldMark from '../ui/FieldMark';
 
 /**
  * Paperwork attached to one invoice — agreements, receipts, title copies.
@@ -202,7 +203,7 @@ export default function InvoiceDocumentsPanel({ invoiceId, canManage = false }) 
           <p className="text-sm font-semibold text-slate-700">Attach a document</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600">Name</span>
+              <span className="text-xs font-medium text-slate-600">Name<FieldMark /></span>
               <Input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -210,7 +211,7 @@ export default function InvoiceDocumentsPanel({ invoiceId, canManage = false }) 
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600">Type</span>
+              <span className="text-xs font-medium text-slate-600">Type<FieldMark /></span>
               <Select value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}>
                 {types.map((t) => <option key={t} value={t}>{TYPE_LABELS[t] || t}</option>)}
               </Select>
@@ -219,7 +220,7 @@ export default function InvoiceDocumentsPanel({ invoiceId, canManage = false }) 
 
           <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 bg-white px-3 py-3 text-sm text-slate-500 hover:border-slate-400">
             <UploadCloud size={16} />
-            <span>{uploading ? 'Uploading…' : form.url ? 'Replace file' : 'Choose a file'}</span>
+            <span>{uploading ? 'Uploading…' : form.url ? 'Replace file' : 'Choose a file'}<FieldMark /></span>
             <input
               type="file"
               accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx"

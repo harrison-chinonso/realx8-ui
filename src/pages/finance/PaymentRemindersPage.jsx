@@ -9,6 +9,7 @@ import Input from '../../components/ui/Input';
 import EntitySearchSelect from '../../components/common/EntitySearchSelect';
 import Select from '../../components/ui/Select';
 import ReminderSchedulePanel from '../../components/finance/ReminderSchedulePanel';
+import FieldMark from '../../components/ui/FieldMark';
 
 const EMPTY_FORM = {
   invoice_id: '',
@@ -156,7 +157,7 @@ export default function PaymentRemindersPage() {
           />
           <Input label="Reminder Date" type="date" value={form.reminder_date} onChange={handleChange('reminder_date')} required />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Status</span>
+            <span className="text-sm font-medium text-slate-700">Status<FieldMark /></span>
             <Select
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               value={form.status}

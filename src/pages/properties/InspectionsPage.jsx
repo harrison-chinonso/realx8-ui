@@ -12,6 +12,7 @@ import ActionsMenu from '../../components/common/ActionsMenu';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const emptyScheduleForm = {
   lead_id: '',
@@ -307,7 +308,7 @@ export default function InspectionsPage() {
 
           {/* Lead */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Lead <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-slate-700">Lead <span className="text-red-500">*</span><FieldMark required /></label>
             <div className="flex gap-2">
               <Select value={scheduleForm.lead_id} onChange={handleLeadChange} required className={`${SELECT_CLASS} flex-1`}>
                 <option value="">Select lead...</option>
@@ -364,7 +365,7 @@ export default function InspectionsPage() {
 
           {/* Property */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Property <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-slate-700">Property <span className="text-red-500">*</span><FieldMark required /></label>
             <Select value={scheduleForm.property_id} onChange={handlePropertyChange} required className={SELECT_CLASS}>
               <option value="">Select property...</option>
               {propertyOptions.map((p) => (
@@ -376,7 +377,7 @@ export default function InspectionsPage() {
 
           {/* Realtor — a realtor books as themselves and cannot list other realtors */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Realtor <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-slate-700">Realtor<FieldMark required /></label>
             {isRealtorUser ? (
               <>
                 <input value={currentUser?.name || 'You'} readOnly className={`${SELECT_CLASS} bg-slate-50`} />
@@ -398,18 +399,18 @@ export default function InspectionsPage() {
           {/* Date & Time */}
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">Date <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-slate-700">Date <span className="text-red-500">*</span><FieldMark required /></label>
               <input type="date" value={scheduleForm.scheduled_date} onChange={(e) => setScheduleForm((f) => ({ ...f, scheduled_date: e.target.value }))} required className={SELECT_CLASS} />
             </div>
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">Time <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-slate-700">Time <span className="text-red-500">*</span><FieldMark required /></label>
               <input type="time" value={scheduleForm.scheduled_time} onChange={(e) => setScheduleForm((f) => ({ ...f, scheduled_time: e.target.value }))} required className={SELECT_CLASS} />
             </div>
           </div>
 
           {/* Attendees */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Number of persons attending</label>
+            <label className="block text-sm font-medium text-slate-700">Number of persons attending<FieldMark /></label>
             <input
               type="number"
               min="1"
@@ -422,7 +423,7 @@ export default function InspectionsPage() {
 
           {/* Notes */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Notes</label>
+            <label className="block text-sm font-medium text-slate-700">Notes<FieldMark /></label>
             <textarea rows={3} value={scheduleForm.notes} onChange={(e) => setScheduleForm((f) => ({ ...f, notes: e.target.value }))} className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" placeholder="Optional notes..." />
           </div>
 
@@ -437,17 +438,17 @@ export default function InspectionsPage() {
       <Modal open={showFeedback} onClose={() => setShowFeedback(false)} title="Complete Inspection">
         <form onSubmit={submitFeedback} className="space-y-3">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Client Satisfaction</label>
+            <label className="block text-sm font-medium text-slate-700">Client Satisfaction<FieldMark /></label>
             <Select value={feedbackForm.client_satisfaction} onChange={(e) => setFeedbackForm((f) => ({ ...f, client_satisfaction: e.target.value }))} className={SELECT_CLASS}>
               {[1, 2, 3, 4, 5].map((v) => <option key={v} value={v}>{v} — {['Very Poor','Poor','Fair','Good','Excellent'][v-1]}</option>)}
             </Select>
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Client Feedback <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-slate-700">Client Feedback <span className="text-red-500">*</span><FieldMark required /></label>
             <textarea rows={3} value={feedbackForm.client_feedback} onChange={(e) => setFeedbackForm((f) => ({ ...f, client_feedback: e.target.value }))} className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" required />
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Realtor Notes</label>
+            <label className="block text-sm font-medium text-slate-700">Realtor Notes<FieldMark /></label>
             <textarea rows={3} value={feedbackForm.realtor_notes} onChange={(e) => setFeedbackForm((f) => ({ ...f, realtor_notes: e.target.value }))} className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
           </div>
           <div className="flex gap-2 pt-1">

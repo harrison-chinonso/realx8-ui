@@ -9,6 +9,7 @@ import { useAppearance } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
 import { apiUrl } from '../../api/apiBase';
 import { googleAuthUrl } from '../../utils/googleAuthUrl';
+import FieldMark from '../../components/ui/FieldMark';
 
 /**
  * A full-page redirect, not an XHR, so it has to be a URL the BROWSER can
@@ -97,7 +98,7 @@ function Field({ label, type = 'text', value, onChange, placeholder, required })
 
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{label}</label>
+      <label className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{label}<FieldMark required /></label>
       <div className="flex items-center h-11 w-full rounded-lg border border-white/10 bg-white/5 pr-3 overflow-hidden transition-all focus-within:border-white/30">
         <input
           type={inputType}
@@ -121,7 +122,7 @@ function Field({ label, type = 'text', value, onChange, placeholder, required })
 function DarkSelect({ label, value, onChange, options }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{label}</label>
+      <label className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{label}<FieldMark /></label>
       <div className="h-11 w-full rounded-lg border border-white/10 bg-white/5 overflow-hidden transition-all focus-within:border-white/30">
         <Select
           value={value}

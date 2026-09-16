@@ -9,6 +9,7 @@ import { useCurrency } from '../../context/useAppearance';
 import { listRecruits, createRecruit, updateRecruit, deleteRecruit } from '../../api/trainingApi';
 import MoneyInput from '../../components/ui/MoneyInput';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const MODAL_OVERLAY_CLASS = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4';
@@ -211,22 +212,22 @@ export default function RecruitmentPage() {
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Name</span>
+                  <span className="text-sm font-medium text-slate-700">Name<FieldMark required /></span>
                   <input required value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} className={INPUT_CLASS} />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Email</span>
+                  <span className="text-sm font-medium text-slate-700">Email<FieldMark required /></span>
                   <input required type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} className={INPUT_CLASS} />
                 </label>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Phone</span>
+                  <span className="text-sm font-medium text-slate-700">Phone<FieldMark /></span>
                   <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} className={INPUT_CLASS} />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Status</span>
+                  <span className="text-sm font-medium text-slate-700">Status<FieldMark /></span>
                   <Select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))} className={INPUT_CLASS}>
                     <option value="applied">Applied</option>
                     <option value="training">Training</option>
@@ -238,22 +239,22 @@ export default function RecruitmentPage() {
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Join Date</span>
+                  <span className="text-sm font-medium text-slate-700">Join Date<FieldMark required /></span>
                   <input required type="date" value={form.join_date} onChange={(event) => setForm((current) => ({ ...current, join_date: event.target.value }))} className={INPUT_CLASS} />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Referred By</span>
+                  <span className="text-sm font-medium text-slate-700">Referred By<FieldMark /></span>
                   <input value={isManager ? form.referred_by_name : user?.name || ''} onChange={(event) => setForm((current) => ({ ...current, referred_by_name: event.target.value }))} className={INPUT_CLASS} disabled={!isManager} />
                 </label>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Commission Earned</span>
+                  <span className="text-sm font-medium text-slate-700">Commission Earned<FieldMark /></span>
                   <MoneyInput value={form.commission_earned} onChange={(commission_earned) => setForm((current) => ({ ...current, commission_earned }))} className={INPUT_CLASS} />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Notes</span>
+                  <span className="text-sm font-medium text-slate-700">Notes<FieldMark /></span>
                   <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} className={`${INPUT_CLASS} min-h-24`} />
                 </label>
               </div>

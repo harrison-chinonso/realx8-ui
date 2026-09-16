@@ -1,4 +1,5 @@
 import { cn } from '../../lib/cn';
+import FieldMark from './FieldMark';
 
 /**
  * Text input.
@@ -8,6 +9,7 @@ import { cn } from '../../lib/cn';
  * are kept from the previous component so existing forms need no changes.
  */
 export default function Input({ label, error, className = '', containerClassName = '', ...props }) {
+  const { required } = props;
   const field = (
     <input
       className={cn(
@@ -26,7 +28,14 @@ export default function Input({ label, error, className = '', containerClassName
   // a block <label>, and call sites rely on that box for layout.
   return (
     <label className={cn('block space-y-1.5', containerClassName)}>
-      {label && <span className="text-sm font-medium text-content">{label}</span>}
+      {label && (
+        <span className="text-sm font-medium text-content">
+          {label}
+          {/* Driven by the same `required` the control gets, so the mark and the
+              validation can never disagree. */}
+          <FieldMark required={Boolean(required)} />
+        </span>
+      )}
       {field}
       {error && <span className="block text-xs text-danger">{error}</span>}
     </label>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../lib/cn';
+import FieldMark from './FieldMark';
 
 /**
  * Select — a listbox that renders its own options.
@@ -306,7 +307,12 @@ export default function Select({
   // Always wrapped, even unlabelled: call sites lay out against `block space-y-1`.
   return (
     <label className="block space-y-1">
-      {label && <span className="text-sm font-medium text-content">{label}</span>}
+      {label && (
+        <span className="text-sm font-medium text-content">
+          {label}
+          <FieldMark required={Boolean(required)} />
+        </span>
+      )}
       {control}
       {error && <span className="text-xs" style={{ color: 'var(--danger)' }}>{error}</span>}
     </label>

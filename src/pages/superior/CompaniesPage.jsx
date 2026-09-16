@@ -5,6 +5,7 @@ import Modal from '../../components/common/Modal';
 import Button from '../../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -353,7 +354,7 @@ export default function CompaniesPage() {
               <FormField label="Company Email" type="email" value={form.email} onChange={(v) => setForm((f) => ({ ...f, email: v }))} required />
               <FormField label="Phone Number" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} />
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-slate-600">Country</label>
+                <label className="text-xs font-medium text-slate-600">Country<FieldMark /></label>
                 <Select value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
                   className="h-10 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-400 bg-white">
                   <option value="">— Select country —</option>
@@ -402,7 +403,7 @@ function FormField({ label, value, onChange, type = 'text', required }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label className="text-xs font-medium text-slate-600">
-        {label}{required && <span className="ml-0.5 text-rose-500">*</span>}
+        {label}{required && <span className="ml-0.5 text-rose-500">*</span>}<FieldMark required />
       </label>
       <input
         type={type}

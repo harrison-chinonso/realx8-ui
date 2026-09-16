@@ -9,6 +9,7 @@ import { useCurrency } from '../../context/useAppearance';
 import { getLeaderboard, listLeaderboardStats, saveLeaderboardStat } from '../../api/leaderboardApi';
 import MoneyInput from '../../components/ui/MoneyInput';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const MODAL_OVERLAY_CLASS = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4';
@@ -203,7 +204,7 @@ export default function LeaderboardPage() {
 
         <div className="grid gap-4 md:grid-cols-4">
           <label className="block space-y-1 md:col-span-2">
-            <span className="text-sm font-medium text-slate-700">Branch</span>
+            <span className="text-sm font-medium text-slate-700">Branch<FieldMark /></span>
             <Select value={filters.branch} onChange={(event) => setFilters((current) => ({ ...current, branch: event.target.value }))}>
               <option value="">All branches</option>
               {branchOptions.map((branch) => <option key={branch} value={branch}>{branch}</option>)}
@@ -212,11 +213,11 @@ export default function LeaderboardPage() {
           {filters.range === 'custom' && (
             <>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Start Date</span>
+                <span className="text-sm font-medium text-slate-700">Start Date<FieldMark /></span>
                 <input type="date" value={filters.start_date} onChange={(event) => setFilters((current) => ({ ...current, start_date: event.target.value }))} className={INPUT_CLASS} />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">End Date</span>
+                <span className="text-sm font-medium text-slate-700">End Date<FieldMark /></span>
                 <input type="date" value={filters.end_date} onChange={(event) => setFilters((current) => ({ ...current, end_date: event.target.value }))} className={INPUT_CLASS} />
               </label>
             </>
@@ -319,48 +320,48 @@ export default function LeaderboardPage() {
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Realtor ID</span>
+                  <span className="text-sm font-medium text-slate-700">Realtor ID<FieldMark /></span>
                   <input value={form.realtor_id} onChange={(event) => setForm((current) => ({ ...current, realtor_id: event.target.value }))} className={INPUT_CLASS} placeholder="Optional" />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Realtor Name</span>
+                  <span className="text-sm font-medium text-slate-700">Realtor Name<FieldMark required /></span>
                   <input required value={form.realtor_name} onChange={(event) => setForm((current) => ({ ...current, realtor_name: event.target.value }))} className={INPUT_CLASS} />
                 </label>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Branch</span>
+                  <span className="text-sm font-medium text-slate-700">Branch<FieldMark required /></span>
                   <input required value={form.branch} onChange={(event) => setForm((current) => ({ ...current, branch: event.target.value }))} className={INPUT_CLASS} />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Total Sales</span>
+                  <span className="text-sm font-medium text-slate-700">Total Sales<FieldMark /></span>
                   <MoneyInput value={form.total_sales} onChange={(total_sales) => setForm((current) => ({ ...current, total_sales }))} className={INPUT_CLASS} />
                 </label>
               </div>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Inspections</span>
+                  <span className="text-sm font-medium text-slate-700">Inspections<FieldMark /></span>
                   <input type="number" min="0" value={form.inspections_count} onChange={(event) => setForm((current) => ({ ...current, inspections_count: event.target.value }))} className={INPUT_CLASS} />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Leads Closed</span>
+                  <span className="text-sm font-medium text-slate-700">Leads Closed<FieldMark /></span>
                   <input type="number" min="0" value={form.leads_closed} onChange={(event) => setForm((current) => ({ ...current, leads_closed: event.target.value }))} className={INPUT_CLASS} />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Active Deals</span>
+                  <span className="text-sm font-medium text-slate-700">Active Deals<FieldMark /></span>
                   <input type="number" min="0" value={form.active_deals} onChange={(event) => setForm((current) => ({ ...current, active_deals: event.target.value }))} className={INPUT_CLASS} />
                 </label>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Period Start</span>
+                  <span className="text-sm font-medium text-slate-700">Period Start<FieldMark /></span>
                   <input type="date" value={form.period_start} onChange={(event) => setForm((current) => ({ ...current, period_start: event.target.value }))} className={INPUT_CLASS} />
                 </label>
                 <label className="block space-y-1">
-                  <span className="text-sm font-medium text-slate-700">Period End</span>
+                  <span className="text-sm font-medium text-slate-700">Period End<FieldMark /></span>
                   <input type="date" value={form.period_end} onChange={(event) => setForm((current) => ({ ...current, period_end: event.target.value }))} className={INPUT_CLASS} />
                 </label>
               </div>

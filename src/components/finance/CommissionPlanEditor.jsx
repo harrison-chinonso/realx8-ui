@@ -8,6 +8,7 @@ import Select from '../ui/Select';
 import MoneyInput from '../ui/MoneyInput';
 import { validateCommissionPlan, simulateCommissionPlan } from '../../api/commissionApi';
 import { useCurrency } from '../../context/useAppearance';
+import FieldMark, { requiredFromChildren } from '../ui/FieldMark';
 
 /**
  * Composing a commission structure.
@@ -100,7 +101,11 @@ const withRule = (config, type, next) => {
 
 const Field = ({ label, hint, children }) => (
   <label className="block space-y-1">
-    <span className="text-sm font-medium text-slate-700">{label}</span>
+    <span className="text-sm font-medium text-slate-700">
+      {label}
+      {/* Read off the control this wraps, so the mark cannot disagree with it. */}
+      <FieldMark required={requiredFromChildren(children)} />
+    </span>
     {children}
     {hint && <span className="block text-xs text-slate-500">{hint}</span>}
   </label>
@@ -462,7 +467,7 @@ export default function CommissionPlanEditor({ config, onChange, readOnly = fals
                     const set = levelRateFor(level.id);
                     return (
                       <label key={level.id} className="flex items-center gap-2">
-                        <span className="w-32 shrink-0 truncate text-sm text-slate-700">{level.name}</span>
+                        <span className="w-32 shrink-0 truncate text-sm text-slate-700">{level.name}<FieldMark /></span>
                         <Input
                           type="number" step="0.01" min="0"
                           value={set ?? ''}

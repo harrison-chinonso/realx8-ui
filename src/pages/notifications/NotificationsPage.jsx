@@ -23,6 +23,7 @@ import Table from '../../components/common/Table';
 import useAuthStore from '../../store/authStore';
 import BrowserNotificationsCard from '../../components/settings/BrowserNotificationsCard';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const TYPE_OPTIONS = ['info', 'warning', 'success', 'alert'];
 const EMAIL_TYPES = ['email', 'push', 'sms'];
@@ -305,7 +306,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
 
         {templates.length > 0 && (
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Use Template (optional)</label>
+            <label className="block text-sm font-medium text-slate-700">Use Template (optional)<FieldMark /></label>
             <Select
               value={form.template_id}
               onChange={(event) => {
@@ -331,7 +332,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Title</label>
+            <label className="block text-sm font-medium text-slate-700">Title<FieldMark /></label>
             <input
               value={form.title}
               onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
@@ -341,7 +342,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">Type</label>
+              <label className="block text-sm font-medium text-slate-700">Type<FieldMark /></label>
               <Select
                 value={form.type}
                 onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
@@ -351,7 +352,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
               </Select>
             </div>
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">Send To</label>
+              <label className="block text-sm font-medium text-slate-700">Send To<FieldMark /></label>
               <Select
                 value={form.target}
                 onChange={(event) => setForm((current) => ({ ...current, target: event.target.value, user_ids: [], company_id: '', role: '' }))}
@@ -367,7 +368,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
 
         {isSuperiorAdmin && form.target === 'company' && (
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Company</label>
+            <label className="block text-sm font-medium text-slate-700">Company<FieldMark /></label>
             <Select
               value={form.company_id}
               onChange={(event) => setForm((current) => ({ ...current, company_id: event.target.value }))}
@@ -381,7 +382,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
 
         {form.target === 'role' && (
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Role</label>
+            <label className="block text-sm font-medium text-slate-700">Role<FieldMark /></label>
             <Select
               value={form.role}
               onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}
@@ -402,7 +403,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
         )}
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Message</label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Message<FieldMark /></label>
           <textarea
             rows={3}
             value={form.body}
@@ -458,7 +459,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
                 required
               />
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Body</span>
+                <span className="text-sm font-medium text-slate-700">Body<FieldMark required /></span>
                 <textarea
                   rows={5}
                   value={singleForm.body}
@@ -485,7 +486,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
                 required
               />
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Type</span>
+                <span className="text-sm font-medium text-slate-700">Type<FieldMark /></span>
                 <Select
                   value={singleForm.type}
                   onChange={(event) => setSingleForm((current) => ({ ...current, type: event.target.value }))}
@@ -497,7 +498,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
                 </Select>
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Message</span>
+                <span className="text-sm font-medium text-slate-700">Message<FieldMark required /></span>
                 <textarea
                   rows={4}
                   value={singleForm.message}
@@ -669,7 +670,7 @@ function TemplatesPanel() {
             required
           />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Type</span>
+            <span className="text-sm font-medium text-slate-700">Type<FieldMark /></span>
             <Select
               value={form.type}
               onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
@@ -686,7 +687,7 @@ function TemplatesPanel() {
             onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
           />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Body</span>
+            <span className="text-sm font-medium text-slate-700">Body<FieldMark required /></span>
             <textarea
               rows={6}
               value={form.body}

@@ -3,6 +3,7 @@ import Select from '../ui/Select';
 import MoneyInput from '../ui/MoneyInput';
 import Button from '../ui/Button';
 import { numberOrUndefined } from '../../utils/numberField';
+import FieldMark, { requiredFromChildren } from '../ui/FieldMark';
 
 /**
  * The fields for whichever kind of promotion is being configured.
@@ -19,7 +20,11 @@ import { numberOrUndefined } from '../../utils/numberField';
 
 const Field = ({ label, hint, children }) => (
   <label className="block space-y-1">
-    <span className="text-sm font-medium text-slate-700">{label}</span>
+    <span className="text-sm font-medium text-slate-700">
+      {label}
+      {/* Read off the control this wraps, so the mark cannot disagree with it. */}
+      <FieldMark required={requiredFromChildren(children)} />
+    </span>
     {children}
     {hint && <span className="block text-xs text-slate-500">{hint}</span>}
   </label>

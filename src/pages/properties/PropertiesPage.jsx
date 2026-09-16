@@ -16,6 +16,7 @@ import PropertyMediaPanel from '../../components/common/PropertyMediaPanel';
 import { parseImages } from '../../utils/parseImages';
 import Select from '../../components/ui/Select';
 import { enumLabel } from '../../utils/enumLabel';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const TEXTAREA_CLASS = `${INPUT_CLASS} resize-none`;
@@ -256,11 +257,11 @@ export default function PropertiesPage() {
             </div>
             <form onSubmit={handleUpdate} className="space-y-4">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Name</span>
+                <span className="text-sm font-medium text-slate-700">Name<FieldMark required /></span>
                 <input value={editForm.name} onChange={(e) => setEditForm((current) => ({ ...current, name: e.target.value }))} className={INPUT_CLASS} required />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Type</span>
+                <span className="text-sm font-medium text-slate-700">Type<FieldMark /></span>
                 <Select value={editForm.type} onChange={(e) => setEditForm((current) => ({ ...current, type: e.target.value }))} className={INPUT_CLASS}>
                   <option value="">Select type...</option>
                   {propertyTypes.map((t) => (
@@ -269,26 +270,26 @@ export default function PropertiesPage() {
                 </Select>
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Address</span>
+                <span className="text-sm font-medium text-slate-700">Address<FieldMark /></span>
                 <input value={editForm.address} onChange={(e) => setEditForm((current) => ({ ...current, address: e.target.value }))} className={INPUT_CLASS} />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">City</span>
+                <span className="text-sm font-medium text-slate-700">City<FieldMark /></span>
                 <input value={editForm.city} onChange={(e) => setEditForm((current) => ({ ...current, city: e.target.value }))} className={INPUT_CLASS} />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">State</span>
+                <span className="text-sm font-medium text-slate-700">State<FieldMark /></span>
                 <input value={editForm.state} onChange={(e) => setEditForm((current) => ({ ...current, state: e.target.value }))} className={INPUT_CLASS} />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Country</span>
+                <span className="text-sm font-medium text-slate-700">Country<FieldMark /></span>
                 <input value={editForm.country} onChange={(e) => setEditForm((current) => ({ ...current, country: e.target.value }))} className={INPUT_CLASS} />
               </label>
               {/* One branch, or none. Moving a property here moves it OUT of
                   whichever branch it was in — there is one column, so there is
                   nowhere for a second assignment to go. */}
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Branch</span>
+                <span className="text-sm font-medium text-slate-700">Branch<FieldMark /></span>
                 <Select value={editForm.branch_id} onChange={(e) => setEditForm((current) => ({ ...current, branch_id: e.target.value }))} className={INPUT_CLASS}>
                   <option value="">No branch</option>
                   {branches.map((branch) => (
@@ -297,7 +298,7 @@ export default function PropertiesPage() {
                 </Select>
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Status</span>
+                <span className="text-sm font-medium text-slate-700">Status<FieldMark /></span>
                 <Select value={editForm.status} onChange={(e) => setEditForm((current) => ({ ...current, status: e.target.value }))} className={INPUT_CLASS}>
                   <option value="available">{enumLabel('available')}</option>
                   <option value="sold">{enumLabel('sold')}</option>
@@ -325,7 +326,7 @@ export default function PropertiesPage() {
                 />
               </div>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Description</span>
+                <span className="text-sm font-medium text-slate-700">Description<FieldMark /></span>
                 <textarea rows={4} value={editForm.description} onChange={(e) => setEditForm((current) => ({ ...current, description: e.target.value }))} className={TEXTAREA_CLASS} />
               </label>
               <div className="flex justify-end gap-2 pt-2">

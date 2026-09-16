@@ -20,6 +20,7 @@ import Select from '../../components/ui/Select';
  */
 import MoneyInput from '../../components/ui/MoneyInput';
 import { enumLabel } from '../../utils/enumLabel';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const TEXTAREA_CLASS = `${INPUT_CLASS} resize-none`;
@@ -532,7 +533,7 @@ export default function InvoiceDetailPage() {
             </div>
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Invoice #</span>
+                <span className="text-sm font-medium text-slate-700">Invoice #<FieldMark required /></span>
                 <input
                   value={editForm.invoice_id}
                   onChange={(event) => setEditForm((current) => ({ ...current, invoice_id: event.target.value }))}
@@ -562,7 +563,7 @@ export default function InvoiceDetailPage() {
                 onChange={(value) => setEditForm((current) => ({ ...current, amount: value }))}
               />
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Due Date</span>
+                <span className="text-sm font-medium text-slate-700">Due Date<FieldMark /></span>
                 <input
                   type="date"
                   value={editForm.due_date}
@@ -571,7 +572,7 @@ export default function InvoiceDetailPage() {
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Status</span>
+                <span className="text-sm font-medium text-slate-700">Status<FieldMark /></span>
                 {invoice?.status === 'paid' ? (
                   <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 font-medium">
                     <span>✓ Paid — status is locked and cannot be changed</span>
@@ -611,7 +612,7 @@ export default function InvoiceDetailPage() {
             </div>
             <form onSubmit={handlePaymentSubmit} className="space-y-4">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Payment Method</span>
+                <span className="text-sm font-medium text-slate-700">Payment Method<FieldMark /></span>
                 <Select
                   value={paymentForm.payment_method}
                   onChange={(event) => setPaymentForm((current) => ({ ...current, payment_method: event.target.value }))}
@@ -633,7 +634,7 @@ export default function InvoiceDetailPage() {
                 onChange={(value) => setPaymentForm((current) => ({ ...current, amount: value }))}
               />
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Reference</span>
+                <span className="text-sm font-medium text-slate-700">Reference<FieldMark required /></span>
                 <input
                   value={paymentForm.reference}
                   onChange={(event) => setPaymentForm((current) => ({ ...current, reference: event.target.value }))}
@@ -642,7 +643,7 @@ export default function InvoiceDetailPage() {
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Note</span>
+                <span className="text-sm font-medium text-slate-700">Note<FieldMark /></span>
                 <textarea
                   rows={3}
                   value={paymentForm.note}

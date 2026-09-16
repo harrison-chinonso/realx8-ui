@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
 import Button from '../ui/Button';
+import FieldMark from '../ui/FieldMark';
 
 const formatWhen = (value) => {
   if (!value) return '—';
@@ -87,7 +88,7 @@ export default function InspectionReviewModal({ open, inspection, decision, onCl
             {declining
               ? <span className="text-red-500"> *</span>
               : <span className="ml-1 font-normal text-slate-400">(optional)</span>}
-          </span>
+          <FieldMark /></span>
           <textarea
             rows={4}
             value={notes}

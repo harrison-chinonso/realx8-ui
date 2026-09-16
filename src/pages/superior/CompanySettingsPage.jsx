@@ -7,6 +7,7 @@ import Input from '../../components/ui/Input';
 import { brightenForDark } from '../../utils/colorUtils';
 import { CURRENCIES, currencyOptionLabel } from '../../constants/currencies';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const PRESET_COLORS = [
   { label: 'Blue', value: '#2563eb' },
@@ -332,21 +333,21 @@ function CompanyDetailsTab({ companyId, company, onToast, onCompanyUpdated }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Company Name <span className="text-rose-500">*</span></label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Company Name <span className="text-rose-500">*</span><FieldMark required /></label>
           <input type="text" value={form.name} onChange={set('name')} placeholder="Acme Corp" className={inputCls} required />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Billing Email <span className="text-rose-500">*</span></label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Billing Email <span className="text-rose-500">*</span><FieldMark required /></label>
           <input type="email" value={form.email} onChange={set('email')} placeholder="billing@company.com" className={inputCls} required />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Phone Number</label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Phone Number<FieldMark /></label>
           <input type="tel" value={form.phone} onChange={set('phone')} placeholder="+234 800 000 0000" className={inputCls} />
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-slate-700">
             Self-Registration Code
-            <span className="ml-1.5 text-xs font-normal text-slate-400">(5 alphanumeric chars)</span>
+            <span className="ml-1.5 text-xs font-normal text-slate-400">(5 alphanumeric chars)</span><FieldMark />
           </label>
           <input
             type="text"
@@ -363,14 +364,14 @@ function CompanyDetailsTab({ companyId, company, onToast, onCompanyUpdated }) {
           {codeHint && <p className={`mt-1 text-xs ${codeHint.cls}`}>{codeHint.text}</p>}
         </div>
         <div className="sm:col-span-2">
-          <label className="mb-1 block text-sm font-medium text-slate-700">Address</label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Address<FieldMark /></label>
           <textarea value={form.address} onChange={set('address')} rows={2} placeholder="123 Main St, Lagos, Nigeria" className={`${inputCls} resize-none`} />
         </div>
       </div>
 
       <div className="grid gap-4 border-t border-slate-100 pt-5 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Status<FieldMark /></label>
           <Select value={form.status} onChange={set('status')} className={inputCls}>
             {STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
@@ -378,7 +379,7 @@ function CompanyDetailsTab({ companyId, company, onToast, onCompanyUpdated }) {
           </Select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Plan</label>
+          <label className="mb-1 block text-sm font-medium text-slate-700">Plan<FieldMark /></label>
           <Select value={form.plan} onChange={set('plan')} className={inputCls}>
             {PLAN_OPTIONS.map((plan) => (
               <option key={plan.value} value={plan.value}>{plan.label}</option>
@@ -537,13 +538,13 @@ function AppearanceTab({ companyId, company, onToast }) {
 
       <div className="space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <div>
-          <label className="mb-1 block text-sm font-medium">App Name</label>
+          <label className="mb-1 block text-sm font-medium">App Name<FieldMark /></label>
           <Input value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} placeholder={company.name} className="max-w-xs" />
           <p className="mt-1 text-xs text-slate-500">Shown in the sidebar and browser tab.</p>
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">App Logo</label>
+          <label className="mb-2 block text-sm font-medium">App Logo<FieldMark /></label>
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50">
               {logoPreview
@@ -562,7 +563,7 @@ function AppearanceTab({ companyId, company, onToast }) {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Primary Color</label>
+          <label className="mb-2 block text-sm font-medium">Primary Color<FieldMark /></label>
           <div className="flex flex-wrap items-center gap-3">
             {PRESET_COLORS.map((c) => (
               <button
@@ -593,7 +594,7 @@ function AppearanceTab({ companyId, company, onToast }) {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Secondary Color</label>
+          <label className="mb-2 block text-sm font-medium">Secondary Color<FieldMark /></label>
           <div className="flex flex-wrap items-center gap-3">
             {SECONDARY_PRESETS.map((c) => (
               <button
@@ -711,7 +712,7 @@ function AppearanceTab({ companyId, company, onToast }) {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Dark Mode Primary</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Dark Mode Primary<FieldMark /></label>
               <div className="flex flex-wrap items-center gap-3">
                 {DARK_PRIMARY_PRESETS.map((c) => (
                   <button
@@ -741,7 +742,7 @@ function AppearanceTab({ companyId, company, onToast }) {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Dark Mode Secondary</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Dark Mode Secondary<FieldMark /></label>
               <div className="flex flex-wrap items-center gap-3">
                 {DARK_SECONDARY_PRESETS.map((c) => (
                   <button
@@ -782,7 +783,7 @@ function AppearanceTab({ companyId, company, onToast }) {
         )}
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Currency</label>
+          <label className="mb-2 block text-sm font-medium">Currency<FieldMark /></label>
           <Select
             value={form.currency}
             onChange={(e) => setForm({ ...form, currency: e.target.value })}
@@ -867,7 +868,7 @@ function FieldTab({ tabKey, companyId, onToast }) {
     <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       {fields.map(({ key, label, type, placeholder, options }) => (
         <div key={key}>
-          <label className="mb-1 block text-sm font-medium">{label}</label>
+          <label className="mb-1 block text-sm font-medium">{label}<FieldMark /></label>
           {type === 'select' ? (
             <Select
               value={values[key] || ''}

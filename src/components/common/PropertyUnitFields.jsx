@@ -1,5 +1,6 @@
 import MoneyInput from '../ui/MoneyInput';
 import Select from '../ui/Select';
+import FieldMark from '../ui/FieldMark';
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 
 export const MEASUREMENT_UNITS = ['sqm', 'sqft', 'hectares', 'acres', 'plots'];
@@ -46,29 +47,29 @@ export default function PropertyUnitFields({ value, onChange }) {
       <label className="block space-y-1">
         <span className="text-sm font-medium text-slate-700">
           Unit Name <span className="font-normal text-slate-400">(optional)</span>
-        </span>
+        <FieldMark /></span>
         <input value={value.name ?? ''} onChange={set('name')} className={INPUT_CLASS} placeholder="Corner Plot" />
       </label>
 
       <label className="block space-y-1">
-        <span className="text-sm font-medium text-slate-700">Property Size</span>
+        <span className="text-sm font-medium text-slate-700">Property Size<FieldMark /></span>
         <input type="number" min="0" step="0.01" value={value.size ?? ''} onChange={set('size')} className={INPUT_CLASS} placeholder="500" />
       </label>
 
       <label className="block space-y-1">
-        <span className="text-sm font-medium text-slate-700">Measured In</span>
+        <span className="text-sm font-medium text-slate-700">Measured In<FieldMark /></span>
         <Select value={value.unit || 'sqm'} onChange={set('unit')} className={INPUT_CLASS}>
           {MEASUREMENT_UNITS.map((unit) => <option key={unit} value={unit}>{unit}</option>)}
         </Select>
       </label>
 
       <label className="block space-y-1">
-        <span className="text-sm font-medium text-slate-700">Price</span>
+        <span className="text-sm font-medium text-slate-700">Price<FieldMark /></span>
         <MoneyInput value={value.price ?? ''} onChange={(price) => onChange({ ...value, price })} placeholder="25000000" />
       </label>
 
       <label className="block space-y-1">
-        <span className="text-sm font-medium text-slate-700">Quantity</span>
+        <span className="text-sm font-medium text-slate-700">Quantity<FieldMark /></span>
         <input type="number" min="0" step="1" value={value.quantity ?? ''} onChange={set('quantity')} className={INPUT_CLASS} placeholder="4" />
       </label>
     </div>

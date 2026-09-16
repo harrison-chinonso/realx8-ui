@@ -25,6 +25,7 @@ import CompanySelect from '../../components/common/CompanySelect';
 import ActionsMenu from '../../components/common/ActionsMenu';
 import useAuthStore from '../../store/authStore';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const STATUSES = [
   { value: 'new',                  label: 'New Lead' },
@@ -724,22 +725,22 @@ export default function LeadsPage() {
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <div className="xl:col-span-1">
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Name</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Name<FieldMark required /></label>
                   <input required value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} className={INPUT_CLASS} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Email<FieldMark /></label>
                   <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} className={INPUT_CLASS} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Phone</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Phone<FieldMark /></label>
                   <input value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} className={INPUT_CLASS} />
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Source</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Source<FieldMark /></label>
                   <Select value={form.source_id} onChange={(event) => setForm((current) => ({ ...current, source_id: event.target.value }))} className={INPUT_CLASS}>
                     <option value="">Select source</option>
                     {sources.map((source) => (
@@ -748,7 +749,7 @@ export default function LeadsPage() {
                   </Select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Label</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Label<FieldMark /></label>
                   <Select value={form.label_id} onChange={(event) => setForm((current) => ({ ...current, label_id: event.target.value }))} className={INPUT_CLASS}>
                     <option value="">Select label</option>
                     {labels.map((label) => (
@@ -757,7 +758,7 @@ export default function LeadsPage() {
                   </Select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Pipeline</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Pipeline<FieldMark /></label>
                   <Select
                     value={form.pipeline_id}
                     onChange={(event) => setForm((current) => ({ ...current, pipeline_id: event.target.value, stage_id: '' }))}
@@ -770,7 +771,7 @@ export default function LeadsPage() {
                   </Select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Stage</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Stage<FieldMark /></label>
                   <Select value={form.stage_id} onChange={(event) => setForm((current) => ({ ...current, stage_id: event.target.value }))} className={INPUT_CLASS}>
                     <option value="">Select stage</option>
                     {filteredStages.map((stage) => (
@@ -782,7 +783,7 @@ export default function LeadsPage() {
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Status</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Status<FieldMark /></label>
                   <Select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))} className={INPUT_CLASS}>
                     {STATUSES.map(({ value, label }) => (
                       <option key={value} value={value}>{label}</option>
@@ -790,7 +791,7 @@ export default function LeadsPage() {
                   </Select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Assigned To</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Assigned To<FieldMark /></label>
                   <Select value={form.assigned_to} onChange={(event) => setForm((current) => ({ ...current, assigned_to: event.target.value }))} className={INPUT_CLASS}>
                     <option value="">— Unassigned —</option>
                     {companyUsers.map((u) => (
@@ -799,7 +800,7 @@ export default function LeadsPage() {
                   </Select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Lead Thermal</label>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Lead Thermal<FieldMark /></label>
                   <Select value={form.lead_thermal} onChange={(event) => setForm((current) => ({ ...current, lead_thermal: event.target.value }))} className={INPUT_CLASS}>
                     {THERMAL_OPTIONS.map((thermal) => (
                       <option key={thermal} value={thermal}>{thermal}</option>
@@ -815,7 +816,7 @@ export default function LeadsPage() {
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Budget Category</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Budget Category<FieldMark /></label>
                     <Select value={form.budget_category} onChange={(event) => setForm((current) => ({ ...current, budget_category: event.target.value }))} className={INPUT_CLASS}>
                       <option value="">Select budget category</option>
                       {BUDGET_CATEGORIES.map((option) => (
@@ -824,7 +825,7 @@ export default function LeadsPage() {
                     </Select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Property Profile</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Property Profile<FieldMark /></label>
                     <Select value={form.property_profile} onChange={(event) => setForm((current) => ({ ...current, property_profile: event.target.value }))} className={INPUT_CLASS}>
                       <option value="">Select property profile</option>
                       {PROPERTY_PROFILES.map((option) => (
@@ -833,7 +834,7 @@ export default function LeadsPage() {
                     </Select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Intent Driver</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Intent Driver<FieldMark /></label>
                     <Select value={form.intent_driver} onChange={(event) => setForm((current) => ({ ...current, intent_driver: event.target.value }))} className={INPUT_CLASS}>
                       <option value="">Select intent driver</option>
                       {INTENT_DRIVERS.map((option) => (
@@ -842,7 +843,7 @@ export default function LeadsPage() {
                     </Select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Purchase Window</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Purchase Window<FieldMark /></label>
                     <Select value={form.purchase_window} onChange={(event) => setForm((current) => ({ ...current, purchase_window: event.target.value }))} className={INPUT_CLASS}>
                       <option value="">Select purchase window</option>
                       {PURCHASE_WINDOWS.map((option) => (
@@ -854,7 +855,7 @@ export default function LeadsPage() {
               </div>
 
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Description</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Description<FieldMark /></label>
                 <textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className={`${INPUT_CLASS} min-h-28`} />
               </div>
 
@@ -895,7 +896,7 @@ export default function LeadsPage() {
             <h3 className="text-sm font-semibold text-slate-900">Log New Activity</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Type</span>
+                <span className="text-sm font-medium text-slate-700">Type<FieldMark /></span>
                 <Select
                   value={activityForm.type}
                   onChange={(event) => setActivityForm((current) => ({ ...current, type: event.target.value }))}
@@ -907,7 +908,7 @@ export default function LeadsPage() {
                 </Select>
               </label>
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Date</span>
+                <span className="text-sm font-medium text-slate-700">Date<FieldMark /></span>
                 <input
                   type="date"
                   value={activityForm.activity_date}
@@ -917,7 +918,7 @@ export default function LeadsPage() {
               </label>
             </div>
             <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">Description</span>
+              <span className="text-sm font-medium text-slate-700">Description<FieldMark required /></span>
               <textarea
                 rows={4}
                 value={activityForm.description}
@@ -1058,7 +1059,7 @@ export default function LeadsPage() {
               <form onSubmit={handleObjectionSubmit} className="mt-4 space-y-4 rounded-xl border border-slate-200 p-4">
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                   <div className="xl:col-span-2">
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Objection Type</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Objection Type<FieldMark /></label>
                     <Select value={objectionForm.type} onChange={(event) => setObjectionForm((current) => ({ ...current, type: event.target.value }))} className={INPUT_CLASS}>
                       {OBJECTION_TYPES.map((option) => (
                         <option key={option} value={option}>{option}</option>
@@ -1066,22 +1067,22 @@ export default function LeadsPage() {
                     </Select>
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Date</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Date<FieldMark /></label>
                     <input type="date" value={objectionForm.objection_date} onChange={(event) => setObjectionForm((current) => ({ ...current, objection_date: event.target.value }))} className={INPUT_CLASS} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Logged By</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Logged By<FieldMark /></label>
                     <input value={user?.name || objectionForm.logged_by_name || 'System'} disabled className={`${INPUT_CLASS} bg-slate-50 text-slate-500`} />
                   </div>
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-2">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Description</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Description<FieldMark required /></label>
                     <textarea required value={objectionForm.description} onChange={(event) => setObjectionForm((current) => ({ ...current, description: event.target.value }))} className={`${INPUT_CLASS} min-h-28`} />
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Resolution Strategy</label>
+                    <label className="mb-1 block text-sm font-medium text-slate-700">Resolution Strategy<FieldMark /></label>
                     <textarea value={objectionForm.resolution_strategy} onChange={(event) => setObjectionForm((current) => ({ ...current, resolution_strategy: event.target.value }))} className={`${INPUT_CLASS} min-h-28`} />
                   </div>
                 </div>

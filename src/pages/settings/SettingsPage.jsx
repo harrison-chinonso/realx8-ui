@@ -14,6 +14,7 @@ import Input from '../../components/ui/Input';
 import { brightenForDark } from '../../utils/colorUtils';
 import { CURRENCIES, currencyOptionLabel } from '../../constants/currencies';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 /**
  * Which company the settings on screen belong to.
@@ -621,13 +622,13 @@ function AppearanceTab() {
       {/* ── Branding & Style ─────────────────────────────────────────────── */}
       <div className="space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <div>
-          <label className="mb-1 block text-sm font-medium">App Name</label>
+          <label className="mb-1 block text-sm font-medium">App Name<FieldMark /></label>
           <Input value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} placeholder="Realx8" className="max-w-xs" />
           <p className="mt-1 text-xs text-slate-500">Shown in the sidebar and browser tab.</p>
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">App Logo</label>
+          <label className="mb-2 block text-sm font-medium">App Logo<FieldMark /></label>
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50">
               {logoPreview
@@ -646,7 +647,7 @@ function AppearanceTab() {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Primary Color</label>
+          <label className="mb-2 block text-sm font-medium">Primary Color<FieldMark /></label>
           <div className="flex flex-wrap items-center gap-3">
             {PRESET_COLORS.map((c) => (
               <button
@@ -677,7 +678,7 @@ function AppearanceTab() {
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Secondary Color</label>
+          <label className="mb-2 block text-sm font-medium">Secondary Color<FieldMark /></label>
           <div className="flex flex-wrap items-center gap-3">
             {SECONDARY_PRESETS.map((c) => (
               <button
@@ -806,7 +807,7 @@ function AppearanceTab() {
 
             {/* Dark Primary */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Dark Mode Primary</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Dark Mode Primary<FieldMark /></label>
               <div className="flex flex-wrap items-center gap-3">
                 {DARK_PRIMARY_PRESETS.map((c) => (
                   <button
@@ -837,7 +838,7 @@ function AppearanceTab() {
 
             {/* Dark Secondary */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Dark Mode Secondary</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Dark Mode Secondary<FieldMark /></label>
               <div className="flex flex-wrap items-center gap-3">
                 {DARK_SECONDARY_PRESETS.map((c) => (
                   <button
@@ -879,7 +880,7 @@ function AppearanceTab() {
         )}
 
         <div>
-          <label className="mb-2 block text-sm font-medium">Currency</label>
+          <label className="mb-2 block text-sm font-medium">Currency<FieldMark /></label>
           <Select
             value={form.currency}
             onChange={(e) => setForm({ ...form, currency: e.target.value })}
@@ -1287,9 +1288,9 @@ function SystemConfigTab() {
         {fields.map(({ section, items }) => (
           <div key={section} className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200 space-y-4">
             <h2 className="font-medium text-slate-700 border-b border-slate-100 pb-2">{section}</h2>
-            {items.map(({ key, label, type, placeholder, options }) => (
+            {items.map(({ key, label, type, placeholder, options, required }) => (
               <div key={key}>
-                <label className="mb-1 block text-sm font-medium text-slate-700">{label}</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">{label}<FieldMark required={Boolean(required)} /></label>
                 {/*
                   * `select` needs its own branch — rendering it through the input
                   * below produces <input type="select">, which the browser falls
@@ -1611,7 +1612,7 @@ export default function SettingsPage() {
             <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
               {currentGroup?.fields?.map(({ key, label, type, placeholder, options }) => (
                 <div key={key}>
-                  <label className="mb-1 block text-sm font-medium">{label}</label>
+                  <label className="mb-1 block text-sm font-medium">{label}<FieldMark /></label>
                   {type === 'select' ? (
                     <Select
                       value={values[key] || ''}

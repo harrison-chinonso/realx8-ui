@@ -18,6 +18,7 @@ import { enumLabel } from '../../utils/enumLabel';
 import useNavBadgeStore from '../../store/navBadgeStore';
 import { uploadMediaFiles } from '../../api/mediaApi';
 import { useAssistantHandoff } from '../../assistant/useAssistantHandoff';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 
@@ -436,7 +437,7 @@ export default function ReceiptsPage() {
             </div>
 
             <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">How was it paid?</span>
+              <span className="text-sm font-medium text-slate-700">How was it paid?<FieldMark /></span>
               <Select value={reviewMethod} onChange={(event) => setReviewMethod(event.target.value)}>
                 <option value="">Select a method…</option>
                 {reviewMethods.map((method) => (
@@ -446,7 +447,7 @@ export default function ReceiptsPage() {
             </label>
 
             <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">Transaction reference</span>
+              <span className="text-sm font-medium text-slate-700">Transaction reference<FieldMark /></span>
               <input
                 type="text"
                 value={reviewReference}
@@ -487,7 +488,7 @@ export default function ReceiptsPage() {
       <Modal open={Boolean(rejectingReceipt)} onClose={closeRejectModal} title="Reject Receipt" size="sm">
         <form onSubmit={handleReject} className="space-y-4">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Reason for rejection</span>
+            <span className="text-sm font-medium text-slate-700">Reason for rejection<FieldMark /></span>
             <textarea
               rows={4}
               value={rejectNotes}

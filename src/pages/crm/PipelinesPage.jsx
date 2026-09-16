@@ -14,6 +14,7 @@ import {
 import Modal from '../../components/common/Modal';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import FieldMark from '../../components/ui/FieldMark';
 
 const normalizeList = (response) => {
   if (Array.isArray(response)) return response;
@@ -427,7 +428,7 @@ export default function PipelinesPage() {
           />
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Color</span>
+            <span className="text-sm font-medium text-slate-700">Color<FieldMark /></span>
             <input
               type="color"
               value={stageForm.color}

@@ -16,6 +16,7 @@ import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const CHANNELS = [
@@ -459,7 +460,7 @@ export default function MediaPostsPage() {
       <Modal open={showModal} onClose={closeModal} title={editingPost ? 'Edit Post' : 'Create Post'}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Title</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Title<FieldMark required /></label>
             <input
               required
               value={form.title}
@@ -471,7 +472,7 @@ export default function MediaPostsPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Type</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Type<FieldMark /></label>
               <Select
                 value={form.type}
                 onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
@@ -482,7 +483,7 @@ export default function MediaPostsPage() {
               </Select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Schedule Date & Time</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Schedule Date & Time<FieldMark /></label>
               <input
                 type="datetime-local"
                 value={form.scheduled_at}
@@ -493,7 +494,7 @@ export default function MediaPostsPage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700">Caption / Content</label>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Caption / Content<FieldMark /></label>
             <textarea
               rows={6}
               value={form.body}
@@ -504,7 +505,7 @@ export default function MediaPostsPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-700">Target Channels</label>
+            <label className="block text-sm font-medium text-slate-700">Target Channels<FieldMark /></label>
             <div className="grid gap-2 sm:grid-cols-2">
               {CHANNELS.map((channel) => (
                 <label key={channel.value} className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
@@ -521,7 +522,7 @@ export default function MediaPostsPage() {
 
           <div className="space-y-3">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Images / Videos</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Images / Videos<FieldMark /></label>
               <div
                 className="cursor-pointer rounded-lg border-2 border-dashed border-slate-600 p-6 text-center transition-colors hover:border-slate-400"
                 onDragOver={(event) => event.preventDefault()}
@@ -565,7 +566,7 @@ export default function MediaPostsPage() {
 
           {workflowModal.type === 'approve' && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Optional schedule date</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Optional schedule date<FieldMark /></label>
               <input
                 type="datetime-local"
                 value={workflowModal.scheduled_at}
@@ -578,7 +579,7 @@ export default function MediaPostsPage() {
 
           {workflowModal.type === 'schedule' && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Schedule date & time</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Schedule date & time<FieldMark required /></label>
               <input
                 type="datetime-local"
                 required
@@ -591,7 +592,7 @@ export default function MediaPostsPage() {
 
           {workflowModal.type === 'reject' && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Reason for rejection</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Reason for rejection<FieldMark /></label>
               <textarea
                 rows={4}
                 value={workflowModal.rejection_reason}

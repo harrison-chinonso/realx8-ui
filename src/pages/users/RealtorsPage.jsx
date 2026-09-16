@@ -14,6 +14,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { useCurrency } from '../../context/useAppearance';
+import FieldMark from '../../components/ui/FieldMark';
 
 export default function RealtorsPage() {
   const fmt = useCurrency();
@@ -150,7 +151,7 @@ export default function RealtorsPage() {
           <Input label="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           <Input label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Tier / Category</label>
+            <label className="block text-sm font-medium text-slate-700">Tier / Category<FieldMark /></label>
             <Select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
               <option value="basic">Basic</option>
               <option value="professional">Professional</option>

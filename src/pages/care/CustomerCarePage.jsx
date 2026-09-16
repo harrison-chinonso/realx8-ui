@@ -11,6 +11,7 @@ import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
 import { useCurrency } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const tabs = [
   { id: 'vip', label: 'VIP Clients' },
@@ -256,7 +257,7 @@ export default function CustomerCarePage({ section = 'vip' }) {
         <div className="space-y-4">
           <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <label className="mb-1 block text-sm font-medium text-slate-700">Filter by tier</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Filter by tier<FieldMark /></label>
               <Select value={vipTier} onChange={(event) => setVipTier(event.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
                 <option value="">All tiers</option>
                 <option value="gold">Gold</option>
@@ -297,14 +298,14 @@ export default function CustomerCarePage({ section = 'vip' }) {
           <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 lg:flex-row lg:items-end lg:justify-between">
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Filter by type</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Filter by type<FieldMark /></label>
                 <Select value={communicationFilter.type} onChange={(event) => setCommunicationFilter((current) => ({ ...current, type: event.target.value }))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
                   <option value="">All types</option>
                   {messageTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                 </Select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-slate-700">Filter by date</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">Filter by date<FieldMark /></label>
                 <input type="date" value={communicationFilter.date} onChange={(event) => setCommunicationFilter((current) => ({ ...current, date: event.target.value }))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
               </div>
             </div>
@@ -332,7 +333,7 @@ export default function CustomerCarePage({ section = 'vip' }) {
       <Modal open={showVipModal} onClose={() => setShowVipModal(false)} title={editingVip ? 'Edit VIP Client' : 'Add VIP Client'}>
         <form onSubmit={submitVip} className="space-y-3">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Select Client</span>
+            <span className="text-sm font-medium text-slate-700">Select Client<FieldMark /></span>
             <Select value={vipForm.client_id} onChange={(event) => pickClient(event.target.value, setVipForm, vipForm)} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
               <option value="">Custom client entry</option>
               {clients.map((client) => <option key={client.id} value={client.id}>{client.name} ({client.email})</option>)}
@@ -348,14 +349,14 @@ export default function CustomerCarePage({ section = 'vip' }) {
             <Input label="Investment Count" type="number" min="0" value={vipForm.investment_count} onChange={(event) => setVipForm((current) => ({ ...current, investment_count: event.target.value }))} required />
           </div>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Status</span>
+            <span className="text-sm font-medium text-slate-700">Status<FieldMark /></span>
             <Select value={vipForm.status} onChange={(event) => setVipForm((current) => ({ ...current, status: event.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </Select>
           </label>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Notes</span>
+            <span className="text-sm font-medium text-slate-700">Notes<FieldMark /></span>
             <textarea rows={3} value={vipForm.notes} onChange={(event) => setVipForm((current) => ({ ...current, notes: event.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" />
           </label>
           <div className="flex gap-2 pt-2">
@@ -383,24 +384,24 @@ export default function CustomerCarePage({ section = 'vip' }) {
       <Modal open={showCommunicationModal} onClose={() => setShowCommunicationModal(false)} title="Send Message">
         <form onSubmit={submitCommunication} className="space-y-3">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Select Client</span>
+            <span className="text-sm font-medium text-slate-700">Select Client<FieldMark required /></span>
             <Select value={communicationForm.client_name} onChange={(event) => setCommunicationForm((current) => ({ ...current, client_name: event.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" required>
               <option value="">Choose client</option>
               {clients.map((client) => <option key={client.id} value={client.name}>{client.name}</option>)}
             </Select>
           </label>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Message Type</span>
+            <span className="text-sm font-medium text-slate-700">Message Type<FieldMark /></span>
             <Select value={communicationForm.type} onChange={(event) => setCommunicationForm((current) => ({ ...current, type: event.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
               {messageTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </Select>
           </label>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Message Body</span>
+            <span className="text-sm font-medium text-slate-700">Message Body<FieldMark required /></span>
             <textarea rows={4} value={communicationForm.message} onChange={(event) => setCommunicationForm((current) => ({ ...current, message: event.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" required />
           </label>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Delivery</span>
+            <span className="text-sm font-medium text-slate-700">Delivery<FieldMark /></span>
             <Select value={communicationForm.mode} onChange={(event) => setCommunicationForm((current) => ({ ...current, mode: event.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
               <option value="now">Send Now</option>
               <option value="schedule">Schedule</option>
@@ -417,21 +418,21 @@ export default function CustomerCarePage({ section = 'vip' }) {
       <Modal open={showAlertModal} onClose={() => setShowAlertModal(false)} title="Create Alert">
         <form onSubmit={submitAlert} className="space-y-3">
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Client Name</span>
+            <span className="text-sm font-medium text-slate-700">Client Name<FieldMark required /></span>
             <Select value={alertForm.client_name} onChange={(event) => setAlertForm((current) => ({ ...current, client_name: event.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" required>
               <option value="">Choose client</option>
               {clients.map((client) => <option key={client.id} value={client.name}>{client.name}</option>)}
             </Select>
           </label>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Alert Type</span>
+            <span className="text-sm font-medium text-slate-700">Alert Type<FieldMark /></span>
             <Select value={alertForm.alert_type} onChange={(event) => setAlertForm((current) => ({ ...current, alert_type: event.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
               {alertTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </Select>
           </label>
           <Input label="Trigger Date" type="date" value={alertForm.trigger_date} onChange={(event) => setAlertForm((current) => ({ ...current, trigger_date: event.target.value }))} required />
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Message</span>
+            <span className="text-sm font-medium text-slate-700">Message<FieldMark required /></span>
             <textarea rows={4} value={alertForm.message} onChange={(event) => setAlertForm((current) => ({ ...current, message: event.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none" required />
           </label>
           <div className="flex gap-2 pt-2">

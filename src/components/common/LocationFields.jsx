@@ -1,4 +1,5 @@
 import PropertyMap from './PropertyMap';
+import FieldMark from '../ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 
@@ -16,7 +17,7 @@ export default function LocationFields({ latitude, longitude, onChange, label, h
     <div className="space-y-3">
       <div className="grid gap-4 md:grid-cols-2">
         <label className="block space-y-1">
-          <span className="text-sm font-medium text-slate-700">Latitude</span>
+          <span className="text-sm font-medium text-slate-700">Latitude<FieldMark /></span>
           <input
             type="number"
             step="any"
@@ -29,7 +30,7 @@ export default function LocationFields({ latitude, longitude, onChange, label, h
           />
         </label>
         <label className="block space-y-1">
-          <span className="text-sm font-medium text-slate-700">Longitude</span>
+          <span className="text-sm font-medium text-slate-700">Longitude<FieldMark /></span>
           <input
             type="number"
             step="any"

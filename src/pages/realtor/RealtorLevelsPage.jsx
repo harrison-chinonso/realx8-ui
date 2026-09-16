@@ -13,6 +13,7 @@ import Input from '../../components/ui/Input';
 import Modal from '../../components/common/Modal';
 import VerificationBadge from '../../components/common/VerificationBadge';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 const asList = (response) => (Array.isArray(response) ? response : (response?.data ?? []));
 
@@ -140,7 +141,7 @@ export default function RealtorLevelsPage() {
           </div>
           {isSuperiorAdmin && (
             <label className="block space-y-1">
-              <span className="text-xs font-medium text-slate-600">Show levels for</span>
+              <span className="text-xs font-medium text-slate-600">Show levels for<FieldMark /></span>
               <Select
                 value={companyFilter}
                 onChange={(e) => setCompanyFilter(e.target.value)}
@@ -356,7 +357,7 @@ export default function RealtorLevelsPage() {
               {review?.decision === 'rejected'
                 ? <span className="text-red-500"> *</span>
                 : <span className="ml-1 font-normal text-slate-400">(optional)</span>}
-            </span>
+            <FieldMark /></span>
             <textarea
               rows={3}
               value={notes}

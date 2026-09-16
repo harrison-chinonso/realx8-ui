@@ -8,6 +8,7 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { useCurrency } from '../../context/useAppearance';
 import MoneyInput from '../../components/ui/MoneyInput';
+import FieldMark from '../../components/ui/FieldMark';
 
 const STATUSES = ['open', 'won', 'lost'];
 const getItems = (response) => response?.data ?? response ?? [];
@@ -134,35 +135,35 @@ export default function DealsPage() {
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title={editDeal ? 'Edit Deal' : 'New Deal'}>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="mb-1 block text-sm font-medium">Deal name</label>
+            <label className="mb-1 block text-sm font-medium">Deal name<FieldMark required /></label>
             <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Amount ($)</label>
+            <label className="mb-1 block text-sm font-medium">Amount ($)<FieldMark /></label>
             <MoneyInput value={form.amount} onChange={(amount) => setForm({ ...form, amount })} />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Pipeline</label>
+            <label className="mb-1 block text-sm font-medium">Pipeline<FieldMark /></label>
             <Select value={form.pipeline_id} onChange={(e) => setForm({ ...form, pipeline_id: e.target.value, stage_id: '' })}>
               <option value="">— Select pipeline —</option>
               {pipelines.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </Select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Stage</label>
+            <label className="mb-1 block text-sm font-medium">Stage<FieldMark /></label>
             <Select value={form.stage_id} onChange={(e) => setForm({ ...form, stage_id: e.target.value })}>
               <option value="">— Select stage —</option>
               {stagesForPipeline.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </Select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Status</label>
+            <label className="mb-1 block text-sm font-medium">Status<FieldMark /></label>
             <Select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
               {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             </Select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium">Expected close date</label>
+            <label className="mb-1 block text-sm font-medium">Expected close date<FieldMark /></label>
             <Input type="date" value={form.expected_close_date} onChange={(e) => setForm({ ...form, expected_close_date: e.target.value })} />
           </div>
           <div className="flex gap-2 pt-2">

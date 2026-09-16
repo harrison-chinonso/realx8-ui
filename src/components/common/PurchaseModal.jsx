@@ -5,6 +5,7 @@ import Select from '../ui/Select';
 import { checkoutProperty } from '../../api/propertyApi';
 import { getUnitPurchaseOptions } from '../../api/financeApi';
 import { useCurrency } from '../../context/useAppearance';
+import FieldMark from '../ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 
@@ -210,7 +211,7 @@ export default function PurchaseModal({ open, property, onClose, onInvoice }) {
         ) : (
           <>
             <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">Unit</span>
+              <span className="text-sm font-medium text-slate-700">Unit<FieldMark /></span>
               <Select value={unitId} onChange={(e) => { setUnitId(e.target.value); setQuantity('1'); }} className={INPUT_CLASS}>
                 <option value="">Select a unit...</option>
                 {units.map((u) => (
@@ -225,7 +226,7 @@ export default function PurchaseModal({ open, property, onClose, onInvoice }) {
             <label className="block space-y-1">
               <span className="text-sm font-medium text-slate-700">
                 Quantity {unit && <span className="font-normal text-slate-400">(max {available})</span>}
-              </span>
+              <FieldMark /></span>
               <input
                 type="number"
                 min="1"

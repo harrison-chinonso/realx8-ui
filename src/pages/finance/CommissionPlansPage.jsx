@@ -12,6 +12,7 @@ import {
 } from '../../api/commissionApi';
 import { listProperties, listPropertyUnits } from '../../api/propertyApi';
 import Select from '../../components/ui/Select';
+import FieldMark from '../../components/ui/FieldMark';
 
 /**
  * Commission plans — the configuration that decides what a sale pays.
@@ -287,7 +288,7 @@ export default function CommissionPlansPage() {
             </p>
 
             <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">Applies to</span>
+              <span className="text-sm font-medium text-slate-700">Applies to<FieldMark /></span>
               <Select value={scopeType} onChange={(e) => { setScopeType(e.target.value); setScopeId(''); }}>
                 <option value="unit">One unit</option>
                 <option value="property">A whole property</option>
@@ -297,7 +298,7 @@ export default function CommissionPlansPage() {
 
             {scopeType === 'property' && (
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Property</span>
+                <span className="text-sm font-medium text-slate-700">Property<FieldMark /></span>
                 <Select value={scopeId} onChange={(e) => setScopeId(e.target.value)}>
                   <option value="">Choose a property…</option>
                   {properties.map((p) => (
@@ -309,7 +310,7 @@ export default function CommissionPlansPage() {
 
             {scopeType === 'unit' && (
               <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Unit</span>
+                <span className="text-sm font-medium text-slate-700">Unit<FieldMark /></span>
                 <Select value={scopeId} onChange={(e) => setScopeId(e.target.value)}>
                   <option value="">Choose a unit…</option>
                   {units.map((u) => (

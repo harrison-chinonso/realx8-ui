@@ -5,6 +5,7 @@ import { getUser } from '../../api/userApi';
 import Button from '../ui/Button';
 import useAuthStore from '../../store/authStore';
 import Select from '../ui/Select';
+import FieldMark from '../ui/FieldMark';
 
 /**
  * The realtor's place on the level ladder and the upgrade request flow.
@@ -138,7 +139,7 @@ export default function LevelPanel() {
           </div>
 
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Level to request</span>
+            <span className="text-sm font-medium text-slate-700">Level to request<FieldMark /></span>
             <Select
               value={target}
               onChange={(e) => setTarget(e.target.value)}
@@ -151,7 +152,7 @@ export default function LevelPanel() {
           <label className="block space-y-1">
             <span className="text-sm font-medium text-slate-700">
               Why should you be upgraded? <span className="font-normal text-slate-400">(optional)</span>
-            </span>
+            <FieldMark /></span>
             <textarea
               rows={3}
               value={reason}

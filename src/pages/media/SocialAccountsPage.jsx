@@ -7,6 +7,7 @@ import {
 } from '../../api/mediaApi';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
+import FieldMark from '../../components/ui/FieldMark';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const PLATFORM_CONFIG = {
@@ -278,7 +279,7 @@ export default function SocialAccountsPage() {
           <form onSubmit={handleSave} className="space-y-4">
             {PLATFORM_CONFIG[activePlatform].fields.map((field) => (
               <div key={field.key}>
-                <label className="mb-1 block text-sm font-medium text-slate-700">{field.label}</label>
+                <label className="mb-1 block text-sm font-medium text-slate-700">{field.label}<FieldMark /></label>
                 <input
                   type={field.type || 'text'}
                   value={form[field.key] || ''}

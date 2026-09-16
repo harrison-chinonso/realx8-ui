@@ -13,6 +13,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { useCurrency } from '../../context/useAppearance';
+import FieldMark from '../../components/ui/FieldMark';
 
 export default function ClientsPage() {
   const fmt = useCurrency();
@@ -156,7 +157,7 @@ export default function ClientsPage() {
             schedule inspections for them.
           </p>
           <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Realtor</span>
+            <span className="text-sm font-medium text-slate-700">Realtor<FieldMark /></span>
             <Select
               defaultValue={assigning?.realtor_id ?? ''}
               onChange={(e) => handleAssignRealtor(e.target.value)}

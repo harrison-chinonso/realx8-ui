@@ -10,6 +10,7 @@ import PropertyUnitFields, { emptyUnitConfig } from '../../components/common/Pro
 import useAuthStore from '../../store/authStore';
 import Select from '../../components/ui/Select';
 import { useAssistantHandoff } from '../../assistant/useAssistantHandoff';
+import FieldMark from '../../components/ui/FieldMark';
 
 const COUNTRY_STATE_MAP = {
   Nigeria: ['Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara', 'FCT'],
@@ -140,7 +141,7 @@ export default function CreatePropertyPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <Input label="Property Name" value={form.name} onChange={setField('name')} required />
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Property Type</label>
+            <label className="block text-sm font-medium text-slate-700">Property Type<FieldMark /></label>
             <div className="relative">
               <Select
                 value={form.type_id}
@@ -161,7 +162,7 @@ export default function CreatePropertyPage() {
           */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-slate-700">
-              Branch <span className="font-normal text-slate-400">(optional)</span>
+              Branch <span className="font-normal text-slate-400">(optional)</span><FieldMark />
             </label>
             <div className="relative">
               <Select
@@ -183,7 +184,7 @@ export default function CreatePropertyPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Status</label>
+            <label className="block text-sm font-medium text-slate-700">Status<FieldMark /></label>
             <div className="relative">
               <Select
                 value={form.status}
@@ -203,7 +204,7 @@ export default function CreatePropertyPage() {
 
         <div className="grid gap-4 md:grid-cols-3">
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Country</label>
+            <label className="block text-sm font-medium text-slate-700">Country<FieldMark /></label>
             <div className="relative">
               <Select
                 value={form.country}
@@ -216,7 +217,7 @@ export default function CreatePropertyPage() {
             </div>
           </div>
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">State / Region</label>
+            <label className="block text-sm font-medium text-slate-700">State / Region<FieldMark /></label>
             <div className="relative">
               <Select
                 value={form.state}
@@ -252,7 +253,7 @@ export default function CreatePropertyPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-slate-700">Description</label>
+          <label className="block text-sm font-medium text-slate-700">Description<FieldMark /></label>
           <textarea
             rows={4}
             value={form.description}
