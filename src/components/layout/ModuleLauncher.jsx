@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Search, X } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Search, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
 import { LAUNCHER_CSS } from './launcherStyles';
 import { DESCRIPTIONS, orderTiles } from './launcherGroups';
 import { rememberVisit, recentVisits } from './recentScreens';
+import NavBadge from './NavBadge';
 
 /**
  * The module launcher — every area of the product, in one grid.
@@ -94,10 +95,14 @@ const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
  * description is the two words saying what a module HOLDS, so it appears on the
  * grouped tiles and not on a tile that already names the screen it opens.
  */
-function Tile({ icon: Icon, name, description, slot, onOpen, to, innerRef, ...props }) {
+function Tile({ icon: Icon, name, description, slot, badge, onOpen, to, innerRef, ...props }) {
   const body = (
     <>
       {slot && <span className="rx-slot" aria-hidden="true">{slot}</span>}
+      {/* Top-right, where the slot key used to sit — the slot key is on hover
+          only and moved to the left, because a count that is always there
+          should not have something appearing on top of it. */}
+      {badge}
       {/* Decorative: the name is the accessible name. */}
       <span className="rx-ic"><Icon aria-hidden="true" strokeWidth={1.75} size={20} /></span>
       <span className="rx-name">{name}</span>
@@ -114,6 +119,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   const [query, setQuery] = useState('');
   const [section, setSection] = useState(null);
   const [group, setGroup] = useState(null);
+  const [showOverflow, setShowOverflow] = useState(false);
   const sections = useSections();
   /*
    * Grouped for staff and realtors; flat for clients.
@@ -130,7 +136,13 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   const tileRefs = useRef([]);
 
   useEffect(() => {
-    if (open) { setQuery(''); setSection(null); setGroup(null); searchRef.current?.focus(); }
+    if (open) {
+      setQuery('');
+      setSection(null);
+      setGroup(null);
+      setShowOverflow(false);
+      searchRef.current?.focus();
+    }
   }, [open]);
 
   const term = query.trim().toLowerCase();
@@ -205,7 +217,48 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   }), [sections, userType]);
 
   /* Staff keep navConfig's order; a realtor's is declared — see launcherGroups. */
-  const orderedModuleTiles = useMemo(() => orderTiles(moduleTiles, userType), [moduleTiles, userType]);
+  /**
+   * The top level, as one list.
+   *
+   * Staff and realtors get a tile per module; a client gets a tile per screen.
+   * Past this point the two are the same thing — ordered, capped and rendered
+   * by the same code — so the cap cannot apply to one shape and not the other.
+   */
+  const topLevelTiles = useMemo(() => (isGrouped
+    ? moduleTiles
+    : rows.flatMap((row) => row.tiles).map((item) => ({
+      kind: 'link', item, name: item.label, icon: item.icon, to: item.to,
+    }))), [isGrouped, moduleTiles, rows]);
+
+  const orderedModuleTiles = useMemo(
+    () => orderTiles(topLevelTiles, userType), [topLevelTiles, userType],
+  );
+
+  /**
+   * Eight tiles, never nine.
+   *
+   * The grid is two rows of four, and the counts that fall out of navConfig
+   * happen to be eight for a company admin, a realtor and a client today. They
+   * are not guaranteed to be: a platform administrator sees Platform Admin as a
+   * ninth, and any new section or permission moves the number again. A grid
+   * that silently grows a third row of one stops being the thing people learn
+   * by position.
+   *
+   * So the eighth tile becomes More whenever there would have been a ninth,
+   * and everything from the eighth onwards goes inside it. Seven plus More,
+   * rather than eight plus More, because the eighth would otherwise be pushed
+   * out by the tile that exists to hold what was pushed out.
+   */
+  const MAX_TILES = 8;
+  const { mainTiles, overflowTiles } = useMemo(() => {
+    if (orderedModuleTiles.length <= MAX_TILES) {
+      return { mainTiles: orderedModuleTiles, overflowTiles: [] };
+    }
+    return {
+      mainTiles: orderedModuleTiles.slice(0, MAX_TILES - 1),
+      overflowTiles: orderedModuleTiles.slice(MAX_TILES - 1),
+    };
+  }, [orderedModuleTiles]);
 
   const close = useCallback(() => {
     onClose();
@@ -226,10 +279,12 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
     if (section) {
       return section.items.map((item) => (item.children ? { kind: 'group', item } : { kind: 'link', item }));
     }
-    return orderedModuleTiles;
-  }, [isGrouped, term, matches, group, section, orderedModuleTiles]);
+    if (showOverflow) return overflowTiles;
+    return mainTiles;
+  }, [isGrouped, term, matches, group, section, showOverflow, mainTiles, overflowTiles]);
 
   const openTile = useCallback((tile) => {
+    if (tile.kind === 'overflow') { setShowOverflow(true); return; }
     if (tile.kind === 'group') { setGroup(tile.item); return; }
     if (tile.kind === 'section') {
       const entry = tile.item;
@@ -392,6 +447,49 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
    */
   const heading = [section?.section, group?.label].filter(Boolean).join(' → ');
 
+  /**
+   * A grid of top-level tiles — modules for staff and realtors, screens for a
+   * client, and the same code for the overflow behind More.
+   */
+  const renderModuleTiles = (tiles, offset = 0) => (
+    <div className="rx-modules">
+      {tiles.map((tile, index) => {
+        // A tile that GOES somewhere takes its own words; only a tile that opens
+        // a drawer speaks for the section behind it. A realtor's Finance holds
+        // one screen, My Commissions, and was describing itself as "Invoices
+        // and payments".
+        const opensDrawer = !tile.to;
+        return (
+          <Tile
+            key={tile.name}
+            innerRef={(node) => { tileRefs.current[offset + index] = node; }}
+            icon={tile.icon}
+            name={tile.name}
+            description={opensDrawer
+              ? (DESCRIPTIONS[tile.item.section] ?? DESCRIPTIONS[tile.name])
+              : DESCRIPTIONS[tile.name]}
+            slot={SLOT_KEYS[offset + index]}
+            /*
+             * The count of work waiting inside, on the tile that opens it.
+             *
+             * Payment Approvals is three levels down — Finance, then Payments,
+             * then the screen — so without this the badge exists and is behind
+             * two folds, which is where a notification is no use. NavBadge sums
+             * every badged leaf beneath whatever it is given, which is how the
+             * sidebar templates put the same number on a collapsed section.
+             */
+            badge={opensDrawer
+              ? <NavBadge items={tile.item.items} className="rx-badge" />
+              : <NavBadge item={tile.item} className="rx-badge" />}
+            to={tile.to}
+            onOpen={() => openTile(tile)}
+            aria-label={opensDrawer ? `${tile.name} — ${tile.count} screens` : undefined}
+          />
+        );
+      })}
+    </div>
+  );
+
   /** A grid of tiles built from drill-in entries, which may open rather than go. */
   const renderEntries = (tiles) => (
     <div className="rx-modules">
@@ -435,10 +533,14 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
 
       <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Modules" className={`rx-panel relative${isGrouped ? ' rx-panel-grouped' : ''}`}>
         <div className="rx-search">
-          {(section || group) && !term && (
+          {(section || group || showOverflow) && !term && (
             <button
               type="button"
-              onClick={() => (group ? setGroup(null) : setSection(null))}
+              onClick={() => {
+                if (group) return setGroup(null);
+                if (section) return setSection(null);
+                return setShowOverflow(false);
+              }}
               aria-label={group ? `Back to ${section?.section || 'the section'}` : 'Back to all modules'}
               style={{ color: 'var(--rx-ink-3)', flexShrink: 0 }}
             >
@@ -508,73 +610,30 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
                 </div>
                 {renderEntries(visibleTiles)}
               </div>
-            ) : isGrouped ? (
-              /*
-               * Staff: one tile per module, filling the page — four across the
-               * top, four across the bottom.
-               *
-               * The four band headings that used to divide these are gone.
-               * They grouped the modules three, one, two and two, which cannot
-               * be laid out as two even rows of four, and a heading over a
-               * single tile was never doing much work.
-               *
-               * Order is navConfig's, which is the order the menu is declared
-               * in and the order it reads in every other template. The bands
-               * imposed one of their own — Marketing third, People & Access
-               * seventh — and with no headings left to explain it, it was just
-               * a shuffle.
-               */
-              <div className="rx-modules">
-                {orderedModuleTiles.map((tile, index) => {
-                  // A tile that GOES somewhere takes its own words; only a tile
-                  // that opens a drawer speaks for the section behind it. A
-                  // realtor's Finance holds one screen, My Commissions, and was
-                  // describing itself as "Invoices and payments".
-                  const opensDrawer = tile.kind === 'section' && !tile.to;
-                  return (
-                    <Tile
-                      key={tile.name}
-                      innerRef={(node) => { tileRefs.current[index] = node; }}
-                      icon={tile.icon}
-                      name={tile.name}
-                      description={opensDrawer
-                        ? (DESCRIPTIONS[tile.item.section] ?? DESCRIPTIONS[tile.name])
-                        : DESCRIPTIONS[tile.name]}
-                      slot={SLOT_KEYS[index]}
-                      to={tile.to}
-                      onOpen={() => openTile(tile)}
-                      aria-label={opensDrawer ? `${tile.name} — ${tile.count} screens` : undefined}
-                    />
-                  );
-                })}
+            ) : showOverflow ? (
+              /* Behind More: everything the eight-tile grid could not hold. */
+              <div className="rx-group">
+                <div className="rx-group-head">
+                  <span>More</span><i /><span>{overflowTiles.length}</span>
+                </div>
+                {renderModuleTiles(overflowTiles)}
               </div>
             ) : (
               /*
-               * A client: every screen they have, in the same filling grid the
-               * modules use — four across the top, four across the bottom.
+               * The top level: four across the top, four across the bottom.
                *
-               * The rows this used to draw, one per parent menu, were headings
-               * over a single tile three times out of four. A client has eight
-               * screens in total; laying them out as eight tiles says the same
-               * thing with none of the furniture, and makes their launcher the
-               * same shape as everybody else's.
-               *
-               * Still flat, not grouped: grouping a client's four menus would
-               * give four tiles, each opening one or two screens.
+               * Staff and realtors see a tile per module; a client sees a tile
+               * per screen, because grouping a client's four menus would give
+               * four tiles each opening one or two things. Either way the grid
+               * is the same shape and never more than eight — see the cap.
                */
-              <div className="rx-modules">
-                {orderTiles(rows.flatMap((row) => row.tiles), userType).map((item, index) => (
-                  <Tile
-                    key={item.to}
-                    innerRef={(node) => { tileRefs.current[index] = node; }}
-                    icon={item.icon}
-                    name={item.label}
-                    description={DESCRIPTIONS[item.label]}
-                    to={item.to}
-                    onOpen={() => { rememberVisit(item); close(); }}
-                  />
-                ))}
-              </div>
+              renderModuleTiles(mainTiles.concat(overflowTiles.length ? [{
+                kind: 'overflow',
+                name: 'More',
+                icon: LayoutGrid,
+                item: { items: overflowTiles.map((t) => t.item) },
+                count: overflowTiles.length,
+              }] : []))
             )}
           </nav>
         </div>

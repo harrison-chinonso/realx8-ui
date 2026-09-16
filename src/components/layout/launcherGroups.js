@@ -28,6 +28,9 @@ export const DESCRIPTIONS = {
   'Listed Properties': 'What is on the market',
   'My Portfolio': 'What you own',
   'Platform Admin': 'Tenants and platform',
+  // The overflow tile. Without a line here its name sits lower than its
+  // neighbours', because every other tile reserves two lines for a description.
+  More: 'Everything else',
 };
 
 /**

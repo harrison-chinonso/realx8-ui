@@ -351,9 +351,27 @@ export const LAUNCHER_CSS = `
   min-height: 2.6em;
 }
 
-/* The slot key, on hover only — texture when wanted, silence when not. */
+/*
+ * The count of work waiting inside, on the tile that opens it.
+ *
+ * Absolutely positioned: the tile is a centred column, and a badge in that
+ * flow would shove the icon off centre on the one tile that has work waiting —
+ * which is the tile you least want looking different by accident.
+ *
+ * ml-auto comes from NavBadge, where the badge sits at the end of a nav ROW.
+ * Here it would push against a flex column and do nothing useful, so it goes.
+ */
+.rx-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  margin-left: 0;
+}
+
+/* The slot key, on hover only — texture when wanted, silence when not. It sits
+   on the LEFT so it never lands on top of a badge, which is always there. */
 .rx-slot {
-  position: absolute; top: 7px; right: 8px;
+  position: absolute; top: 7px; left: 8px;
   font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   color: var(--rx-ink-3);
   opacity: 0;
