@@ -119,6 +119,27 @@ export default function PayInvoiceModal({ invoiceId, open, onClose, onSubmitted 
               <span className="text-slate-500">Invoice {invoice.invoice_id}</span>
               <span className="font-semibold text-slate-900">Outstanding: {fmt(invoice.balance)}</span>
             </div>
+            {/*
+              * What this invoice is FOR.
+              *
+              * This is where the money is committed, and it named the invoice
+              * by its reference alone — so somebody buying two units in the
+              * same development could not tell from this form which one they
+              * were paying for. Absent when the invoice was raised without a
+              * purchase behind it, because then nothing records a unit.
+              */}
+            {(invoice.property_name || invoice.purchase) && (
+              <p className="mt-1 text-sm text-slate-700">
+                {invoice.property_name}
+                {invoice.purchase && (
+                  <span className="text-slate-500">
+                    {invoice.property_name ? ' · ' : ''}
+                    {invoice.purchase.unit_label || 'Unit'}
+                    {invoice.purchase.quantity ? ` × ${invoice.purchase.quantity}` : ''}
+                  </span>
+                )}
+              </p>
+            )}
             {invoice.paid > 0 && (
               <p className="mt-1 text-xs text-slate-400">
                 {fmt(invoice.paid)} of {fmt(invoice.total)} already paid.
@@ -219,6 +240,8 @@ export default function PayInvoiceModal({ invoiceId, open, onClose, onSubmitted 
               <div>
                 <MoneyInput
                   label="Amount paid"
+                  // canSubmit refuses without it; the label has to say so.
+                  required
                   value={form.amount}
                   onChange={(amount) => setForm((f) => ({ ...f, amount }))}
                   error={amountError}
@@ -245,11 +268,11 @@ export default function PayInvoiceModal({ invoiceId, open, onClose, onSubmitted 
 
             <div>
               <span className="mb-1 block text-sm font-medium text-slate-700">
-                Proof of payment <span className="text-red-500">*</span>
+                Proof of payment<FieldMark required />
               </span>
               <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-3 text-sm text-slate-500 hover:border-slate-400">
                 <UploadCloud size={16} />
-                <span>{uploading ? 'Uploading…' : form.document_url ? 'Replace file' : 'Upload receipt or screenshot'}<FieldMark /></span>
+                <span>{uploading ? 'Uploading…' : form.document_url ? 'Replace file' : 'Upload receipt or screenshot'}</span>
                 <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleUpload} disabled={uploading} />
               </label>
               {form.document_url && (
