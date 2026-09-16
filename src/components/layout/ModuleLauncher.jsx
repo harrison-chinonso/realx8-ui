@@ -172,6 +172,38 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
     });
   }, [sections]);
 
+  /**
+   * The tiles on the grouped top level.
+   *
+   * One per module, except where a section carries `flattenInLauncher` — then
+   * its screens stand as tiles of their own. Realtor Hub is the case: two
+   * screens a realtor uses constantly, behind a tile that would open a drawer
+   * of two, and flattening them completes the grid at eight.
+   *
+   * A section holding ONE destination is named after what it opens: "General"
+   * landing on Notifications was a tile that lied about where it went.
+   */
+  const moduleTiles = useMemo(() => sections.flatMap((entry) => {
+    /* `true` flattens for everyone; a list flattens only for those types. */
+    const flatten = Array.isArray(entry.flattenInLauncher)
+      ? entry.flattenInLauncher.includes(userType)
+      : Boolean(entry.flattenInLauncher);
+    if (flatten) {
+      return entry.destinations.map((item) => ({
+        kind: 'link', item, name: item.label, icon: item.icon, to: item.to,
+      }));
+    }
+    const only = entry.destinations.length === 1 ? entry.destinations[0] : null;
+    return [{
+      kind: 'section',
+      item: entry,
+      name: only ? only.label : (entry.section || 'More'),
+      icon: (only || entry.destinations[0]).icon,
+      to: only?.to,
+      count: entry.destinations.length,
+    }];
+  }), [sections, userType]);
+
   const close = useCallback(() => {
     onClose();
     returnFocusTo?.current?.focus();
@@ -191,8 +223,8 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
     if (section) {
       return section.items.map((item) => (item.children ? { kind: 'group', item } : { kind: 'link', item }));
     }
-    return sections.map((entry) => ({ kind: 'section', item: entry }));
-  }, [isGrouped, term, matches, group, section, sections]);
+    return moduleTiles;
+  }, [isGrouped, term, matches, group, section, moduleTiles]);
 
   const openTile = useCallback((tile) => {
     if (tile.kind === 'group') { setGroup(tile.item); return; }
@@ -446,11 +478,11 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
         )}
 
         {/*
-          Both grouped views fill the page — the modules and the screens inside
-          one of them. Search results and a client's rows scroll normally,
-          because those are lists of unknown length rather than a fixed grid.
+          Every view but search fills the page: the modules, the screens inside
+          one of them, and a client's flat list. Search results still scroll,
+          being a list of unknown length rather than a fixed grid.
         */}
-        <div className={`rx-body${isGrouped && !term ? ' rx-body-modules' : ''}`}>
+        <div className={`rx-body${term ? '' : ' rx-body-modules'}`}>
           <nav aria-label="Modules">
             {term ? (
               matches.length
@@ -490,50 +522,56 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
                * a shuffle.
                */
               <div className="rx-modules">
-                {sections.map((member, index) => {
-                  const only = member.destinations.length === 1 ? member.destinations[0] : null;
-                  // A section holding one destination is named after what it
-                  // OPENS — "General" that lands on Notifications is a tile that
-                  // lied about where it went.
-                  const name = only ? only.label : (member.section || 'More');
-                  const icon = (only || member.destinations[0]).icon;
+                {moduleTiles.map((tile, index) => {
+                  // A tile that GOES somewhere takes its own words; only a tile
+                  // that opens a drawer speaks for the section behind it. A
+                  // realtor's Finance holds one screen, My Commissions, and was
+                  // describing itself as "Invoices and payments".
+                  const opensDrawer = tile.kind === 'section' && !tile.to;
                   return (
                     <Tile
-                      key={name}
+                      key={tile.name}
                       innerRef={(node) => { tileRefs.current[index] = node; }}
-                      icon={icon}
-                      name={name}
-                      /*
-                       * A collapsed section is named after what it OPENS, so it
-                       * takes that screen's words rather than the section's.
-                       * A realtor's Finance holds one screen, My Commissions,
-                       * and it was describing itself as "Invoices and payments"
-                       * — the section's description on a tile that is not the
-                       * section.
-                       */
-                      description={only ? DESCRIPTIONS[name] : (DESCRIPTIONS[member.section] ?? DESCRIPTIONS[name])}
+                      icon={tile.icon}
+                      name={tile.name}
+                      description={opensDrawer
+                        ? (DESCRIPTIONS[tile.item.section] ?? DESCRIPTIONS[tile.name])
+                        : DESCRIPTIONS[tile.name]}
                       slot={SLOT_KEYS[index]}
-                      to={only?.to}
-                      onOpen={() => openTile({ kind: 'section', item: member })}
-                      aria-label={only ? undefined : `${name} — ${member.destinations.length} screens`}
+                      to={tile.to}
+                      onOpen={() => openTile(tile)}
+                      aria-label={opensDrawer ? `${tile.name} — ${tile.count} screens` : undefined}
                     />
                   );
                 })}
               </div>
             ) : (
               /*
-               * Realtors and clients: every screen, under the menu it belongs
-               * to. They see a handful, so a drill-in over four tiles would
-               * charge a click and a change of context to save nothing.
+               * A client: every screen they have, in the same filling grid the
+               * modules use — four across the top, four across the bottom.
+               *
+               * The rows this used to draw, one per parent menu, were headings
+               * over a single tile three times out of four. A client has eight
+               * screens in total; laying them out as eight tiles says the same
+               * thing with none of the furniture, and makes their launcher the
+               * same shape as everybody else's.
+               *
+               * Still flat, not grouped: grouping a client's four menus would
+               * give four tiles, each opening one or two screens.
                */
-              rows.map((row) => (
-                <div className="rx-group" key={row.key}>
-                  <div className="rx-group-head">
-                    <span>{row.name}</span><i /><span>{row.tiles.length}</span>
-                  </div>
-                  {renderTiles(row.tiles, row.offset)}
-                </div>
-              ))
+              <div className="rx-modules">
+                {rows.flatMap((row) => row.tiles).map((item, index) => (
+                  <Tile
+                    key={item.to}
+                    innerRef={(node) => { tileRefs.current[index] = node; }}
+                    icon={item.icon}
+                    name={item.label}
+                    description={DESCRIPTIONS[item.label]}
+                    to={item.to}
+                    onOpen={() => { rememberVisit(item); close(); }}
+                  />
+                ))}
+              </div>
             )}
           </nav>
         </div>

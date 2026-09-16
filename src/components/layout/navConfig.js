@@ -59,6 +59,19 @@ export const NAV = [
   {
     section: 'People & Access',
     primary: true,
+    /*
+     * Flattened for realtors only.
+     *
+     * Almost everything in this section is gated on users.manage, which a
+     * realtor does not hold, so theirs contains exactly My Referrals and My
+     * Clients. A tile called "People & Access" opening a drawer of those two
+     * is both a click for nothing and a name describing an administrator's job
+     * rather than a realtor's people.
+     *
+     * A list of types rather than `true`: staff see five entries here and want
+     * the one tile.
+     */
+    flattenInLauncher: ['realtor'],
     items: [
       { to: '/users/employees', label: 'Staff',   icon: UserCheck, permission: 'users.manage' },
       { to: '/users/clients',   label: 'Clients', icon: Briefcase, permission: 'users.manage' },
@@ -289,7 +302,9 @@ export const NAV = [
     primary: true,
     items: [
       { to: '/realtor/training',       label: 'Training & LMS',            icon: GraduationCap, permission: 'realtors.training.view' },
-      { to: '/realtor/recruitment',    label: 'Recruitment',               icon: Megaphone,     permission: 'realtors.recruitment.view' },
+      // Staff recruit realtors; a realtor does not, though the role carries the
+      // permission that reads this screen.
+      { to: '/realtor/recruitment',    label: 'Recruitment',               icon: Megaphone,     permission: 'realtors.recruitment.view', hideForTypes: ['realtor'] },
       { to: '/front-desk',             label: 'Visitor Log & Attendance',  icon: UserRound,     permission: 'frontdesk.visitors.manage' },
       { to: '/support',                label: 'Support Centre',            icon: HelpCircle,    permission: 'support.view' },
       { to: '/care',                   label: 'VIP Clients',               icon: ThumbsUp,      permission: 'care.view' },
@@ -325,8 +340,24 @@ export const NAV = [
    */
   {
     section: 'Realtor Hub',
+    /*
+     * Shown as its screens rather than as one tile, on the template that lays
+     * the menu out as a grid.
+     *
+     * A flag rather than the launcher naming this section in a list of its own:
+     * ModernLayout used to name its top-bar sections by string, two were
+     * renamed here, and they silently dropped out of that one template. A flag
+     * cannot come adrift from the section it sits on.
+     *
+     * It earns its place because this section holds two screens a realtor uses
+     * constantly, and a tile that opens a drawer of two is a click charged for
+     * nothing — while the same two tiles complete their grid at eight.
+     */
+    flattenInLauncher: true,
     items: [
-      { to: '/realtor/leaderboard',   label: 'Leaderboard', icon: Trophy,     permission: 'realtors.leaderboard.view', showForTypes: ['realtor'] },
+      // The leaderboard is no longer listed for realtors. /realtor/leaderboard
+      // still works if linked to directly, and staff reach it through
+      // People & Access - Realtor, where the management view of it lives.
       // Scoped server-side to the holder's own investments.
       { to: '/investments/portfolio', label: 'Investments', icon: TrendingUp, permission: 'investments.own.view',      showForTypes: ['realtor'] },
     ],

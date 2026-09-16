@@ -743,7 +743,10 @@
       "realtors.leaderboard.view"
     ],
     "showForTypes": [],
-    "hideForTypes": [],
+    "hideForTypes": [
+      "realtor",
+      "client"
+    ],
     "hideForSuperior": false,
     "superiorAdminOnly": false,
     "source": "nav"
@@ -771,7 +774,9 @@
       "realtors.recruitment.view"
     ],
     "showForTypes": [],
-    "hideForTypes": [],
+    "hideForTypes": [
+      "realtor"
+    ],
     "hideForSuperior": false,
     "superiorAdminOnly": false,
     "source": "nav"
