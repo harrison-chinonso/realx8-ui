@@ -167,10 +167,17 @@ export const LAUNCHER_CSS = `
   color: var(--rx-ink-3);
 }
 
+/*
+ * The row grid — search results, and a client's flat list.
+ *
+ * 220px rather than 158: the tiles are the same size everywhere in the
+ * launcher now, and a 158px track would have squeezed the larger icon and type
+ * into a box built for the small ones.
+ */
 .rx-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
-  gap: 9px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
 }
 
 /* ── The module grid: eight tiles, filling the page ──────────────────────────
@@ -186,6 +193,9 @@ export const LAUNCHER_CSS = `
  */
 .rx-body-modules { display: flex; }
 .rx-body-modules > nav { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+/* A drill-in level wraps its grid in a heading block; that has to stretch too,
+   or the grid inside it sizes to its contents and leaves the page half empty. */
+.rx-body-modules .rx-group { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 /* Full width here, not the 1060px reading measure the other views use — eight
    tiles at that width would be a strip down the middle of an empty page. */
 .rx-body-modules { padding-inline: max(18px, 3vw); }
@@ -220,22 +230,7 @@ export const LAUNCHER_CSS = `
   gap: clamp(8px, 1vw, 14px);
 }
 
-/*
- * The contents scale with the tile.
- *
- * At a fixed 54px the icon left most of a 390px-tall tile empty and the whole
- * grid read as unfinished — eight small clusters adrift in eight large boxes.
- * The clamps grow the icon and the type with the window and stop before either
- * becomes a poster, so the tile feels filled at 1920 and stays legible at 820.
- */
-.rx-modules .rx-ic {
-  width: clamp(48px, 4.4vw, 72px);
-  height: clamp(48px, 4.4vw, 72px);
-  border-radius: 14px;
-}
-.rx-modules .rx-ic svg { width: clamp(22px, 2vw, 32px); height: clamp(22px, 2vw, 32px); }
-.rx-modules .rx-name { font-size: clamp(14px, 1.15vw, 19px); max-width: none; }
-.rx-modules .rx-desc { font-size: clamp(11px, .85vw, 14px); max-width: 22ch; }
+
 
 /* ── Tile: filled at rest, outlined on hover ────────────────────────────── */
 .rx-tile {
@@ -266,7 +261,7 @@ export const LAUNCHER_CSS = `
    * pixels of it were empty. On a page showing sixty-one of them that is most
    * of a screen of nothing.
    */
-  min-height: 116px;
+  min-height: 168px;
   background: var(--rx-surface-2);
   border: 1px solid transparent;
   border-radius: 11px;
@@ -287,14 +282,25 @@ export const LAUNCHER_CSS = `
  * grey mass. Its radius is 9px against the tile's 11px: two pixels tighter, so
  * the shapes read as nested rather than repeated.
  */
+/*
+ * One tile size for the whole launcher.
+ *
+ * The clamps used to belong to the module grid alone, which left the screens
+ * INSIDE a module rendered at half the size of the module that opened them —
+ * the same tile, the same kind of destination, shrinking as you went deeper.
+ * They grow the icon and the type with the window and stop before either
+ * becomes a poster, so a tile feels filled at 1920 and stays legible at 820.
+ */
 .rx-ic {
   display: flex; align-items: center; justify-content: center;
-  width: 44px; height: 44px;
+  width: clamp(48px, 4.4vw, 72px);
+  height: clamp(48px, 4.4vw, 72px);
   background: var(--rx-surface);
-  border-radius: 9px;
+  border-radius: 14px;
   color: var(--rx-ink-2);
   transition: background-color .12s ease, color .12s ease;
 }
+.rx-ic svg { width: clamp(22px, 2vw, 32px); height: clamp(22px, 2vw, 32px); }
 .rx-tile:hover .rx-ic {
   background: var(--rx-accent);
   /*
@@ -310,8 +316,8 @@ export const LAUNCHER_CSS = `
 }
 
 .rx-name {
-  font: 600 13px/1.25 system-ui, sans-serif; color: var(--rx-ink);
-  max-width: 15ch;
+  font: 600 clamp(14px, 1.15vw, 19px)/1.25 system-ui, sans-serif; color: var(--rx-ink);
+  max-width: none;
   /*
    * Two lines, reserved whether or not they are used. "Commission Statements"
    * wraps where "Invoices" does not, and a grid row sizes to its tallest
@@ -336,10 +342,10 @@ export const LAUNCHER_CSS = `
  * The flat tile names a screen and needs neither, which is why it is 116px and
  * this one is 158px rather than both compromising on one number.
  */
-.rx-panel-grouped .rx-tile { min-height: 158px; padding: 22px 10px 16px; }
+.rx-panel-grouped .rx-tile { min-height: 168px; padding: 20px 12px; }
 .rx-desc {
-  font: 400 11px/1.3 system-ui, sans-serif; color: var(--rx-ink-3);
-  max-width: 14ch;
+  font: 400 clamp(11px, .85vw, 14px)/1.3 system-ui, sans-serif; color: var(--rx-ink-3);
+  max-width: 22ch;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 2.6em;
@@ -393,16 +399,15 @@ export const LAUNCHER_CSS = `
    * width below the breakpoint.
    */
   .rx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
-  .rx-ic { width: 38px; height: 38px; }
-  .rx-tile { min-height: 104px; padding: 14px 8px 11px; }
+  .rx-ic { width: 44px; height: 44px; }
+  .rx-ic svg { width: 20px; height: 20px; }
+  .rx-tile { min-height: 116px; padding: 14px 8px 11px; }
+  .rx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* A description is a luxury at this width; the name is not. Stated for the
      grouped tile too, whose two-class selector would otherwise outrank this. */
-  .rx-panel-grouped .rx-tile { min-height: 104px; padding: 14px 8px 11px; }
+  .rx-panel-grouped .rx-tile { min-height: 116px; padding: 14px 10px; }
   .rx-modules { gap: 9px; min-height: 420px; }
-  .rx-modules .rx-tile { padding: 14px 10px; }
-  .rx-modules .rx-ic { width: 42px; height: 42px; }
-  .rx-modules .rx-ic svg { width: 20px; height: 20px; }
-  .rx-modules .rx-name { font-size: 13px; }
+  .rx-name { font-size: 13px; }
   .rx-body-modules { padding-inline: 12px; }
   .rx-desc, .rx-keys { display: none; }
   .rx-body { padding: 12px 12px 18px; }

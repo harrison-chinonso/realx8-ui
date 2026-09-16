@@ -20,6 +20,9 @@ export const DESCRIPTIONS = {
   'Marketing & Content': 'Posts and campaigns',
   'Operations & Support': 'Training, care, settings',
   'Realtor Hub': 'Your standing',
+  // Named after the one screen a realtor's Finance section holds.
+  'My Commissions': 'What you have earned',
+  'Listed Properties': 'What is on the market',
   'My Portfolio': 'What you own',
   'Platform Admin': 'Tenants and platform',
 };

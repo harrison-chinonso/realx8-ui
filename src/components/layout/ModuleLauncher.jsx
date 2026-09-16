@@ -20,15 +20,17 @@ import { rememberVisit, recentVisits } from './recentScreens';
  *
  * ── Two shapes, chosen by how much there is to show ─────────────────────────
  *
- * GROUPED, for staff. One tile per module in four labelled bands, and opening
- * one shows the screens inside it. An administrator can see 52 screens across
- * a dozen menus; laid out at once that is a wall to be read rather than a menu
- * to be scanned, and the twelve-tile top level is the thing that can be learned
- * by position.
+ * GROUPED, for staff and realtors. One tile per module, filling the page, and
+ * opening one shows the screens inside it — at the same size, so a tile does
+ * not shrink as you go deeper. An administrator can see 52 screens across eight
+ * menus; laid out at once that is a wall to be read rather than a menu to be
+ * scanned, and the eight-tile top level is the thing that can be learned by
+ * position.
  *
- * FLAT, for realtors and clients. They see a handful of screens, and a drill-in
- * over four tiles charges a click and a change of context to save nothing. Their
- * screens are simply on the page, in rows headed by the menu they belong to.
+ * FLAT, for clients. A handful of screens about the one property they are
+ * buying, on the page in rows headed by the menu they belong to. A drill-in
+ * over four tiles would charge a click and a change of context to save
+ * nothing.
  *
  * The split is `effectiveType`, the same value that decides whether the Settings
  * tile exists — so a member of staff who switches to their realtor profile gets
@@ -113,9 +115,16 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   const [section, setSection] = useState(null);
   const [group, setGroup] = useState(null);
   const sections = useSections();
-  /* Staff get the grouped grid; realtors and clients get the flat rows. */
+  /*
+   * Grouped for staff and realtors; flat for clients.
+   *
+   * A realtor sees seven modules, which is a menu worth grouping — their own
+   * hub, their people, their commissions. A client sees a handful of screens
+   * about the one property they are buying, and a drill-in over four tiles
+   * charges a click and a change of context to save nothing.
+   */
   const userType = useAuthStore((s) => s.effectiveType());
-  const isGrouped = !['realtor', 'client'].includes(userType);
+  const isGrouped = userType !== 'client';
   const panelRef = useRef(null);
   const searchRef = useRef(null);
   const tileRefs = useRef([]);
@@ -350,7 +359,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
 
   /** A grid of tiles built from drill-in entries, which may open rather than go. */
   const renderEntries = (tiles) => (
-    <div className="rx-grid">
+    <div className="rx-modules">
       {tiles.map((tile, index) => {
         const entry = tile.item;
         const isDrawer = tile.kind === 'group';
@@ -436,8 +445,12 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
           </div>
         )}
 
-        {/* The module grid fills the page; every other view scrolls normally. */}
-        <div className={`rx-body${isGrouped && !term && !section && !group ? ' rx-body-modules' : ''}`}>
+        {/*
+          Both grouped views fill the page — the modules and the screens inside
+          one of them. Search results and a client's rows scroll normally,
+          because those are lists of unknown length rather than a fixed grid.
+        */}
+        <div className={`rx-body${isGrouped && !term ? ' rx-body-modules' : ''}`}>
           <nav aria-label="Modules">
             {term ? (
               matches.length
@@ -490,7 +503,15 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
                       innerRef={(node) => { tileRefs.current[index] = node; }}
                       icon={icon}
                       name={name}
-                      description={DESCRIPTIONS[member.section] ?? DESCRIPTIONS[name]}
+                      /*
+                       * A collapsed section is named after what it OPENS, so it
+                       * takes that screen's words rather than the section's.
+                       * A realtor's Finance holds one screen, My Commissions,
+                       * and it was describing itself as "Invoices and payments"
+                       * — the section's description on a tile that is not the
+                       * section.
+                       */
+                      description={only ? DESCRIPTIONS[name] : (DESCRIPTIONS[member.section] ?? DESCRIPTIONS[name])}
                       slot={SLOT_KEYS[index]}
                       to={only?.to}
                       onOpen={() => openTile({ kind: 'section', item: member })}
