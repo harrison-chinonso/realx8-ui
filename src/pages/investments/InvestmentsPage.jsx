@@ -27,9 +27,14 @@ import {
   requestCashOut,
   updateInvestmentPlan,
 } from '../../api/investmentApi';
+import { listProperties } from '../../api/propertyApi';
 
 const TABS = ['Plans', 'Investments', 'Categories', 'Periods'];
-const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:border-blue-500';
+// Disabled inputs must LOOK disabled. The penalty amount is already
+// switched off for 'No penalty' and 'Forfeit all return', but with no
+// disabled styling it read as an ordinary empty box somebody had failed
+// to fill in.
+const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:border-blue-500 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400';
 const emptyPlanForm = () => ({
   name: '',
   category_id: '',
@@ -63,16 +68,40 @@ const FREQUENCY_OPTIONS = [
   { value: 'monthly', label: 'Monthly' },
   { value: 'quarterly', label: 'Quarterly' },
 ];
+/*
+ * Short labels, with the meaning underneath.
+ *
+ * "Simple — the return does not itself earn" needs 244px and the control is
+ * 240px wide in a two-column row, so it was being cut mid-word. A select is not
+ * a place for a sentence: the choice goes in the option, the explanation goes
+ * in a line below where it has the full width to itself.
+ */
 const BASIS_OPTIONS = [
-  { value: 'simple', label: 'Simple — the return does not itself earn' },
-  { value: 'compound', label: 'Compounding — each payout period earns on the last' },
+  { value: 'simple', label: 'Simple' },
+  { value: 'compound', label: 'Compounding' },
 ];
+const BASIS_HELP = {
+  simple: 'The return is worked out on the original amount each period.',
+  compound: 'Each period earns on the amount plus everything earned before it.',
+};
+/*
+ * Same treatment as the basis options above, for the same measured reason: this
+ * control sits in a three-column row and is 139px wide, and "A percentage of the
+ * return earned" wants 209px. The name goes in the option; what it means goes in
+ * the line underneath, which has the whole row to itself.
+ */
 const PENALTY_OPTIONS = [
   { value: 'none', label: 'No penalty' },
-  { value: 'percentage_of_return', label: 'A percentage of the return earned' },
-  { value: 'flat_fee', label: 'A flat fee' },
-  { value: 'forfeit_all_return', label: 'Forfeit all return; capital is returned' },
+  { value: 'percentage_of_return', label: 'Percentage of return' },
+  { value: 'flat_fee', label: 'Flat fee' },
+  { value: 'forfeit_all_return', label: 'Forfeit all return' },
 ];
+const PENALTY_HELP = {
+  none: 'Leaving early costs the investor nothing.',
+  percentage_of_return: 'A share of what they have earned, never of their capital.',
+  flat_fee: 'A fixed charge, capped at what they have earned.',
+  forfeit_all_return: 'They give up the return earned; their capital is returned in full.',
+};
 const emptyInvestmentForm = () => ({ user_id: '', plan_id: '', amount: '' });
 
 const normalizeList = (response) => {
@@ -115,6 +144,7 @@ export default function InvestmentsPage() {
   const [planDetailRow, setPlanDetailRow] = useState(null);
   const [categories, setCategories] = useState([]);
   const [periods, setPeriods] = useState([]);
+  const [properties, setProperties] = useState([]);
   const [investments, setInvestments] = useState([]);
   const [investmentDetailRow, setInvestmentDetailRow] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -170,6 +200,16 @@ export default function InvestmentsPage() {
       setCategories(normalizeList(categoriesResponse));
       setPeriods(normalizeList(periodsResponse));
       setInvestments(normalizeList(investmentsResponse));
+
+      /*
+       * Properties are fetched apart from the four above, and a failure is
+       * swallowed on purpose. Someone may administer investments without being
+       * allowed to read the property register, and a 403 there should cost them
+       * the optional picker below — not the whole page.
+       */
+      listProperties()
+        .then((response) => setProperties(normalizeList(response)))
+        .catch(() => setProperties([]));
     } catch (loadError) {
       console.error(loadError);
       setError(getErrorMessage(loadError, 'Failed to load investment data.'));
@@ -744,8 +784,18 @@ export default function InvestmentsPage() {
       />
 
       {showPlanModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          {/*
+            Wider, capped, and scrollable — the same shell as Modal.jsx.
+
+            This was a 448px box centred in the viewport with no way to scroll.
+            The terms section made it 1030px tall, so on a 1280x720 laptop it
+            overflowed both edges and the save button sat below the fold with
+            nothing to scroll — the form could be filled in and not submitted.
+            672px also gives the two-column rows room: "Simple — the return does
+            not itself earn" was being cut to half its length.
+          */}
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">{editingPlan ? 'Edit Investment Plan' : 'Create Investment Plan'}</h2>
               <p className="text-sm text-slate-500">Configure plan details and availability.</p>
@@ -789,6 +839,33 @@ export default function InvestmentsPage() {
                   ))}
                 </Select>
               </div>
+
+              {/*
+                What the money is actually for.
+
+                `property_id` was already being read on the way in and sent on
+                the way out, and the server stamps it onto the invoice every
+                subscriber is billed with — but nothing on this form could ever
+                set it, so it left as null on every plan ever created here.
+                Optional, because an opportunity need not be tied to one
+                development, and hidden entirely when the register cannot be read.
+              */}
+              {properties.length > 0 && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-slate-700">Property</label>
+                  <Select
+                    value={planForm.property_id}
+                    onChange={(event) => setPlanForm((current) => ({ ...current, property_id: event.target.value }))}
+                    className={INPUT_CLASS}
+                  >
+                    <option value="">Not tied to a property</option>
+                    {properties.map((property) => (
+                      <option key={property.id} value={property.id}>{property.name || property.title}</option>
+                    ))}
+                  </Select>
+                  <p className="mt-1 text-xs text-slate-400">The development this opportunity raises money for.</p>
+                </div>
+              )}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -873,6 +950,9 @@ export default function InvestmentsPage() {
                     />
                   </div>
                 </div>
+                <p className="-mt-2 text-xs text-slate-400">
+                  {BASIS_HELP[planForm.return_basis] || BASIS_HELP.simple}
+                </p>
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
@@ -916,11 +996,14 @@ export default function InvestmentsPage() {
                       onChange={(event) => setPlanForm((current) => ({ ...current, closes_at: event.target.value }))}
                       className={INPUT_CLASS}
                     />
-                    {/* The window is not the tenor: an opportunity can be open
-                        for two weeks and run for two years. */}
-                    <p className="mt-1 text-xs text-slate-400">When it accepts money — not how long it runs.</p>
                   </div>
                 </div>
+                {/* The window is not the tenor: an opportunity can be open for
+                    two weeks and run for two years. It describes both dates, so
+                    it sits under the pair rather than under the second one. */}
+                <p className="-mt-2 text-xs text-slate-400">
+                  When the opportunity accepts money — not how long it runs.
+                </p>
 
                 <label className="flex items-start gap-2 text-sm text-slate-700">
                   <input
@@ -969,12 +1052,19 @@ export default function InvestmentsPage() {
                         className={INPUT_CLASS}
                         disabled={['none', 'forfeit_all_return'].includes(planForm.penalty_type)}
                       />
-                      {/* A penalty can take the return but never the capital —
-                          the server caps it, and this says so before anybody
-                          configures a fee larger than the return. */}
-                      <p className="mt-1 text-xs text-slate-400">Never takes capital.</p>
                     </div>
                   </div>
+                )}
+                {/*
+                  What the chosen penalty actually does, in full width. A penalty
+                  can take the return but never the capital — the server caps it,
+                  and saying so here stops anybody configuring a fee larger than
+                  the return and expecting it to be collected.
+                */}
+                {planForm.early_exit_allowed && (
+                  <p className="-mt-2 text-xs text-slate-400">
+                    {PENALTY_HELP[planForm.penalty_type] || PENALTY_HELP.none}
+                  </p>
                 )}
               </div>
 
@@ -988,8 +1078,8 @@ export default function InvestmentsPage() {
       )}
 
       {showInvestmentModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Create Investment</h2>
               <p className="text-sm text-slate-500">Assign a user to an investment plan.</p>
@@ -1046,8 +1136,8 @@ export default function InvestmentsPage() {
       )}
 
       {payoutFor && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Create Payout</h2>
               <p className="text-sm text-slate-500">Record a payout for investment #{payoutFor.id}.</p>
