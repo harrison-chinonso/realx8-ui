@@ -11,9 +11,16 @@
  *
  * ── One themeable token ─────────────────────────────────────────────────────
  *
- * `--rx-accent` is the only value a tenant controls, and it is used in exactly
- * two places: the focus ring, and the icon container on hover. Everything else
- * is a fixed neutral ramp.
+ * `--rx-accent` is the only value a tenant controls. It appears on the rule
+ * across the top of the page, the focus ring, the icon container on hover, and
+ * — at well under half strength — the tile and chip borders on hover.
+ * Everything else is a fixed neutral ramp.
+ *
+ * The rule that keeps this safe is not "use it twice", it is that the accent
+ * never carries text on a page background and never distinguishes one tile
+ * from another. Where it does sit under a glyph, the glyph colour is picked
+ * from its luminance at runtime. Widening its use within that rule costs
+ * nothing; stepping outside it is what has to be re-checked per tenant.
  *
  * That is not squeamishness about colour — it is what a white-label product
  * requires. A design that carries meaning in hue has to be re-checked against
@@ -25,6 +32,10 @@
 export const LAUNCHER_CSS = `
 .rx-launcher {
   --rx-accent: var(--primary, #2563eb);
+  /* The same colour as r, g, b, so it can be mixed at low opacity for the
+     tints and hairlines below. Set by AppearanceContext alongside --primary,
+     and already the idiom the rest of the app uses (see Alert.jsx). */
+  --rx-accent-rgb: var(--primary-rgb, 37, 99, 235);
   --rx-surface: #FFFFFF;
   --rx-surface-2: #F5F5F2;
   --rx-surface-3: #EAEAE6;
@@ -34,25 +45,60 @@ export const LAUNCHER_CSS = `
   --rx-rule: #E4E4E0;
 }
 
-/* ── Panel: sized by its contents, not by the viewport ──────────────────── */
+/* ── Panel: the whole viewport ──────────────────────────────────────────────
+ *
+ * It was a 1060px card floating on a dimmed page — radius, drop shadow, a
+ * margin all round. That reads as a dialog: something you have interrupted
+ * your work with and will dismiss. The menu is not an interruption on this
+ * template, it is the only way to navigate, and it is now the first thing seen
+ * after signing in. So it takes the full screen and reads as a destination.
+ *
+ * Full bleed, but not full measure — see the content column below.
+ */
 .rx-panel {
   background: var(--rx-surface);
-  border-radius: 14px;
-  box-shadow: 0 24px 60px -20px rgba(22, 24, 26, .28), 0 0 0 1px var(--rx-rule);
+  /* The one piece of brand on the page, and the only accent that is always
+     visible rather than waiting for a hover. Decoration carries no text, so
+     any tenant colour is safe here at any luminance. */
+  border-top: 3px solid var(--rx-accent);
   width: 100%;
-  max-width: 1060px;
-  max-height: calc(100vh - 6rem);
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
+/*
+ * The content column.
+ *
+ * Full bleed is right for the surface and wrong for the contents: at 2560px a
+ * grid of 158px tiles becomes fifteen columns, and the eye has no line to come
+ * back to. The padding grows to hold the content to a measure and centre it,
+ * while the rules above and below it still run the width of the screen — which
+ * is what makes it read as a page rather than a stretched card.
+ *
+ * 1060px is the width the panel itself used to be, chosen when the grid was
+ * tuned. Keeping it means only the SURFACE became a page: the tiles sit at the
+ * same size, in the same six columns, in the same relationship to each other
+ * as before. Widening the measure to suit the new canvas was the obvious move
+ * and the wrong one — at 1180px a group of three tiles sat in a seven-column
+ * grid, and the extra column of nothing was the first thing the eye found.
+ */
+.rx-search, .rx-recent, .rx-body {
+  padding-inline: max(18px, calc((100% - 1060px) / 2));
+}
+
 /* ── Search row ─────────────────────────────────────────────────────────── */
 .rx-search {
   display: flex; align-items: center; gap: 12px;
-  padding: 14px 18px;
+  padding-block: 14px;
   border-bottom: 1px solid var(--rx-rule);
+  transition: border-color .12s ease;
 }
+/* Typing is the fastest route through this screen; the rule under the row
+   picks up the brand while it has the caret. Border only — an accent that
+   never carries text cannot fail a contrast check. */
+.rx-search:focus-within { border-bottom-color: var(--rx-accent); }
 .rx-search input {
   flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
   font-size: 16px; color: var(--rx-ink);
@@ -75,7 +121,7 @@ export const LAUNCHER_CSS = `
 /* ── Recent strip: gives the old dead space a job ───────────────────────── */
 .rx-recent {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding: 10px 18px;
+  padding-block: 10px;
   background: var(--rx-surface-2);
   border-bottom: 1px solid var(--rx-rule);
 }
@@ -93,13 +139,20 @@ export const LAUNCHER_CSS = `
   color: var(--rx-ink-2);
   text-decoration: none;
 }
-.rx-chip:hover { color: var(--rx-ink); border-color: var(--rx-ink-3); }
+.rx-chip:hover {
+  color: var(--rx-ink);
+  border-color: rgba(var(--rx-accent-rgb), .45);
+  background: rgba(var(--rx-accent-rgb), .06);
+}
 
 /* ── Body ───────────────────────────────────────────────────────────────── */
-.rx-body { overflow-y: auto; padding: 16px 18px 20px; }
+.rx-body { flex: 1; overflow-y: auto; padding-block: 18px 26px; }
 
 /* Group header: label, hairline filling the width, count. */
-.rx-group + .rx-group { margin-top: 20px; }
+/* Twelve rows now rather than four, so they need a little more air between
+   them than they did — the heading is the only thing separating one menu's
+   screens from the next one's. */
+.rx-group + .rx-group { margin-top: 26px; }
 .rx-group-head {
   display: flex; align-items: center; gap: 10px;
   margin-bottom: 9px;
@@ -122,7 +175,6 @@ export const LAUNCHER_CSS = `
 
 /* ── Tile: filled at rest, outlined on hover ────────────────────────────── */
 .rx-tile {
-  position: relative;
   display: flex; flex-direction: column; align-items: center;
   /*
    * Anchored to the top, not centred.
@@ -136,15 +188,20 @@ export const LAUNCHER_CSS = `
    */
   justify-content: flex-start;
   gap: 8px;
-  padding: 22px 10px 16px;
+  padding: 18px 10px 14px;
   /*
    * A floor, so every tile is the same height.
    *
-   * Grid rows size themselves independently: a group whose descriptions wrap
-   * to two lines produced taller tiles than one whose did not, and the pattern
-   * has exactly one rule it will not bend on — no tile heavier than another.
+   * Grid rows size themselves independently, so without this a row holding one
+   * two-line name is taller than a row that does not — and the pattern has
+   * exactly one rule it will not bend on: no tile heavier than another.
+   *
+   * 116px rather than 158px. The tile used to reserve two lines for a name and
+   * two more for a description; there is no description now, so forty-two
+   * pixels of it were empty. On a page showing sixty-one of them that is most
+   * of a screen of nothing.
    */
-  min-height: 158px;
+  min-height: 116px;
   background: var(--rx-surface-2);
   border: 1px solid transparent;
   border-radius: 11px;
@@ -153,7 +210,10 @@ export const LAUNCHER_CSS = `
   cursor: pointer;
   transition: background-color .12s ease, border-color .12s ease;
 }
-.rx-tile:hover { background: var(--rx-surface); border-color: var(--rx-rule); }
+/* The border was a neutral hairline; it now carries the accent at just over a
+   third, which is enough to tie the hover to the brand and far too little for
+   hue to be carrying any meaning. */
+.rx-tile:hover { background: var(--rx-surface); border-color: rgba(var(--rx-accent-rgb), .38); }
 .rx-tile:focus-visible { outline: 2px solid var(--rx-accent); outline-offset: 2px; }
 
 /*
@@ -186,41 +246,20 @@ export const LAUNCHER_CSS = `
 
 .rx-name {
   font: 600 13px/1.25 system-ui, sans-serif; color: var(--rx-ink);
+  max-width: 15ch;
   /*
-   * Two lines, and the tile is tall enough for two whether or not they are
-   * used. "Visitor Log & Attendance" wraps where "Finance" does not, and a
-   * grid row sizes to its tallest member — so one long name made a whole group
-   * of tiles heavier than the rest. Reserving the space costs a few pixels on
-   * every tile and keeps the one rule the pattern will not bend on.
+   * Two lines, reserved whether or not they are used. "Commission Statements"
+   * wraps where "Invoices" does not, and a grid row sizes to its tallest
+   * member — so one long name made a whole row of tiles heavier than the rest.
+   * Reserving the space is what makes every tile the same height by
+   * construction, rather than by a floor that needs re-tuning whenever a label
+   * changes. Chasing that with min-height alone took three attempts and was
+   * still wrong for the one screen whose name wrapped.
    */
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
-  /* Exactly two lines of space, used or not — see the tile height note. */
   min-height: 2.5em;
 }
-.rx-desc {
-  font: 400 11px/1.3 system-ui, sans-serif; color: var(--rx-ink-3);
-  max-width: 14ch;
-  /*
-   * Both text blocks reserve two lines, so every tile is the same height by
-   * construction rather than by a floor that has to be re-tuned each time a
-   * label changes. Chasing it with min-height took three attempts and was
-   * still wrong for the one module whose name AND description both wrap.
-   */
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 2.6em;
-}
-
-/* The slot key, on hover only — texture when wanted, silence when not. */
-.rx-slot {
-  position: absolute; top: 7px; right: 8px;
-  font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--rx-ink-3);
-  opacity: 0;
-  transition: opacity .12s ease;
-}
-.rx-tile:hover .rx-slot, .rx-tile:focus-visible .rx-slot { opacity: 1; }
 
 .rx-empty { padding: 42px 0; text-align: center; font-size: 13px; color: var(--rx-ink-3); }
 
@@ -234,7 +273,6 @@ export const LAUNCHER_CSS = `
  * proportions, so that is where the switch belongs.
  */
 @media (max-width: 519px) {
-  .rx-panel { max-width: none; width: 100%; height: 100%; max-height: none; border-radius: 0; }
   /*
    * Two columns, stated rather than derived.
    *
@@ -246,15 +284,13 @@ export const LAUNCHER_CSS = `
    */
   .rx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .rx-ic { width: 38px; height: 38px; }
-  /* Shorter, because the description that justified the height is gone. */
-  .rx-tile { min-height: 112px; padding: 16px 8px 12px; }
-  /* A description is a luxury at this width; the name is not. */
-  .rx-desc, .rx-keys { display: none; }
+  .rx-tile { min-height: 104px; padding: 14px 8px 11px; }
+  .rx-keys { display: none; }
   .rx-body { padding: 12px 12px 18px; }
   .rx-search, .rx-recent { padding-left: 12px; padding-right: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rx-tile, .rx-ic, .rx-slot { transition: none; }
+  .rx-tile, .rx-ic, .rx-search { transition: none; }
 }
 `;

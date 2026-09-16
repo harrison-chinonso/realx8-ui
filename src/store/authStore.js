@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { switchRoleApi, enableProfileApi, logout as logoutApi } from '../api/authApi';
 import { setSessionKey, clearSessionKey } from '../api/payloadCrypto';
 import { resetRefreshBudget } from '../api/refreshBudget';
+import { markFreshLogin } from '../lib/launcherGreeting';
 
 const useAuthStore = create(
   persist(
@@ -40,6 +41,20 @@ const useAuthStore = create(
         // A new session starts with a clean refresh budget, so a previous
         // session's loop cannot end this one early.
         if (payload.accessToken) resetRefreshBudget();
+
+        /*
+         * A session starting where there wasn't one — which is to say, a sign
+         * in. The launcher template opens its menu on the back of this.
+         *
+         * The test is "was there a user a moment ago", NOT "did a token
+         * arrive". Every one of these sends a token: the silent refresh in
+         * client.js, saving your profile, saving company settings. Only a sign
+         * in, a registration or an OAuth callback arrives with nobody signed in
+         * yet, which is what distinguishes it from the other five callers
+         * without any of them having to say so.
+         */
+        if (!get().user && u) markFreshLogin();
+
         set({
           user: u,
           accessToken: payload.accessToken ?? null,

@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Search, Settings, X } from 'lucide-react';
+import { Search, Settings, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
 import { LAUNCHER_CSS } from './launcherStyles';
-import { groupSections, DESCRIPTIONS } from './launcherGroups';
 import { rememberVisit, recentVisits } from './recentScreens';
 
 /**
@@ -18,13 +17,19 @@ import { rememberVisit, recentVisits } from './recentScreens';
  * so as an overlay the launcher is reachable from anywhere in one click and
  * costs nothing.
  *
- * ── Why the tiles are SECTIONS ──────────────────────────────────────────────
+ * ── Why every screen is on the page ─────────────────────────────────────────
  *
- * The pattern wants one tile per top-level module, flat. This product has 61
- * destinations across 12 sections, and Finance alone holds 16 of them — so a
- * genuinely flat grid would either be 61 tiles, which is three times past where
- * a grid stops beating a sidebar, or a hand-picked subset that strands the
- * rest. Opening a section shows its destinations.
+ * The tiles were sections, and opening one showed a second grid of the screens
+ * inside it. That was the right trade while this was a 1060px card: 61 tiles
+ * will not fit in a dialog, so the dialog showed twelve and charged a click
+ * for the rest.
+ *
+ * It is a full page now, and a full page has the room. So the drill-in is gone
+ * and the screens are simply there, in rows headed by the menu they belong to
+ * — 61 tiles a scroll away rather than twelve tiles and a click away. Sixty-one
+ * is a lot to lay out and nothing to scan, because the row headings are what
+ * the eye travels, and they read the same as the sidebar in every other
+ * template.
  *
  * ── Nothing here is hand-listed ─────────────────────────────────────────────
  *
@@ -71,32 +76,35 @@ const useSections = () => {
   }, [hasPermission, isSuperiorAdmin, userType]);
 };
 
-/** Slot keys in layout order: 1–9, then 0 for the tenth. */
-const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+/*
+ * The 1–9,0 slot keys are gone with the drill-in.
+ *
+ * A slot key is a promise that a position is worth memorising. That held for a
+ * twelve-tile top level; across sixty-one screens in twelve rows, which ten get
+ * a digit is an accident of what this particular user may see, and the badge
+ * would appear on ten tiles and not the other fifty-one for no reason a person
+ * could work out. Search and the arrow keys carry the keyboard now.
+ */
 
 /**
- * One tile. Identical to every other tile — no featured one, no per-module
- * colour, no counts. Only the words change.
+ * One tile — one screen. Identical to every other tile: no featured one, no
+ * per-module colour, no counts. Only the words change.
+ *
+ * The two-word description is gone with the drill-in. It existed to say what
+ * "General" or "Media" held, which was a fair question of a tile that opened a
+ * drawer; a tile that goes straight to Invoices has already answered it.
  */
-function Tile({ icon: Icon, name, description, slot, onOpen, to, innerRef, ...props }) {
-  const body = (
-    <>
-      {slot && <span className="rx-slot" aria-hidden="true">{slot}</span>}
+function Tile({ icon: Icon, name, onOpen, to, innerRef, ...props }) {
+  return (
+    <Link ref={innerRef} to={to} className="rx-tile" onClick={onOpen} {...props}>
       {/* Decorative: the name is the accessible name. */}
       <span className="rx-ic"><Icon aria-hidden="true" strokeWidth={1.75} size={20} /></span>
       <span className="rx-name">{name}</span>
-      {description && <span className="rx-desc">{description}</span>}
-    </>
+    </Link>
   );
-
-  return to
-    ? <Link ref={innerRef} to={to} className="rx-tile" onClick={onOpen} {...props}>{body}</Link>
-    : <button ref={innerRef} type="button" className="rx-tile" onClick={onOpen} {...props}>{body}</button>;
 }
 
 export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
-  const [section, setSection] = useState(null);
-  const [group, setGroup] = useState(null);
   const [query, setQuery] = useState('');
   const sections = useSections();
   const panelRef = useRef(null);
@@ -104,7 +112,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   const tileRefs = useRef([]);
 
   useEffect(() => {
-    if (open) { setSection(null); setGroup(null); setQuery(''); searchRef.current?.focus(); }
+    if (open) { setQuery(''); searchRef.current?.focus(); }
   }, [open]);
 
   const term = query.trim().toLowerCase();
@@ -119,36 +127,37 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
       || (item.section || '').toLowerCase().includes(term))
     : []), [term, allDestinations]);
 
-  const grouped = useMemo(() => groupSections(sections), [sections]);
+  /**
+   * One row per parent menu, in the order navConfig declares them.
+   *
+   * `destinations` is already flat, so a sub-menu — Realtors inside User
+   * Management — dissolves into its parent's row rather than becoming a second
+   * thing to open. That is the point of the change: one label, everything
+   * under it.
+   *
+   * `offset` is where the row's tiles begin in the overall tile order, which is
+   * what keeps tileRefs in visual order for the arrow keys.
+   */
+  const rows = useMemo(() => {
+    let offset = 0;
+    return sections.map((entry) => {
+      const row = {
+        /* A section with no name of its own is named after what it holds —
+           Dashboard is declared nameless in navConfig. */
+        key: entry.section || entry.destinations[0]?.to || 'row',
+        name: entry.section || entry.destinations[0]?.label || 'More',
+        tiles: entry.destinations,
+        offset,
+      };
+      offset += entry.destinations.length;
+      return row;
+    });
+  }, [sections]);
 
   const close = useCallback(() => {
     onClose();
     returnFocusTo?.current?.focus();
   }, [onClose, returnFocusTo]);
-
-  /** What is on screen now, in visual order — for arrow keys and slot keys. */
-  const visibleTiles = useMemo(() => {
-    if (term) return matches.map((item) => ({ kind: 'link', item }));
-    if (group) return group.children.map((item) => ({ kind: 'link', item }));
-    if (section) {
-      return section.items.map((item) => (item.children ? { kind: 'group', item } : { kind: 'link', item }));
-    }
-    return grouped.flatMap((g) => g.members.map((entry) => ({ kind: 'section', item: entry })));
-  }, [term, matches, group, section, grouped]);
-
-  const openTile = useCallback((tile) => {
-    if (tile.kind === 'group') { setGroup(tile.item); return; }
-    if (tile.kind === 'section') {
-      const entry = tile.item;
-      const only = entry.destinations.length === 1 ? entry.destinations[0] : null;
-      // A section holding one destination IS that destination.
-      if (only) { rememberVisit(only); close(); return; }
-      setSection(entry);
-      return;
-    }
-    rememberVisit(tile.item);
-    close();
-  }, [close]);
 
   /**
    * Keyboard. The keycaps in the search row advertise this as keyboard-driven,
@@ -159,34 +168,6 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
 
     const onKeyDown = (event) => {
       if (event.key === 'Escape') { event.stopPropagation(); close(); return; }
-
-      /*
-       * Slot keys jump straight to a module — but only while the search box is
-       * empty. Otherwise typing "2 bedroom" would navigate on the first
-       * keystroke, which is the kind of shortcut people disable the feature
-       * over.
-       */
-      if (!term && SLOT_KEYS.includes(event.key) && !event.metaKey && !event.ctrlKey) {
-        const index = SLOT_KEYS.indexOf(event.key);
-        const tile = visibleTiles[index];
-        const node = tileRefs.current[index];
-        if (tile) {
-          event.preventDefault();
-          /*
-           * Ask the RENDERED TILE what it is, rather than the data behind it.
-           *
-           * A section holding one destination is rendered as a link — the
-           * mouse path follows it and navigates. The keyboard path branched on
-           * `tile.kind` instead, saw 'section', and called openTile, which for
-           * a collapsed section only closes the launcher. Pressing 1 therefore
-           * dismissed the overlay and went nowhere, while clicking the same
-           * tile worked. One source of truth: if it is an anchor, click it.
-           */
-          if (node?.tagName === 'A') node.click();
-          else openTile(tile);
-          return;
-        }
-      }
 
       if (['ArrowDown', 'ArrowUp', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
         const nodes = tileRefs.current.filter(Boolean);
@@ -200,10 +181,10 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
          * Navigation is GEOMETRIC, not arithmetic.
          *
          * Index maths needs a column count, and there is no single right one
-         * here: the grid is split into four groups, each its own grid, and a
-         * group with three members still lays out across six tracks. Stepping
-         * down by six from the second tile in Core skipped the whole of Sales &
-         * clients and landed in Finance — which is not where the eye went.
+         * here: every row is its own grid, and a row of two screens still lays
+         * out across six tracks. Stepping down by six from the second tile in
+         * one row skipped whole rows and landed somewhere the eye had not
+         * gone.
          *
          * Asking the layout where things actually are handles partial rows,
          * group boundaries and any future column count without knowing about
@@ -262,7 +243,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, close, term, visibleTiles, openTile]);
+  }, [open, close]);
 
   /**
    * Pick a glyph colour the accent can actually carry.
@@ -293,48 +274,32 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
 
   tileRefs.current = [];
 
-  const heading = term
-    ? `${matches.length} ${matches.length === 1 ? 'result' : 'results'}`
-    : [section?.section, group?.label].filter(Boolean).join(' → ');
-
-  /** One grid of tiles, used by search and by every drill-in level. */
-  const renderTiles = (tiles) => (
+  /**
+   * One grid of screens. `offset` keeps tileRefs in visual order across the
+   * rows, which is the order the arrow keys walk.
+   */
+  const renderTiles = (items, offset = 0) => (
     <div className="rx-grid">
-      {tiles.map((tile, index) => {
-        const entry = tile.item;
-        const isGroup = tile.kind === 'group';
-        return (
-          <Tile
-            key={`${tile.kind}-${entry.label || entry.section}-${index}`}
-            innerRef={(node) => { tileRefs.current[index] = node; }}
-            icon={entry.icon}
-            name={entry.label}
-            to={isGroup ? undefined : entry.to}
-            onOpen={() => openTile(tile)}
-            aria-label={isGroup ? `${entry.label} — ${entry.children.length} screens` : undefined}
-          />
-        );
-      })}
+      {items.map((item, index) => (
+        <Tile
+          key={item.to}
+          innerRef={(node) => { tileRefs.current[offset + index] = node; }}
+          icon={item.icon}
+          name={item.label}
+          to={item.to}
+          onOpen={() => { rememberVisit(item); close(); }}
+        />
+      ))}
     </div>
   );
 
   return (
-    <div className="rx-launcher fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-slate-900/40 min-[520px]:p-6 min-[900px]:p-10">
+    <div className="rx-launcher fixed inset-0 z-[70] flex bg-slate-900/40">
       <style>{LAUNCHER_CSS}</style>
       <div className="absolute inset-0" onClick={close} aria-hidden="true" />
 
       <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Modules" className="rx-panel relative">
         <div className="rx-search">
-          {(section || group) && !term && (
-            <button
-              type="button"
-              onClick={() => (group ? setGroup(null) : setSection(null))}
-              aria-label={group ? `Back to ${section?.section || 'the section'}` : 'Back to all modules'}
-              style={{ color: 'var(--rx-ink-3)', flexShrink: 0 }}
-            >
-              <ArrowLeft size={18} />
-            </button>
-          )}
           <Search aria-hidden="true" size={18} style={{ color: 'var(--rx-ink-3)', flexShrink: 0 }} />
           <input
             ref={searchRef}
@@ -358,7 +323,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
 
         {/* Recently visited: most launcher trips are return trips, and a chip
             answers that in a glance where a grid needs a scan. */}
-        {!term && !section && !group && recent.length > 0 && (
+        {!term && recent.length > 0 && (
           <div className="rx-recent">
             <span className="rx-recent-label">Recent</span>
             {recent.map((item) => (
@@ -374,60 +339,36 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
           <nav aria-label="Modules">
             {term ? (
               matches.length
-                ? renderTiles(visibleTiles)
+                /* Headed like every other row, so searching rearranges the page
+                   rather than replacing it with something shaped differently. */
+                ? (
+                  <div className="rx-group">
+                    <div className="rx-group-head">
+                      <span>Results</span><i /><span>{matches.length}</span>
+                    </div>
+                    {renderTiles(matches)}
+                  </div>
+                )
                 : <p className="rx-empty">Nothing matches “{query.trim()}”.</p>
-            ) : (section || group) ? (
-              <div className="rx-group">
-                <div className="rx-group-head">
-                  <span>{heading}</span><i /><span>{visibleTiles.length}</span>
-                </div>
-                {renderTiles(visibleTiles)}
-              </div>
             ) : (
               /*
-               * Grouped. A flat grid of twelve equal tiles has no vertical
-               * rhythm — the eye reads every label in order because nothing
-               * tells it where to start. Four labelled groups cost nothing:
-               * the tiles themselves stay identical.
+               * Every screen, under the menu it belongs to.
+               *
+               * The row label is the parent menu's name — the same name the
+               * sidebar gives it in the other five templates — so somebody who
+               * learned the menu in one of those can read this without
+               * translating. The count on the right says how many screens the
+               * row holds, which is the only thing the old section tile said
+               * that this does not say by simply showing them.
                */
-              grouped.map((entry, groupIndex) => {
-                const offset = grouped.slice(0, groupIndex)
-                  .reduce((total, previous) => total + previous.members.length, 0);
-                return (
-                  <div className="rx-group" key={entry.id}>
-                    <div className="rx-group-head">
-                      <span>{entry.label}</span><i /><span>{entry.members.length}</span>
-                    </div>
-                    <div className="rx-grid">
-                      {entry.members.map((member, index) => {
-                        const position = offset + index;
-                        const only = member.destinations.length === 1 ? member.destinations[0] : null;
-                        // A section holding one destination is named after what
-                        // it OPENS — "General" that lands on Notifications is a
-                        // tile that lied about where it went.
-                        const name = only ? only.label : (member.section || 'More');
-                        const icon = (only || member.destinations[0]).icon;
-                        return (
-                          <Tile
-                            key={name}
-                            innerRef={(node) => { tileRefs.current[position] = node; }}
-                            icon={icon}
-                            name={name}
-                            /* Keyed by section name, falling back to the tile's
-                               own name — Dashboard has no section name, which
-                               is the same gap that put it in "More". */
-                            description={DESCRIPTIONS[member.section] ?? DESCRIPTIONS[name]}
-                            slot={SLOT_KEYS[position]}
-                            to={only?.to}
-                            onOpen={() => openTile({ kind: 'section', item: member })}
-                            aria-label={only ? undefined : `${name} — ${member.destinations.length} screens`}
-                          />
-                        );
-                      })}
-                    </div>
+              rows.map((row) => (
+                <div className="rx-group" key={row.key}>
+                  <div className="rx-group-head">
+                    <span>{row.name}</span><i /><span>{row.tiles.length}</span>
                   </div>
-                );
-              })
+                  {renderTiles(row.tiles, row.offset)}
+                </div>
+              ))
             )}
           </nav>
         </div>

@@ -3,10 +3,11 @@ import { Link, NavLink } from 'react-router-dom';
 import { Bell, ChevronDown, Grid3x3, LogOut, User } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
-import { useAppearance } from '../../context/useAppearance';
+import { useAppearance, useOnPrimary } from '../../context/useAppearance';
 import { listNotifications } from '../../api/notificationApi';
 import ProfileToggle from '../common/ProfileToggle';
 import ModuleLauncher from './ModuleLauncher';
+import { consumeFreshLogin } from '../../lib/launcherGreeting';
 
 /**
  * LauncherLayout — a utility bar and a module launcher, with no sidebar.
@@ -35,12 +36,31 @@ export default function LauncherLayout({ children }) {
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const userType = useAuthStore((s) => s.effectiveType());
   const { app_name, app_logo } = useAppearance();
+  // The logo square and the avatar are filled with the PRIMARY colour, so
+  // their ink comes from primary rather than from the bar underneath.
+  const onPrimary = useOnPrimary();
 
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const launcherButtonRef = useRef(null);
   const menuRef = useRef(null);
+
+  /*
+   * The menu is the first thing you see after signing in.
+   *
+   * This template has no sidebar, so somebody arriving on it has a dashboard
+   * and a grid button and no visible way to anywhere else. Opening the menu on
+   * arrival makes the first screen the map rather than something to be found.
+   *
+   * Once per login, not once per mount — see launcherGreeting for why a mount
+   * is the wrong trigger. In an effect rather than a useState initialiser
+   * because StrictMode invokes an initialiser twice, and the second call would
+   * find a flag the first had already spent.
+   */
+  useEffect(() => {
+    if (consumeFreshLogin()) setLauncherOpen(true);
+  }, []);
 
   useEffect(() => {
     listNotifications()
@@ -68,7 +88,7 @@ export default function LauncherLayout({ children }) {
 
   return (
     <div className="flex h-screen flex-col bg-slate-50">
-      <header className="relative z-50 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-3 shadow-sm sm:px-4">
+      <header className="rx-topbar relative z-50 flex h-14 shrink-0 items-center gap-2 px-3 shadow-sm sm:px-4">
         {/*
           The launcher button sits first, where a hamburger would.
           It is the only way to navigate on this template, so it gets the
@@ -81,24 +101,24 @@ export default function LauncherLayout({ children }) {
           aria-label="Open modules"
           aria-haspopup="dialog"
           aria-expanded={launcherOpen}
-          className="flex shrink-0 items-center gap-2 rounded-lg px-2 py-1.5 text-slate-600 hover:bg-slate-100"
+          className="rx-topbar-btn flex shrink-0 items-center gap-2 rounded-lg px-2 py-1.5"
         >
           <Grid3x3 className="h-5 w-5" />
           <span className="hidden text-sm font-medium sm:inline">Modules</span>
         </button>
 
-        <Link to="/" className="flex min-w-0 items-center gap-2 rounded-lg px-1 py-1 hover:bg-slate-50">
+        <Link to="/" className="rx-topbar-btn flex min-w-0 items-center gap-2 rounded-lg px-1 py-1">
           {app_logo
             ? <img src={app_logo} alt="" className="h-7 w-7 shrink-0 rounded object-contain" />
             : (
               <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs font-bold text-white"
-                style={{ backgroundColor: 'var(--primary, #2563eb)' }}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs font-bold"
+                style={{ backgroundColor: 'var(--primary, #2563eb)', color: onPrimary }}
               >
                 {(app_name || 'R').charAt(0)}
               </span>
             )}
-          <span className="truncate text-sm font-semibold text-slate-800">{app_name || 'Realx8'}</span>
+          <span className="truncate text-sm font-semibold">{app_name || 'Realx8'}</span>
         </Link>
 
         <div className="flex-1" />
@@ -109,7 +129,7 @@ export default function LauncherLayout({ children }) {
         <NavLink
           to="/notifications"
           aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
-          className="relative shrink-0 rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+          className="rx-topbar-btn rx-topbar-dim relative shrink-0 rounded-lg p-2"
         >
           <Bell aria-hidden="true" className="h-5 w-5" />
           {unread > 0 && (
@@ -136,18 +156,18 @@ export default function LauncherLayout({ children }) {
             onClick={() => setMenuOpen((v) => !v)}
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 hover:bg-slate-100"
+            className="rx-topbar-btn flex items-center gap-2 rounded-lg px-1.5 py-1.5"
           >
-            <span className="hidden text-sm text-slate-600 md:inline">
-              Hello, <span className="font-medium text-slate-800">{firstName || 'there'}</span>
+            <span className="rx-topbar-dim hidden text-sm md:inline">
+              Hello, <span className="font-medium">{firstName || 'there'}</span>
             </span>
             <span
-              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold text-white"
-              style={{ backgroundColor: 'var(--primary, #2563eb)' }}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold"
+              style={{ backgroundColor: 'var(--primary, #2563eb)', color: onPrimary }}
             >
               {(user?.name || '?').charAt(0).toUpperCase()}
             </span>
-            <ChevronDown aria-hidden="true" className="h-4 w-4 text-slate-400" />
+            <ChevronDown aria-hidden="true" className="rx-topbar-dim h-4 w-4" />
           </button>
 
           {menuOpen && (
