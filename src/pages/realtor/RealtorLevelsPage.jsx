@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import {
-  approveLevelRequest, assignRealtorLevel, createRealtorLevel, deleteRealtorLevel,
-  listLevelRequests, listRealtorLevels, rejectLevelRequest, reorderRealtorLevels, updateRealtorLevel,
+  approveLevelRequest, assignRealtorLevel,
+  listLevelRequests, listRealtorLevels, rejectLevelRequest, saveRealtorLadder,
 } from '../../api/realtorLevelApi';
 import { listRealtors } from '../../api/userApi';
 import { listCompanies } from '../../api/companyApi';
@@ -21,6 +21,24 @@ const asList = (response) => (Array.isArray(response) ? response : (response?.da
 /**
  * Admin management for realtor levels: define the ladder, reorder it, place
  * realtors on a level, and review upgrade requests.
+ *
+ * ── The ladder is edited as one thing ──────────────────────────────────────
+ *
+ * Every field below is a draft until Save. It used to write on every
+ * keystroke's blur — one request per cell, each landing on its own — which
+ * meant an admin reorganising a ladder produced a stream of saves, and a
+ * failure halfway through left the ladder as neither the old one nor the new.
+ * Now the whole ladder goes up together and either replaces what was there or
+ * changes nothing.
+ *
+ * ── The platform ladder, and making it yours ───────────────────────────────
+ *
+ * A company starts on the four rungs the platform ships, which it does not
+ * own. Before, that meant every control was disabled and the page read as
+ * though somebody had deleted the levels. Now the fields are editable and
+ * saving adopts them: the rungs become the company's own copies, and the
+ * banner says so before they press it, because it is not reversible from
+ * here.
  */
 export default function RealtorLevelsPage() {
   const isSuperiorAdmin = useAuthStore((state) => state.isSuperiorAdmin);
@@ -28,17 +46,35 @@ export default function RealtorLevelsPage() {
   // Superior admins browse one company's levels at a time; '' means global only.
   const [companyFilter, setCompanyFilter] = useState('');
   const [levels, setLevels] = useState([]);
+  // The editable copy. `levels` stays as the server last returned it, so the
+  // page can tell whether anything has actually changed.
+  const [draft, setDraft] = useState([]);
+  const [ladder, setLadder] = useState({ editable: true, source: 'platform' });
   const [realtors, setRealtors] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const fmt = useCurrency();
-  const [form, setForm] = useState({ name: '', description: '', commission_percentage: '', levelup_fee: '' });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [review, setReview] = useState(null);   // { request, decision }
   const [notes, setNotes] = useState('');
 
   const say = (type, text) => setMessage({ type, text });
+
+  /*
+   * A row as the editor holds it. Fees are naira here and kobo on the wire —
+   * nobody prices a level in kobo — and `key` exists because a brand-new row
+   * has no id yet and React still needs to tell two of them apart.
+   */
+  const toRow = (level) => ({
+    key: `saved-${level.id}`,
+    id: level.id,
+    name: level.name || '',
+    description: level.description || '',
+    commission_percentage: String(Number(level.commission_percentage || 0)),
+    levelup_fee: String(Number(level.levelup_fee_minor || 0) / 100),
+    is_active: level.is_active !== false,
+  });
 
   const load = async () => {
     setLoading(true);
@@ -48,7 +84,14 @@ export default function RealtorLevelsPage() {
       listLevelRequests(),
     ]);
     const items = (r) => (r.status === 'fulfilled' ? asList(r.value) : []);
-    setLevels(items(levelRes));
+    const rows = items(levelRes);
+    setLevels(rows);
+    setDraft(rows.map(toRow));
+    const body = levelRes.status === 'fulfilled' ? levelRes.value : null;
+    setLadder({
+      editable: body?.editable !== false,
+      source: body?.source || (rows[0]?.company_id ? 'company' : 'platform'),
+    });
     setRealtors(items(realtorRes));
     setRequests(items(requestRes));
     setLoading(false);
@@ -77,34 +120,47 @@ export default function RealtorLevelsPage() {
     }
   };
 
-  const addLevel = (event) => {
-    event.preventDefault();
-    if (!form.name.trim()) return;
-    guard(
-      () => createRealtorLevel({
-        name: form.name.trim(),
-        description: form.description.trim() || null,
-        commission_percentage: form.commission_percentage === '' ? 0 : Number(form.commission_percentage),
-        // Kobo on the wire; the field asks for naira, because nobody prices a
-        // level in kobo.
-        levelup_fee_minor: form.levelup_fee === '' ? 0 : Math.round(Number(form.levelup_fee) * 100),
-      }),
-      'Level added.',
-    ).then(() => setForm({ name: '', description: '', commission_percentage: '', levelup_fee: '' }));
-  };
+  // ── The ladder draft ──────────────────────────────────────────────────────
 
-  const ownIndex = (level) => ownLevels.findIndex((l) => l.id === level.id);
+  const editRow = (index, patch) => setDraft((rows) => rows.map(
+    (row, i) => (i === index ? { ...row, ...patch } : row),
+  ));
 
-  // Reordering applies only to levels you own — the API rejects a list that
-  // includes someone else's — so the swap happens within that subset.
-  const move = (level, delta) => {
-    const next = [...ownLevels];
-    const from = ownIndex(level);
-    const to = from + delta;
-    if (from < 0 || to < 0 || to >= next.length) return;
-    [next[from], next[to]] = [next[to], next[from]];
-    guard(() => reorderRealtorLevels(next.map((l) => l.id)));
-  };
+  const addRow = () => setDraft((rows) => [...rows, {
+    // No id: the server reads that as a new rung rather than an edit.
+    key: `new-${rows.length}-${rows.reduce((n, r) => n + r.key.length, 0)}`,
+    id: null,
+    name: '',
+    description: '',
+    commission_percentage: '0',
+    levelup_fee: '0',
+    is_active: true,
+  }]);
+
+  const removeRow = (index) => setDraft((rows) => rows.filter((_, i) => i !== index));
+
+  const move = (index, delta) => setDraft((rows) => {
+    const to = index + delta;
+    if (to < 0 || to >= rows.length) return rows;
+    const next = [...rows];
+    [next[index], next[to]] = [next[to], next[index]];
+    return next;
+  });
+
+  const saveLadder = () => guard(
+    // Kobo on the wire; the field asks for naira.
+    () => saveRealtorLadder(draft.map((row) => ({
+      id: row.id ?? undefined,
+      name: row.name.trim(),
+      description: row.description.trim() || null,
+      commission_percentage: row.commission_percentage === '' ? 0 : Number(row.commission_percentage),
+      levelup_fee_minor: row.levelup_fee === '' ? 0 : Math.round(Number(row.levelup_fee) * 100),
+      is_active: row.is_active,
+    }))),
+    ladder.source === 'platform' ? 'The ladder is now yours to manage.' : 'Ladder saved.',
+  );
+
+  const resetDraft = () => setDraft(levels.map(toRow));
 
   const submitReview = () => {
     const action = review.decision === 'approved' ? approveLevelRequest : rejectLevelRequest;
@@ -115,13 +171,29 @@ export default function RealtorLevelsPage() {
   };
 
   const levelName = (id) => levels.find((l) => l.id === id)?.name || '—';
-  // A level with no company is part of the shared global ladder, which only a
-  // platform administrator may change.
-  const isGlobal = (level) => !level.company_id;
-  const companyName = (id) => companies.find((c) => c.id === id)?.name || `Company #${id}`;
-  const canEdit = (level) => (isSuperiorAdmin ? isGlobal(level) : !isGlobal(level));
-  const ownLevels = levels.filter((l) => canEdit(l));
   const pending = requests.filter((r) => r.status === 'pending');
+
+  /*
+   * Who may edit what.
+   *
+   * A company admin may always edit the ladder in front of them: their own if
+   * they have one, and the platform's if they have not — editing the latter is
+   * how they come to have one. The single case that is genuinely read-only is
+   * a superior admin looking at a company's own ladder through the filter,
+   * which belongs to that company's administrator.
+   */
+  const canEditLadder = ladder.editable;
+  const companyName = (id) => companies.find((c) => c.id === id)?.name || `Company #${id}`;
+
+  /*
+   * Compared field by field against what the server returned, not tracked by a
+   * flag. A flag set on every keystroke calls typing a character and deleting
+   * it a change, and then offers to save nothing.
+   */
+  const dirty = JSON.stringify(draft) !== JSON.stringify(levels.map(toRow));
+  const draftIsValid = draft.length > 0
+    && draft.every((row) => row.name.trim())
+    && new Set(draft.map((row) => row.name.trim().toLowerCase())).size === draft.length;
 
   return (
     <div className="space-y-5">
@@ -143,6 +215,19 @@ export default function RealtorLevelsPage() {
             <p className="text-xs text-slate-500">
               Ordered lowest to highest. Realtors may only request a level above their current one.
             </p>
+            {/*
+              Whose ladder this is. Two companies' ladders look identical on
+              screen, and a superior admin switching between them with the
+              filter needs the answer in words rather than by remembering what
+              they last selected.
+            */}
+            <p className="mt-0.5 text-xs font-medium text-slate-600">
+              {ladder.source === 'company'
+                ? (isSuperiorAdmin && companyFilter
+                  ? `${companyName(Number(companyFilter))}\u2019s own ladder`
+                  : 'Your company\u2019s own ladder')
+                : 'The ladder the platform ships'}
+            </p>
           </div>
           {isSuperiorAdmin && (
             <label className="block space-y-1">
@@ -161,119 +246,153 @@ export default function RealtorLevelsPage() {
           )}
         </div>
 
+        {/*
+          Said BEFORE they type, not after they press Save.
+
+          Adopting the platform ladder is a one-way door — from then on the
+          company has its own rungs and a later platform change does not reach
+          them. Somebody who only wanted to correct a typo is entitled to know
+          that before they make it.
+        */}
+        {!loading && ladder.source === 'platform' && !isSuperiorAdmin && (
+          <div className="mb-4 rounded-lg bg-sky-50 px-4 py-3 text-sm text-sky-900 ring-1 ring-sky-200">
+            <p className="font-medium">You are using the ladder the platform ships.</p>
+            <p className="mt-0.5">
+              Rename a rung, price it, reorder it or add your own, and saving makes the whole
+              ladder yours. Your realtors keep their standing. After that, changes the platform
+              makes to its ladder no longer reach you.
+            </p>
+          </div>
+        )}
+
         {loading ? <p className="text-sm text-slate-500">Loading...</p> : (
           <div className="space-y-2">
-            {levels.map((level, index) => (
-              <div key={level.id} className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-200 p-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white" style={{ backgroundColor: 'var(--primary)' }}>
-                  {level.position}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-semibold text-slate-900">{level.name}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${isGlobal(level) ? 'bg-slate-100 text-slate-600' : 'bg-indigo-100 text-indigo-700'}`}>
-                      {isGlobal(level)
-                        ? 'Global'
-                        : (isSuperiorAdmin ? companyName(level.company_id) : 'Your company')}
+            {draft.map((row, index) => {
+              const saved = row.id ? levels.find((l) => l.id === row.id) : null;
+              const standing = saved
+                ? realtors.filter((r) => r.realtor_level_id === saved.id).length
+                : 0;
+              return (
+                <div key={row.key} className="rounded-lg border border-slate-200 p-3">
+                  <div className="flex flex-wrap items-start gap-3">
+                    {/* The rung number is the ROW's place in the list, not a
+                        stored position — reordering renumbers as you drag. */}
+                    <span
+                      className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                      style={{ backgroundColor: 'var(--primary)' }}
+                    >
+                      {index + 1}
                     </span>
-                    {level.is_active === false && <Badge value="inactive" />}
-                  </div>
-                  {level.description && <p className="truncate text-xs text-slate-500">{level.description}</p>}
-                  <p className="text-[11px] text-slate-400">
-                    {Number(level.commission_percentage || 0)}% commission ·{' '}
-                    {/* What a realtor pays to reach this level. Free is worth
-                        saying outright — a blank reads as "not configured". */}
-                    {Number(level.levelup_fee_minor || 0) > 0
-                      ? `${fmt(Number(level.levelup_fee_minor) / 100)} to level up`
-                      : 'free to level up'} ·{' '}
-                    {realtors.filter((r) => r.realtor_level_id === level.id).length} realtor(s)
-                  </p>
-                </div>
-                <div className="flex items-center gap-1">
-                  {canEdit(level) ? (
-                    <>
-                      <Button type="button" variant="secondary" size="sm" disabled={saving || ownIndex(level) === 0} onClick={() => move(level, -1)} title="Move down the ladder">
+
+                    <div className="grid min-w-0 flex-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <Input
+                        label="Name"
+                        required
+                        value={row.name}
+                        disabled={!canEditLadder}
+                        onChange={(e) => editRow(index, { name: e.target.value })}
+                        placeholder="e.g. Gold"
+                      />
+                      <Input
+                        label="Description"
+                        value={row.description}
+                        disabled={!canEditLadder}
+                        onChange={(e) => editRow(index, { description: e.target.value })}
+                        placeholder="Optional"
+                      />
+                      <Input
+                        label="Commission %" type="number" min="0" max="100" step="0.01"
+                        value={row.commission_percentage}
+                        disabled={!canEditLadder}
+                        onChange={(e) => editRow(index, { commission_percentage: e.target.value })}
+                      />
+                      {/* Blank or zero means free, which is the right default:
+                          a company that has not thought about charging should
+                          not start charging by accident. */}
+                      <Input
+                        label="Level-up fee" type="number" min="0" step="0.01"
+                        value={row.levelup_fee}
+                        disabled={!canEditLadder}
+                        onChange={(e) => editRow(index, { levelup_fee: e.target.value })}
+                        placeholder="0 — free"
+                      />
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-1 pt-6">
+                      <Button type="button" variant="secondary" size="sm" disabled={!canEditLadder || index === 0} onClick={() => move(index, -1)} title="Move down the ladder">
                         <ArrowUp size={14} />
                       </Button>
-                      <Button type="button" variant="secondary" size="sm" disabled={saving || ownIndex(level) === ownLevels.length - 1} onClick={() => move(level, 1)} title="Move up the ladder">
+                      <Button type="button" variant="secondary" size="sm" disabled={!canEditLadder || index === draft.length - 1} onClick={() => move(index, 1)} title="Move up the ladder">
                         <ArrowDown size={14} />
                       </Button>
-                      <input
-                        type="number" min="0" max="100" step="0.01"
-                        defaultValue={Number(level.commission_percentage || 0)}
-                        disabled={saving}
-                        title="Commission %"
-                        onBlur={(e) => {
-                          const next = Number(e.target.value);
-                          if (next === Number(level.commission_percentage || 0)) return;
-                          guard(() => updateRealtorLevel(level.id, { commission_percentage: next }), 'Commission updated.');
-                        }}
-                        className="w-20 rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
-                      />
-                      {/* Edited in place like the commission beside it, and in
-                          naira — the column is kobo. */}
-                      <input
-                        type="number" min="0" step="0.01"
-                        defaultValue={Number(level.levelup_fee_minor || 0) / 100}
-                        disabled={saving}
-                        title="Level-up fee"
-                        onBlur={(e) => {
-                          const next = Math.round(Number(e.target.value) * 100);
-                          if (next === Number(level.levelup_fee_minor || 0)) return;
-                          guard(() => updateRealtorLevel(level.id, { levelup_fee_minor: next }), 'Level-up fee updated.');
-                        }}
-                        className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none"
-                      />
                       <Button
-                        type="button" variant="secondary" size="sm" disabled={saving}
-                        onClick={() => guard(() => updateRealtorLevel(level.id, { is_active: level.is_active === false }), 'Level updated.')}
+                        type="button" variant="secondary" size="sm" disabled={!canEditLadder}
+                        onClick={() => editRow(index, { is_active: !row.is_active })}
                       >
-                        {level.is_active === false ? 'Activate' : 'Deactivate'}
+                        {row.is_active ? 'Deactivate' : 'Activate'}
                       </Button>
+                      {/*
+                        Refused on the page rather than by the server, because
+                        the server can only refuse the whole save — and an
+                        admin who has spent two minutes rearranging a ladder
+                        should not lose it to a rule they could have been told
+                        about at the moment they broke it.
+                      */}
                       <Button
-                        type="button" variant="danger" size="sm" disabled={saving}
-                        onClick={() => window.confirm(`Delete the "${level.name}" level?`) && guard(() => deleteRealtorLevel(level.id), 'Level deleted.')}
+                        type="button" variant="danger" size="sm"
+                        disabled={!canEditLadder || draft.length === 1 || standing > 0}
+                        title={standing > 0
+                          ? `${standing} realtor${standing === 1 ? ' is' : 's are'} on this level — move them first`
+                          : (draft.length === 1 ? 'A ladder needs at least one level' : 'Remove this level')}
+                        onClick={() => removeRow(index)}
                       >
-                        Delete
+                        <Trash2 size={14} />
                       </Button>
-                    </>
-                  ) : (
-                    <span className="text-[11px] text-slate-400">
-                      {isGlobal(level) ? 'Managed by the platform' : `Managed by ${companyName(level.company_id)}`}
-                    </span>
-                  )}
+                    </div>
+                  </div>
+
+                  <p className="mt-2 pl-10 text-[11px] text-slate-400">
+                    {row.is_active ? '' : 'Inactive · '}
+                    {Number(row.levelup_fee || 0) > 0
+                      ? `${fmt(Number(row.levelup_fee))} to reach`
+                      : 'free to reach'}
+                    {saved ? ` · ${standing} realtor(s)` : ' · new'}
+                  </p>
                 </div>
-              </div>
-            ))}
-            {!levels.length && (
+              );
+            })}
+
+            {!draft.length && (
               <p className="rounded-lg border border-dashed border-slate-200 p-4 text-sm text-slate-500">
-                No levels to show. Level ladders are managed per company, so ask a platform
-                administrator to link your account to one.
+                There are no levels yet. Add one to start the ladder.
               </p>
             )}
           </div>
         )}
 
-        <form onSubmit={addLevel} className="mt-4 grid gap-3 border-t border-slate-100 pt-4 md:grid-cols-[1fr_2fr_auto_auto] md:items-end">
-          <Input label="New level name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Elite" />
-          <Input label="Description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional" />
-          <Input
-            label="Commission %" type="number" min="0" max="100" step="0.01"
-            value={form.commission_percentage}
-            onChange={(e) => setForm((f) => ({ ...f, commission_percentage: e.target.value }))}
-            placeholder="0"
-          />
-          {/* What a realtor pays to reach this level. Blank means free, which
-              is the right default: a company that has not thought about
-              charging should not start charging by accident. */}
-          <Input
-            label="Level-up fee" type="number" min="0" step="0.01"
-            value={form.levelup_fee}
-            onChange={(e) => setForm((f) => ({ ...f, levelup_fee: e.target.value }))}
-            placeholder="0 — free"
-          />
-          <Button type="submit" disabled={saving || !form.name.trim()}>Add Level</Button>
-        </form>
+        {canEditLadder && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+            <Button type="button" variant="secondary" onClick={addRow} disabled={saving}>
+              <span className="inline-flex items-center gap-1.5"><Plus size={14} /> Add a level</span>
+            </Button>
+            <div className="flex-1" />
+            {dirty && (
+              <Button type="button" variant="secondary" onClick={resetDraft} disabled={saving}>
+                Discard changes
+              </Button>
+            )}
+            <Button type="button" onClick={saveLadder} disabled={saving || !dirty || !draftIsValid}>
+              {saving ? 'Saving…' : 'Save ladder'}
+            </Button>
+          </div>
+        )}
+        {!canEditLadder && !loading && (
+          <p className="mt-4 border-t border-slate-100 pt-4 text-xs text-slate-400">
+            {isSuperiorAdmin
+              ? 'This is the company\u2019s own ladder. Their administrator manages it.'
+              : 'Managed by the platform.'}
+          </p>
+        )}
       </section>
 
       {isSuperiorAdmin ? (

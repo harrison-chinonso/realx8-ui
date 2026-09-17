@@ -2,11 +2,18 @@ import client from './client';
 
 /** params.company_id lets a superior admin inspect one company's levels alongside the global ladder. */
 export const listRealtorLevels = (params) => client.get('/realtor-levels', { params }).then((r) => r.data);
-export const createRealtorLevel = (payload) => client.post('/realtor-levels', payload).then((r) => r.data);
-export const updateRealtorLevel = (id, payload) => client.put(`/realtor-levels/${id}`, payload).then((r) => r.data);
-export const deleteRealtorLevel = (id) => client.delete(`/realtor-levels/${id}`).then((r) => r.data);
-/** ids: level ids lowest-rank first. */
-export const reorderRealtorLevels = (ids) => client.put('/realtor-levels/reorder', { ids }).then((r) => r.data);
+/**
+ * Save the WHOLE ladder, lowest rung first.
+ *
+ * There is no per-level create, update, delete or reorder any more. Every real
+ * change to a ladder touches several rungs at once, and as four separate calls
+ * an admin's single intention could half-happen. One call, one outcome.
+ *
+ * An entry with an `id` from the platform ladder is an instruction to adopt
+ * that rung as the company's own; the server copies it and moves everything
+ * that pointed at the original.
+ */
+export const saveRealtorLadder = (levels) => client.put('/realtor-levels', { levels }).then((r) => r.data);
 export const assignRealtorLevel = (userId, levelId) =>
   client.put(`/realtors/${userId}/level`, { level_id: levelId }).then((r) => r.data);
 
