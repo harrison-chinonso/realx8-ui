@@ -39,24 +39,37 @@ const fromMap = (map) => Object.entries(map || {})
  * nothing in it can be dropped cleanly — an empty "Top Due Payments" heading
  * above a blank space reads like a rendering fault rather than good news.
  */
-export const buildSections = (data, symbol) => {
+/**
+ * @param allow  predicate over a widget key from widgetPermissions.js. Sections
+ *               the viewer may not see are omitted rather than exported as
+ *               zeros — a spreadsheet outlives the screen it came from, and a
+ *               "Total invoiced: 0" that really meant "you were not allowed to
+ *               read this" is a figure somebody will act on months later.
+ *               Defaults to allowing everything, so a caller that has no
+ *               permission context behaves as it always did.
+ */
+export const buildSections = (data, symbol, allow = () => true) => {
   const sections = [];
 
   sections.push({
     title: 'Summary',
     head: ['Measure', 'Value'],
+    // Row by row, because this one section draws on several modules: the
+    // headcounts are open, the invoice and sales figures are not.
     body: [
       ['Properties', count(data.totalProperties)],
       ['Clients', count(data.totalClients)],
       ['Realtors', count(data.totalRealtors)],
       ['Staff', count(data.totalStaff)],
-      ['Invoices', count(data.totalInvoices)],
-      ['Sales in period', count(data.totalSales)],
+      ...(allow('kpiSummary') ? [
+        ['Invoices', count(data.totalInvoices)],
+        ['Sales in period', count(data.totalSales)],
+      ] : []),
       ['Referrals', count(data.totalReferrals)],
     ],
   });
 
-  sections.push({
+  if (allow('financeSummary')) sections.push({
     title: 'Finance',
     head: ['Measure', 'Amount'],
     body: [
@@ -73,7 +86,7 @@ export const buildSections = (data, symbol) => {
     ],
   });
 
-  if (data.weekComparison?.days?.length) {
+  if (data.weekComparison?.days?.length && allow('revenueChart')) {
     sections.push({
       title: 'This week vs last week',
       head: ['Day', 'Last week', 'This week'],
@@ -92,12 +105,12 @@ export const buildSections = (data, symbol) => {
   }
 
   const propertyRows = fromMap(data.propertyStatusMap);
-  if (propertyRows.length) {
+  if (propertyRows.length && allow('propertyStatus')) {
     sections.push({ title: 'Properties by status', head: ['Status', 'Count'], body: propertyRows });
   }
 
   const leadRows = fromMap(data.leadStatusMap);
-  if (leadRows.length) {
+  if (leadRows.length && allow('leadStatus')) {
     sections.push({
       title: 'Leads by status',
       head: ['Status', 'Count'],
@@ -108,7 +121,7 @@ export const buildSections = (data, symbol) => {
     });
   }
 
-  if (data.duePayments?.length) {
+  if (data.duePayments?.length && allow('topDuePayments')) {
     sections.push({
       title: 'Top due payments',
       head: ['Invoice', 'Client', 'Amount', 'Due date', 'Days left'],
@@ -122,7 +135,7 @@ export const buildSections = (data, symbol) => {
     });
   }
 
-  if (data.realtorLeaderboard?.length) {
+  if (data.realtorLeaderboard?.length && allow('realtorLeaderboard')) {
     sections.push({
       title: 'Realtor leaderboard',
       head: ['Realtor', 'Sales', 'Value'],
@@ -134,7 +147,7 @@ export const buildSections = (data, symbol) => {
     });
   }
 
-  sections.push({
+  if (allow('supportStats')) sections.push({
     title: 'Support',
     head: ['Measure', 'Value'],
     body: [
@@ -151,6 +164,7 @@ export const buildSections = (data, symbol) => {
 
 export const exportDashboardPdf = async ({
   data, symbol = '', title = 'Dashboard report', period = '', onProgress = () => {},
+  allow = () => true,
 }) => {
   onProgress({ stage: 'Loading the PDF engine', percent: 10 });
   const { jsPDF } = await lazyImport(() => import('jspdf'));
@@ -170,7 +184,7 @@ export const exportDashboardPdf = async ({
 
   let cursor = period ? 100 : 86;
 
-  buildSections(data || {}, symbol).forEach((section) => {
+  buildSections(data || {}, symbol, allow).forEach((section) => {
     autoTable(doc, {
       startY: cursor,
       /**
@@ -218,6 +232,7 @@ export const exportDashboardPdf = async ({
 /** The same report as a spreadsheet, one sheet per section. */
 export const exportDashboardExcel = async ({
   data, symbol = '', title = 'Dashboard report', onProgress = () => {},
+  allow = () => true,
 }) => {
   onProgress({ stage: 'Loading the spreadsheet engine', percent: 10 });
   const module = await lazyImport(() => import('exceljs'));
@@ -226,7 +241,7 @@ export const exportDashboardExcel = async ({
   const workbook = new ExcelJS.Workbook();
   workbook.created = new Date();
 
-  buildSections(data || {}, symbol).forEach((section) => {
+  buildSections(data || {}, symbol, allow).forEach((section) => {
     const sheet = workbook.addWorksheet(section.title.replace(/[[\]:*?/\\]/g, ' ').slice(0, 31));
     sheet.addRow(section.head).font = { bold: true };
     section.body.forEach((row) => sheet.addRow(row));

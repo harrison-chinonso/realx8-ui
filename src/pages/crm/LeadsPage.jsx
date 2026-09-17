@@ -16,6 +16,7 @@ import {
 } from '../../api/crmApi';
 import { createObjection, deleteObjection, listObjections } from '../../api/objectionApi';
 import { listUsers } from '../../api/userApi';
+import { usePermission } from '../../hooks/usePermission';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
 import DetailsModal from '../../components/common/DetailsModal';
@@ -141,6 +142,17 @@ export default function LeadsPage() {
   const [showScoreDetailsModal, setShowScoreDetailsModal] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [detailRow, setDetailRow] = useState(null);
+  /*
+   * What this account may actually do, asked once.
+   *
+   * The CRM routes are permission-gated now, and a realtor holds crm.leads.view
+   * and crm.leads.create but NOT crm.leads.manage. Without these the page would
+   * still draw Edit and Delete for them and every press would come back 403 —
+   * a visible control that always fails, which is its own bug.
+   */
+  const canCreate = usePermission('crm.leads.create');
+  const canManage = usePermission('crm.leads.manage');
+  const canLogObjections = usePermission('crm.objections.manage');
   const [editingLead, setEditingLead] = useState(null);
   const [activityLead, setActivityLead] = useState(null);
   const [objectionLead, setObjectionLead] = useState(null);
@@ -637,7 +649,7 @@ export default function LeadsPage() {
           <h1 className="text-xl font-semibold">Leads</h1>
           <p className="text-sm text-slate-500">Track qualification signals, pipeline movement, and objections.</p>
         </div>
-        <Button onClick={openCreate}>+ Add Lead</Button>
+        {canCreate && <Button onClick={openCreate}>+ Add Lead</Button>}
       </div>
 
       <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
@@ -676,12 +688,12 @@ export default function LeadsPage() {
           data={filteredLeads}
           renderActions={(row) => (
             <div className="flex items-center justify-end gap-2">
-              <Button onClick={() => openEdit(row)} variant="primary" size="sm">Edit</Button>
+              {canManage && <Button onClick={() => openEdit(row)} variant="primary" size="sm">Edit</Button>}
               <ActionsMenu
                 items={[
                   { label: '👁 View Details', onClick: () => setDetailRow(row) },
                   { label: '📊 Score Details', onClick: () => openScoreDetails(row) },
-                  ...(!row.assigned_to ? [{
+                  ...(!row.assigned_to && canManage ? [{
                     label: autoAssigningLeadId === row.id ? '⏳ Assigning…' : '🎯 Auto Assign',
                     disabled: autoAssigningLeadId === row.id,
                     onClick: () => handleAutoAssign(row),
@@ -689,7 +701,7 @@ export default function LeadsPage() {
                   { label: '💡 Follow-Up Suggestion', onClick: () => openFollowUpSuggestion(row) },
                   { label: '📋 Activities', onClick: () => openActivities(row) },
                   { label: '💬 Objections', onClick: () => openObjections(row) },
-                  { label: '🗑 Delete', variant: 'danger', onClick: () => handleDelete(row) },
+                  ...(canManage ? [{ label: '🗑 Delete', variant: 'danger', onClick: () => handleDelete(row) }] : []),
                 ]}
               />
             </div>
@@ -1050,9 +1062,11 @@ export default function LeadsPage() {
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                 Lead Thermal: <span className="ml-1 align-middle"><ThermalBadge value={objectionLead.lead_thermal} /></span>
               </div>
-              <Button type="button" variant={showObjectionForm ? 'secondary' : 'primary'} onClick={() => setShowObjectionForm((current) => !current)}>
-                {showObjectionForm ? 'Hide Form' : 'Log Objection'}
-              </Button>
+              {canLogObjections && (
+                <Button type="button" variant={showObjectionForm ? 'secondary' : 'primary'} onClick={() => setShowObjectionForm((current) => !current)}>
+                  {showObjectionForm ? 'Hide Form' : 'Log Objection'}
+                </Button>
+              )}
             </div>
 
             {showObjectionForm && (
@@ -1122,7 +1136,9 @@ export default function LeadsPage() {
                       <td className="max-w-xs px-4 py-3 text-slate-700">{objection.resolution_strategy || '—'}</td>
                       <td className="px-4 py-3 text-slate-700">{objection.logged_by_name || 'System'}</td>
                       <td className="px-4 py-3 text-right">
-                        <Button onClick={() => handleDeleteObjection(objection)} variant="danger" size="sm">Delete</Button>
+                        {canLogObjections && (
+                          <Button onClick={() => handleDeleteObjection(objection)} variant="danger" size="sm">Delete</Button>
+                        )}
                       </td>
                     </tr>
                   ))}

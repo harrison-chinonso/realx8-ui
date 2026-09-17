@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { listTasks, createTask, updateTask, deleteTask, listDeals, listLeads } from '../../api/crmApi';
+import { usePermission } from '../../hooks/usePermission';
 import { listUsers } from '../../api/userApi';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
@@ -104,6 +105,12 @@ export default function TasksPage() {
     () => Object.fromEntries(leads.map((lead) => [String(lead.id), lead])),
     [leads]
   );
+
+  // Viewing a task board and working it are separate permissions — a role with
+
+  // crm.tasks.view alone gets the board and none of the controls.
+
+  const canManageTasks = usePermission('crm.tasks.manage');
 
   const openCreate = () => {
     setEditingTask(null);
@@ -232,7 +239,7 @@ export default function TasksPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Tasks</h1>
-        <Button onClick={openCreate}>Add Task</Button>
+        {canManageTasks && <Button onClick={openCreate}>Add Task</Button>}
       </div>
 
       {error && (
@@ -247,11 +254,15 @@ export default function TasksPage() {
           rows={tasks}
           renderActions={(row) => (
             <div className="flex items-center justify-end gap-2">
-              <Button type="button" variant="primary" size="sm" onClick={() => openEdit(row)}>Edit</Button>
+              {canManageTasks && (
+                <Button type="button" variant="primary" size="sm" onClick={() => openEdit(row)}>Edit</Button>
+              )}
               <ActionsMenu
                 items={[
                   { label: '👁 View Details', onClick: () => setDetailRow(row) },
-                  { label: '🗑 Delete', variant: 'danger', onClick: () => handleDelete(row) },
+                  ...(canManageTasks
+                    ? [{ label: '🗑 Delete', variant: 'danger', onClick: () => handleDelete(row) }]
+                    : []),
                 ]}
               />
             </div>

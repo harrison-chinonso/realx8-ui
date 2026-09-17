@@ -26,6 +26,7 @@ import SupportStatsWidget from '../../components/dashboard/SupportStatsWidget';
 import TopPerformersPanel from '../../components/dashboard/TopPerformersPanel';
 import RealtorDashboard from './RealtorDashboard';
 import ClientDashboard from './ClientDashboard';
+import { canSeeWidget } from '../../components/dashboard/widgetPermissions';
 
 /**
  * Exporting the dashboard.
@@ -94,9 +95,16 @@ function SectionSkeleton() {
   );
 }
 
-// ─── Section wrapper with hide support ───────────────────────────────────────
-function Section({ visible, children }) {
-  if (!visible) return null;
+/**
+ * A card, shown when the viewer has both switched it on and is allowed it.
+ *
+ * `visible` is the viewer's own preference; `allowed` is the permission. The
+ * two are deliberately separate arguments rather than one combined flag,
+ * because they fail differently: a card you turned off you can turn back on,
+ * and a card you may not see is not yours to turn on at all.
+ */
+function Section({ visible, allowed = true, children }) {
+  if (!visible || !allowed) return null;
   return <>{children}</>;
 }
 
@@ -116,6 +124,12 @@ function StaffDashboard() {
   const { primary_color, currencySymbol } = useAppearance();
   const accent = primary_color || '#2563eb';
   const user = useAuthStore((s) => s.user);
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+  /*
+   * Which cards this account may see at all, decided here and passed down, so
+   * the page, the toggle bar and the export cannot disagree about it.
+   */
+  const allow = (key) => canSeeWidget(key, hasPermission);
   const widgets = useDashboardStore((s) => s.widgets);
   const preset = useDashboardStore((s) => s.preset);
   const getDateRange = useDashboardStore((s) => s.getDateRange);
@@ -140,6 +154,10 @@ function StaffDashboard() {
         title: 'Dashboard report',
         period: preset,
         onProgress: setExportProgress,
+        // The report is built from the same permission rule as the screen, so
+        // a figure the viewer was refused is absent from the file rather than
+        // present as a zero somebody reads as fact six months later.
+        allow,
       };
       if (choice === 'pdf') await exportDashboardPdf(options);
       else await exportDashboardExcel(options);
@@ -299,7 +317,7 @@ function StaffDashboard() {
           arithmetic visible instead of three cards that can silently drift
           apart. "Collected" here is derived (invoiced − outstanding), so it
           can never disagree with the other two. */}
-      <Section visible={widgets.kpiSummary}>
+      <Section visible={widgets.kpiSummary} allowed={allow('kpiSummary')}>
         <div className="space-y-3">
           <section aria-label="Cash position" className="rounded-2xl bg-slate-900 p-6 text-white sm:p-8">
             <p className="text-xs text-slate-400">Invoiced to date · {preset}</p>
@@ -385,12 +403,12 @@ function StaffDashboard() {
         question those numbers raise: the cash position says how much came in,
         this says where from.
       */}
-      <Section visible={widgets.topPerformers}>
+      <Section visible={widgets.topPerformers} allowed={allow('topPerformers')}>
         <TopPerformersPanel data={topPerformers} fmt={fmt} period={preset} />
       </Section>
 
       {/* ══ REVENUE TREND CHART ════════════════════════════════════════════════ */}
-      <Section visible={widgets.revenueChart}>
+      <Section visible={widgets.revenueChart} allowed={allow('revenueChart')}>
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="mb-4 flex items-center justify-between">
             <div>
@@ -425,7 +443,7 @@ function StaffDashboard() {
       </Section>
 
       {/* ══ REVENUE PANEL ════════════════════════════════════════════════════ */}
-      <Section visible={widgets.financeSummary}>
+      <Section visible={widgets.financeSummary} allowed={allow('financeSummary')}>
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0">
@@ -462,20 +480,20 @@ function StaffDashboard() {
 
       {/* ══ SECTION 4 — DEBTORS + REMINDERS ══════════════════════════════════ */}
       <div className="grid gap-5 xl:grid-cols-2">
-        <Section visible={widgets.topDuePayments}>
+        <Section visible={widgets.topDuePayments} allowed={allow('topDuePayments')}>
           <TopDuePaymentsTable invoices={duePayments} fmt={fmt} />
         </Section>
-        <Section visible={widgets.paymentReminders}>
+        <Section visible={widgets.paymentReminders} allowed={allow('paymentReminders')}>
           <PaymentRemindersWidget reminders={reminders} fmt={fmt} />
         </Section>
       </div>
 
       {/* ══ SECTION 5 — LEAD STATUS + PROPERTY STATUS ════════════════════════ */}
       <div className="grid gap-5 xl:grid-cols-2">
-        <Section visible={widgets.leadStatus}>
+        <Section visible={widgets.leadStatus} allowed={allow('leadStatus')}>
           <LeadStatusPanel statusMap={leadStatusMap} totalLeads={totalLeadsInRange} />
         </Section>
-        <Section visible={widgets.propertyStatus}>
+        <Section visible={widgets.propertyStatus} allowed={allow('propertyStatus')}>
           <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
             <div className="mb-4 flex items-center justify-between">
               <div>
@@ -490,7 +508,7 @@ function StaffDashboard() {
       </div>
 
       {/* ══ SECTION 6 — REALTOR LEADERBOARD ══════════════════════════════════ */}
-      <Section visible={widgets.realtorLeaderboard}>
+      <Section visible={widgets.realtorLeaderboard} allowed={allow('realtorLeaderboard')}>
         <RealtorLeaderboard realtors={realtorLeaderboard} fmt={fmt} period={preset} range={getDateRange()} />
       </Section>
 
@@ -500,7 +518,7 @@ function StaffDashboard() {
       </Section>
 
       {/* ══ PIPELINE — the one place a stepped/funnel treatment is earned ═══ */}
-      <Section visible={widgets.operationalSummary}>
+      <Section visible={widgets.operationalSummary} allowed={allow('operationalSummary')}>
         <section aria-label="Sales pipeline" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
             <h2 className="text-sm font-semibold text-slate-900">Pipeline</h2>
@@ -544,7 +562,7 @@ function StaffDashboard() {
       </Section>
 
       {/* ══ SECTION 8 — SUPPORT PERFORMANCE ════════════════════════════════ */}
-      <Section visible={widgets.supportStats}>
+      <Section visible={widgets.supportStats} allowed={allow('supportStats')}>
         <SupportStatsWidget
           open={openTickets}
           closed={closedTickets}

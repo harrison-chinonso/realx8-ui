@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { listDeals, createDeal, updateDeal, deleteDeal, listPipelines, listStages, getDealTasks } from '../../api/crmApi';
+import { usePermission } from '../../hooks/usePermission';
 import Badge from '../../components/common/Badge';
 import Table from '../../components/common/Table';
 import Button from '../../components/ui/Button';
@@ -36,6 +37,12 @@ export default function DealsPage() {
     ]);
 
   useEffect(() => { load(); }, []);
+  /*
+   * Viewing a deal and changing one are separate permissions, and a realtor
+   * holds only the first. Drawing the controls anyway would give them three
+   * buttons that each return 403.
+   */
+  const canManageDeals = usePermission('crm.deals.manage');
 
   const openCreate = () => {
     setForm({ name: '', amount: '', pipeline_id: '', stage_id: '', status: 'open', expected_close_date: '' });
@@ -99,7 +106,7 @@ export default function DealsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Deals pipeline</h1>
-        <Button onClick={openCreate}>+ New Deal</Button>
+        {canManageDeals && <Button onClick={openCreate}>+ New Deal</Button>}
       </div>
 
       <div className="space-y-3">
@@ -119,8 +126,12 @@ export default function DealsPage() {
               </div>
               <div className="flex gap-2">
                 <Button onClick={() => handleOpenTasks(deal)} variant="secondary" size="sm">Tasks</Button>
-                <Button onClick={() => openEdit(deal)} variant="primary" size="sm">Edit</Button>
-                <Button onClick={() => handleDelete(deal.id)} variant="danger" size="sm">Delete</Button>
+                {canManageDeals && (
+                  <>
+                    <Button onClick={() => openEdit(deal)} variant="primary" size="sm">Edit</Button>
+                    <Button onClick={() => handleDelete(deal.id)} variant="danger" size="sm">Delete</Button>
+                  </>
+                )}
               </div>
             </div>
           </div>

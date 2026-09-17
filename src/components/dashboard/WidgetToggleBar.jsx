@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { LayoutDashboard, ChevronDown, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import useDashboardStore from '../../store/dashboardStore';
+import useAuthStore from '../../store/authStore';
+import { canSeeWidget } from './widgetPermissions';
 
 const WIDGET_LABELS = {
   kpiSummary:         'Cash Position & Portfolio',
@@ -25,8 +27,21 @@ export default function WidgetToggleBar() {
   const toggleWidget = useDashboardStore((s) => s.toggleWidget);
   const resetWidgets = useDashboardStore((s) => s.resetWidgets);
 
-  const visibleCount = Object.values(widgets).filter(Boolean).length;
-  const total = Object.keys(WIDGET_LABELS).length;
+  const hasPermission = useAuthStore((s) => s.hasPermission);
+
+  /*
+   * Only the cards this account is allowed.
+   *
+   * A switch for a card the viewer may never see is a switch that does
+   * nothing, and worse, it implies the card exists and they have merely
+   * hidden it. The counter has to be drawn from the same list or it reads
+   * "8 of 12" to somebody who can only ever have eight.
+   */
+  const allowed = Object.entries(WIDGET_LABELS)
+    .filter(([key]) => canSeeWidget(key, hasPermission));
+
+  const visibleCount = allowed.filter(([key]) => widgets[key]).length;
+  const total = allowed.length;
 
   // Close on outside click
   useEffect(() => {
@@ -62,7 +77,7 @@ export default function WidgetToggleBar() {
             </button>
           </div>
           <div className="max-h-72 overflow-y-auto py-1">
-            {Object.entries(WIDGET_LABELS).map(([key, label]) => {
+            {allowed.map(([key, label]) => {
               const visible = widgets[key];
               return (
                 <button

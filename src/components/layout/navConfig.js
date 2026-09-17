@@ -140,7 +140,13 @@ export const NAV = [
       { to: '/crm/deals',          label: 'Manage Deals',     icon: Handshake,   permission: 'crm.deals.view' },
       { to: '/crm/pipelines',      label: 'Pipeline',         icon: GitBranch,   permission: 'crm.pipelines.manage' },
       { to: '/crm/tasks',          label: 'Tasks',            icon: CheckSquare, permission: 'crm.tasks.view' },
-      { to: '/crm/sources-labels', label: 'Sources & Labels', icon: Tags,        permission: 'crm.leads.view' },
+      /*
+       * Configuration, so it takes the configuration permission — the same one
+       * Pipeline takes. It was on crm.leads.view, which put it in a realtor's
+       * menu; now that the routes behind it are gated on crm.pipelines.manage,
+       * that would be a screen where every button returns 403.
+       */
+      { to: '/crm/sources-labels', label: 'Sources & Labels', icon: Tags,        permission: 'crm.pipelines.manage' },
       /*
        * "Realtor Performance", not "Realtor Leaderboard".
        *
