@@ -243,17 +243,18 @@ export const NAV = [
            * directly; it simply is not somewhere the menu sends anybody.
            */
           { to: '/finance/my-commission', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
-          /**
-           * The realtor's own notes: verification and upgrade fees they owe,
-           * and anything the company owes them back.
-           *
-           * In the Commission sub-menu because that is where a realtor's money
-           * already is, and a realtor looking for "what do I owe" will look
-           * under the heading where "what am I owed" lives.
-           */
-          { to: '/finance/my-notes', label: 'Credit & Debit Notes', icon: FileMinus, permission: null, showForTypes: ['realtor'] },
         ],
       },
+      /**
+       * The realtor's own notes: verification and upgrade fees they owe, and
+       * anything the company owes them back.
+       *
+       * Under Finance directly, not inside Commission. It sat there because
+       * that is where a realtor's other money screen lives, but commission is
+       * what they EARN and these are what they owe — filing a bill under
+       * "Commission" makes a realtor looking for what they owe read past it.
+       */
+      { to: '/finance/my-notes', label: 'Credit & Debit Notes', icon: FileMinus, permission: null, showForTypes: ['realtor'] },
       /**
        * Both carry the SAME badge count, because the queue is one queue.
        *
