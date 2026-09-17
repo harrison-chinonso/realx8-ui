@@ -236,23 +236,32 @@ export const NAV = [
            * approve or pay those commissions, or to configure the rules that
            * set them. Put this entry back if such a company needs it.
            */
-          /**
-           * ONE entry for the earner, not two. The statement carries both the
-           * engine's entitlements and the flat-rate list, including the
-           * request-payment action. /commissions/mine still works if linked to
-           * directly; it simply is not somewhere the menu sends anybody.
-           */
-          { to: '/finance/my-commission', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
         ],
       },
       /**
-       * The realtor's own notes: verification and upgrade fees they owe, and
-       * anything the company owes them back.
+       * A realtor's two money screens, directly under Finance.
        *
-       * Under Finance directly, not inside Commission. It sat there because
-       * that is where a realtor's other money screen lives, but commission is
-       * what they EARN and these are what they owe — filing a bill under
-       * "Commission" makes a realtor looking for what they owe read past it.
+       * Neither is inside the Commission sub-menu, and the reason is what a
+       * realtor sees rather than how the entries are grouped: every other item
+       * in that sub-menu is hidden from them, so it rendered as Finance →
+       * Commission → one link — a heading that exists only to be clicked
+       * through. Flattened, Finance opens onto the two screens themselves.
+       *
+       * Staff are unaffected: the Commission sub-menu still holds payouts,
+       * plans and analytics, which is a real grouping for the people who can
+       * see all three.
+       */
+      /**
+       * ONE entry for the earner, not two. The statement carries both the
+       * engine's entitlements and the flat-rate list, including the
+       * request-payment action. /commissions/mine still works if linked to
+       * directly; it simply is not somewhere the menu sends anybody.
+       */
+      { to: '/finance/my-commission', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
+      /**
+       * Verification and upgrade fees they owe, and anything the company owes
+       * them back. After the statement: what they have earned is the question
+       * they come here with, and what they owe is the one they leave with.
        */
       { to: '/finance/my-notes', label: 'Credit & Debit Notes', icon: FileMinus, permission: null, showForTypes: ['realtor'] },
       /**
