@@ -341,14 +341,15 @@ export const NAV = [
       // Finance where the purchase-journey version of it started.
       { to: '/settings/notifications', label: 'Notification Settings',     icon: Bell,          permission: 'finance.purchase-notifications.manage' },
       /*
-       * Points at the SMS TAB inside Settings, not a screen of its own.
+       * No SMS entry here. It is a TAB of Settings, below — the same screen,
+       * so a second menu item for it is the Commission wrapper all over
+       * again: an entry that exists only to land you somewhere you can
+       * already get to, and one more tile competing for the eight the
+       * launcher has.
        *
-       * It was a separate page and nobody found it — "where do I configure
-       * SMS" is answered by looking next to where you configure email, so
-       * that is where it lives now. The entry stays because a menu is how
-       * people look, and ?tab= is what lets it land on the right one.
+       * /settings?tab=sms still works and still opens the right tab, for
+       * anything that wants to link straight to it.
        */
-      { to: '/settings?tab=sms',       label: 'SMS Settings',              icon: MessageSquare, permission: 'settings.sms.manage' },
       /**
        * Company settings, in the menu at last.
        *
