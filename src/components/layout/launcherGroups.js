@@ -27,6 +27,7 @@ export const DESCRIPTIONS = {
   'My Commissions': 'What you have earned',
   'Listed Properties': 'What is on the market',
   'My Portfolio': 'What you own',
+  'Credit & Debit Notes': 'Charges and refunds',
   'Platform Admin': 'Tenants and platform',
   // The overflow tile. Without a line here its name sits lower than its
   // neighbours', because every other tile reserves two lines for a description.
@@ -61,12 +62,20 @@ export const TILE_ORDER = {
     '/investments/portfolio',
     '/notifications',
     '/support',
+    // Ninth, and so the one the cap pushes into More. Last on purpose: of the
+    // client's screens this is the one they need least often.
+    '/finance/my-notes',
   ],
   realtor: [
     'Dashboard',
     'Properties',
     'My Referrals',
     'My Clients',
+    // Named 'Finance' once the section holds more than the commission
+    // statement, and 'My Commissions' while it holds only that — the launcher
+    // names a one-screen module after its screen. Both sit in the same slot so
+    // the tile does not move when a second screen is added or removed.
+    'Finance',
     'My Commissions',
     'Investments',
     'Sales & CRM',

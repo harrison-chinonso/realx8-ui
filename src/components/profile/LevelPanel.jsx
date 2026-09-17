@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Award } from 'lucide-react';
 import { listRealtorLevels, listLevelRequests, requestLevelUpgrade } from '../../api/realtorLevelApi';
 import { getUser } from '../../api/userApi';
+import { Link } from 'react-router-dom';
+import { useCurrency } from '../../context/useAppearance';
 import Button from '../ui/Button';
 import useAuthStore from '../../store/authStore';
 import Select from '../ui/Select';
@@ -16,6 +18,8 @@ import FieldMark from '../ui/FieldMark';
 export default function LevelPanel() {
   const user = useAuthStore((state) => state.user);
 
+  const fmt = useCurrency();
+
   const [levels, setLevels] = useState([]);
   const [levelId, setLevelId] = useState(null);
   const [pending, setPending] = useState(null);
@@ -25,6 +29,7 @@ export default function LevelPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [charge, setCharge] = useState(null);
 
   const load = async () => {
     // allSettled: listLevelRequests is admin-scoped for some accounts, and a
@@ -59,9 +64,17 @@ export default function LevelPanel() {
     setError('');
     setNotice('');
     try {
-      await requestLevelUpgrade({ level_id: Number(target), reason: reason.trim() || null });
+      const response = await requestLevelUpgrade({ level_id: Number(target), reason: reason.trim() || null });
       setReason('');
-      setNotice('Upgrade request submitted. An administrator will review it.');
+      /*
+       * Where a level costs money, say so on submission and link to the bill.
+       * "An administrator will review it" is wrong when what the request is
+       * actually waiting on is the realtor's own payment.
+       */
+      setCharge(response?.charge ?? null);
+      setNotice(response?.charge
+        ? 'Upgrade request submitted.'
+        : 'Upgrade request submitted. An administrator will review it.');
       load();
     } catch (err) {
       setError(err?.response?.data?.message || err?.userMessage || 'Could not submit the request.');
@@ -112,6 +125,20 @@ export default function LevelPanel() {
       </div>
 
       {notice && <div className="rounded-lg bg-green-50 px-4 py-2 text-sm text-green-700">{notice}</div>}
+      {charge && (
+        <div className="rounded-lg bg-sky-50 px-4 py-3 text-sm text-sky-900 ring-1 ring-sky-200">
+          <p>
+            An upgrade fee of <strong>{fmt(charge.amount)}</strong> has been raised against you
+            as <strong>{charge.credit_note_id}</strong>.
+          </p>
+          <p className="mt-1">
+            <Link to="/finance/my-notes" className="font-medium underline">
+              Pay it and upload your proof
+            </Link>{' '}
+            — your request is reviewed once the payment is confirmed.
+          </p>
+        </div>
+      )}
       {error && <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
 
       {pending ? (
@@ -145,7 +172,18 @@ export default function LevelPanel() {
               onChange={(e) => setTarget(e.target.value)}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             >
-              {upgrades.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+              {/*
+                The price is on the option, not discovered after submitting.
+                A realtor choosing between two levels is choosing between two
+                prices, and hiding them until the bill arrives makes the choice
+                for them.
+              */}
+              {upgrades.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                  {Number(l.levelup_fee_minor || 0) > 0 ? ` — ${fmt(Number(l.levelup_fee_minor) / 100)}` : ''}
+                </option>
+              ))}
             </Select>
           </label>
 

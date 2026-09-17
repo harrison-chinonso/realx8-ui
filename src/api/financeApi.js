@@ -73,6 +73,20 @@ export const rejectNote = (kind, id, reason) => client.post(`/${notePath(kind)}/
 export const settleNote = (kind, id) => client.post(`/${notePath(kind)}/${id}/settle`).then(r => r.data);
 export const listPendingNotes = () => client.get('/notes/pending-approval').then(r => r.data);
 
+/*
+ * The same two documents, from the side of the person they are about.
+ *
+ * A separate path rather than a filter on the list above: those routes are
+ * staff-only and return every note in the company, and the thing standing
+ * between a client and everybody else's finances should be a different URL,
+ * not a query parameter.
+ */
+export const listMyNotes = () => client.get('/my-notes').then(r => r.data);
+export const submitNotePayment = (id, payload) =>
+  client.post(`/my-notes/credit/${id}/proof`, payload).then(r => r.data);
+export const remindAboutNote = (id) =>
+  client.post(`/my-notes/debit/${id}/remind`).then(r => r.data);
+
 // Payment Reminders
 export const listPaymentReminders = (params) => client.get('/payment-reminders', { params }).then(r => r.data);
 export const createPaymentReminder = (payload) => client.post('/payment-reminders', payload).then(r => r.data);

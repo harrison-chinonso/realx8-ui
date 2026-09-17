@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getMyKyc, submitKyc } from '../../api/userApi';
+import { useCurrency } from '../../context/useAppearance';
 import { uploadPropertyMedia } from '../../api/propertyApi';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
@@ -87,12 +89,14 @@ function DocumentUpload({ label, hint, value, onChange, disabled }) {
  * email links to — so this must keep working outside the profile page.
  */
 export default function VerificationPanel() {
+  const fmt = useCurrency();
   const [record, setRecord] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [charge, setCharge] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -128,8 +132,20 @@ export default function VerificationPanel() {
     setError('');
     setNotice('');
     try {
-      await submitKyc(form);
-      setNotice('Verification submitted. An administrator will review it shortly.');
+      const response = await submitKyc(form);
+      /*
+       * The bill, said here rather than left to be discovered.
+       *
+       * A company may charge for verification. Telling somebody their
+       * submission is "awaiting review" when it is really awaiting THEIR
+       * payment leaves them waiting for a decision nobody is going to make —
+       * so when a charge came back, the notice says what it is and where to
+       * pay it. Absent when the company charges nothing, which is most of them.
+       */
+      setCharge(response?.charge ?? null);
+      setNotice(response?.charge
+        ? 'Verification submitted.'
+        : 'Verification submitted. An administrator will review it shortly.');
       load();
     } catch (err) {
       setError(err?.response?.data?.message || err?.userMessage || 'Could not submit your verification.');
@@ -161,6 +177,20 @@ export default function VerificationPanel() {
       )}
 
       {notice && <div className="rounded-lg bg-green-50 px-4 py-2 text-sm text-green-700">{notice}</div>}
+      {charge && (
+        <div className="rounded-lg bg-sky-50 px-4 py-3 text-sm text-sky-900 ring-1 ring-sky-200">
+          <p>
+            A verification fee of <strong>{fmt(charge.amount)}</strong> has been raised against you
+            as <strong>{charge.credit_note_id}</strong>.
+          </p>
+          <p className="mt-1">
+            <Link to="/finance/my-notes" className="font-medium underline">
+              Pay it and upload your proof
+            </Link>{' '}
+            — your submission is reviewed once the payment is confirmed.
+          </p>
+        </div>
+      )}
       {error && <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
 
       <form onSubmit={submit} className="space-y-5 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">

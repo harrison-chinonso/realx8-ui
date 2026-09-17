@@ -22,6 +22,20 @@ const WORDS = {
   debit: { settle: 'Mark as paid', settled: 'paid out' },
 };
 
+/**
+ * What settling a FEE note means, which is not what settling an ordinary one
+ * means.
+ *
+ * An ordinary credit note is written off against what somebody owes, and "Mark
+ * as used" says that. A verification or upgrade fee is a bill the realtor has
+ * paid into the company's account, and pressing this both confirms the money
+ * and approves the request it was for. Calling that "Mark as used" would have
+ * an approver do the most consequential thing on the screen without the button
+ * telling them what it does.
+ */
+const FEE_SOURCES = ['realtor_verification', 'realtor_levelup'];
+const isFeeNote = (note) => FEE_SOURCES.includes(note?.source_type);
+
 export default function NoteApprovalActions({ kind, note, onChanged }) {
   const canApprove = usePermission('finance.notes.approve');
   const canSettle = usePermission(`finance.${kind}-notes.manage`);
@@ -64,9 +78,28 @@ export default function NoteApprovalActions({ kind, note, onChanged }) {
       )}
 
       {note.status === 'approved' && canSettle && (
-        <Button size="sm" variant="secondary" disabled={busy} onClick={() => run(() => settleNote(kind, note.id))}>
-          {words.settle}
-        </Button>
+        <>
+          {/*
+            The evidence, next to the button that acts on it. An approver asked
+            to confirm a payment with no way to see the proof from here will
+            either go and find it somewhere else or — the failure that matters —
+            stop looking.
+          */}
+          {note.payment_proof_url && (
+            <a
+              href={note.payment_proof_url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs font-medium underline underline-offset-2"
+              style={{ color: 'var(--primary)' }}
+            >
+              View proof
+            </a>
+          )}
+          <Button size="sm" variant="secondary" disabled={busy} onClick={() => run(() => settleNote(kind, note.id))}>
+            {isFeeNote(note) ? 'Confirm payment' : words.settle}
+          </Button>
+        </>
       )}
 
       <Modal open={rejecting} onClose={() => setRejecting(false)} title="Refuse this note">

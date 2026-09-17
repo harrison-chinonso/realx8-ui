@@ -49,8 +49,18 @@ const statusLabel = (status) => STATUS_LABELS[status] || status || '—';
  * is "No data available", which on a queue reads as a loading failure rather
  * than as the good news that there is nothing to do.
  */
+/**
+ * `proof` is not a status — it is a QUESTION about approved notes.
+ *
+ * A realtor billed for verification is shown the note, pays it and uploads
+ * evidence. The note's status does not change when they do, because the money
+ * has not been confirmed yet — so without this tab the one row that needs an
+ * approver is filed among every other approved note, and the only way to find
+ * it is to read them all. Filtered on payment_submitted_at rather than status.
+ */
 const TABS = [
   { key: 'pending_approval', label: 'Waiting for approval', empty: 'Nothing is waiting for approval.' },
+  { key: 'proof', label: 'Payment submitted', empty: 'Nobody is waiting on a payment being checked.' },
   { key: 'approved', label: 'Approved', empty: 'Nothing has been approved yet.' },
   { key: 'rejected', label: 'Refused', empty: 'Nothing has been refused.' },
   { key: 'used', label: 'Used', empty: 'Nothing has been settled yet.' },
@@ -166,13 +176,27 @@ export default function CreditNotesPage() {
         </div>
       ),
     },
+    {
+      header: 'Payment',
+      render: (row) => (row.payment_submitted_at ? (
+        <div className="text-xs text-slate-600">
+          <span>Submitted {formatDate(row.payment_submitted_at)}</span>
+          {row.payment_reference && <span className="block text-slate-400">ref {row.payment_reference}</span>}
+        </div>
+      ) : <span className="text-xs text-slate-400">—</span>),
+    },
     { header: 'Tax', render: getTaxLabel },
     { header: 'Created At', render: (row) => formatDate(row.createdAt || row.created_at) },
   ];
 
-  const countFor = (key) => (key === 'all' ? items.length : items.filter((row) => row.status === key).length);
+  const matchesTab = (row, key) => {
+    if (key === 'all') return true;
+    if (key === 'proof') return row.status === 'approved' && Boolean(row.payment_submitted_at);
+    return row.status === key;
+  };
+  const countFor = (key) => items.filter((row) => matchesTab(row, key)).length;
   const active = TABS.find((entry) => entry.key === tab) || TABS[0];
-  const visible = tab === 'all' ? items : items.filter((row) => row.status === tab);
+  const visible = items.filter((row) => matchesTab(row, tab));
 
   return (
     <div className="space-y-4">

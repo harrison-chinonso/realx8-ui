@@ -243,6 +243,15 @@ export const NAV = [
            * directly; it simply is not somewhere the menu sends anybody.
            */
           { to: '/finance/my-commission', label: 'My Commissions', icon: DollarSign, permission: null, showForTypes: ['realtor'] },
+          /**
+           * The realtor's own notes: verification and upgrade fees they owe,
+           * and anything the company owes them back.
+           *
+           * In the Commission sub-menu because that is where a realtor's money
+           * already is, and a realtor looking for "what do I owe" will look
+           * under the heading where "what am I owed" lives.
+           */
+          { to: '/finance/my-notes', label: 'Credit & Debit Notes', icon: FileMinus, permission: null, showForTypes: ['realtor'] },
         ],
       },
       /**
@@ -375,6 +384,9 @@ export const NAV = [
       { to: '/finance/my-properties', label: 'My Properties', icon: Building2,  permission: null, showForTypes: ['client'] },
       { to: '/finance/my-invoices',   label: 'My Invoices',   icon: FileText,   permission: null, showForTypes: ['client'] },
       { to: '/finance/my-payments',   label: 'My Payments',   icon: CreditCard, permission: null, showForTypes: ['client'] },
+      // Refunds owed to them — an overpayment is the common one — and any
+      // charge raised against them. Last, because it is the rarest of the four.
+      { to: '/finance/my-notes',      label: 'Credit & Debit Notes', icon: FileMinus, permission: null, showForTypes: ['client'] },
     ],
   },
 

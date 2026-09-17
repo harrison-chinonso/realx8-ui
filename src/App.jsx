@@ -38,6 +38,7 @@ import PromotionsPage from './pages/promotions/PromotionsPage';
 import BankAccountsPage from './pages/finance/BankAccountsPage';
 import CreditNotesPage from './pages/finance/CreditNotesPage';
 import DebitNotesPage from './pages/finance/DebitNotesPage';
+import MyNotesPage from './pages/finance/MyNotesPage';
 import PaymentRemindersPage from './pages/finance/PaymentRemindersPage';
 import ReportsPage from './pages/finance/ReportsPage';
 import TransactionsPage from './pages/finance/TransactionsPage';
@@ -296,6 +297,8 @@ export default function App() {
           <Route path="/finance/bank-accounts" element={<BankAccountsPage />} />
           <Route path="/finance/credit-notes" element={<CreditNotesPage />} />
           <Route path="/finance/debit-notes" element={<DebitNotesPage />} />
+          {/* The same two documents, own-scoped, for the party they concern. */}
+          <Route path="/finance/my-notes" element={<MyNotesPage />} />
           <Route path="/finance/payment-reminders" element={<PaymentRemindersPage />} />
           <Route path="/finance/reports" element={<ReportsPage />} />
           <Route path="/finance/transactions" element={<TransactionsPage />} />
