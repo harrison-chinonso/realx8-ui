@@ -340,6 +340,9 @@ export const NAV = [
       // event across every module, which is why it sits here rather than under
       // Finance where the purchase-journey version of it started.
       { to: '/settings/notifications', label: 'Notification Settings',     icon: Bell,          permission: 'finance.purchase-notifications.manage' },
+      // A company's own eBulkSMS account: credentials, sender name, and the
+      // switch that decides whether anything is sent at all.
+      { to: '/settings/sms',           label: 'SMS Settings',              icon: MessageSquare, permission: 'settings.sms.manage' },
       /**
        * Company settings, in the menu at last.
        *

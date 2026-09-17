@@ -114,3 +114,16 @@ export const submitKyc = (payload) => client.post('/realtor-kyc', payload).then(
 export const listKycSubmissions = (params) => client.get('/realtor-kyc', { params }).then((r) => r.data);
 export const approveKyc = (id, payload) => client.post(`/realtor-kyc/${id}/approve`, payload).then((r) => r.data);
 export const rejectKyc = (id, payload) => client.post(`/realtor-kyc/${id}/reject`, payload).then((r) => r.data);
+
+/*
+ * A company's own eBulkSMS credentials.
+ *
+ * The API key is write-only: getSmsSettings returns whether one is saved and
+ * its last four characters, never the value. saveSmsSettings therefore omits
+ * `api_key` entirely unless the administrator typed a new one — sending the
+ * empty string it was shown would erase a working credential.
+ */
+export const getSmsSettings = (params) => client.get('/settings/sms', { params }).then((r) => r.data);
+export const saveSmsSettings = (payload) => client.put('/settings/sms', payload).then((r) => r.data);
+export const testSmsCredentials = (payload) => client.post('/settings/sms/test', payload).then((r) => r.data);
+export const sendTestSms = (payload) => client.post('/settings/sms/send-test', payload).then((r) => r.data);

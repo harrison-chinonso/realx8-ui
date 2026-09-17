@@ -45,6 +45,7 @@ import TransactionsPage from './pages/finance/TransactionsPage';
 import PaymentPlansPage from './pages/finance/PaymentPlansPage';
 import InstallmentPlansPage from './pages/finance/InstallmentPlansPage';
 import NotificationSettingsPage from './pages/settings/NotificationSettingsPage';
+import SmsSettingsPage from './pages/settings/SmsSettingsPage';
 import ReceiptsPage from './pages/finance/ReceiptsPage';
 import SupportPage from './pages/support/SupportPage';
 import UsersPage from './pages/users/UsersPage';
@@ -286,6 +287,8 @@ export default function App() {
           <Route path="/finance/commission-analytics" element={<CommissionAnalyticsPage />} />
           <Route path="/finance/my-commission" element={<MyCommissionStatementPage />} />
           <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
+          {/* A company's own eBulkSMS account — its own permission. */}
+          <Route path="/settings/sms" element={<SmsSettingsPage />} />
           {/*
             Promotions live under Properties rather than Finance: they are
             configured against properties and units, and the people who run
