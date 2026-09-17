@@ -22,7 +22,8 @@
     "lint:nav": "node scripts/lint-nav.js",
     "lint": "eslint src",
     "assistant:build-kb": "node scripts/build-assistant-kb.mjs",
-    "assistant:test": "node src/assistant/kb/kb-integrity.test.mjs && node src/assistant/assistant.test.mjs && node src/assistant/converse.test.mjs"
+    "assistant:test": "node src/assistant/kb/kb-integrity.test.mjs && node src/assistant/assistant.test.mjs && node src/assistant/converse.test.mjs",
+    "verify:launcher": "node scripts/verify-launcher-layout.cjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",

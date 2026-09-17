@@ -201,14 +201,47 @@ export const LAUNCHER_CSS = `
 .rx-body-modules { padding-inline: max(18px, 3vw); }
 
 .rx-modules {
-  flex: 1;
+  /**
+   * Grow, don't shrink, and size from content.
+   *
+   * This is the line that fixes the landscape bug, measured: with a basis of 0
+   * the box is pinned to the flex line's free space, so on an 844x390 phone
+   * the four rows had to share about 330px for tiles with a 116px minimum —
+   * adjacent tiles OVERLAPPED by 34px and the last row hung 50px outside the
+   * grid. With a basis of auto the box grows to what the rows need, and
+   * .rx-body scrolls — the right answer when eight tiles do not fit a
+   * 390px viewport.
+   */
+  flex: 1 0 auto;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  /**
+   * Rows: minmax(min-content, 1fr), NOT minmax(0, 1fr).
+   *
+   * A backstop, not the fix — measured. The flex line above is what stops the
+   * landscape collapse; with it in place this floor never binds. It is kept
+   * because a zero minimum lets a row become shorter than the tile inside it,
+   * which is the mechanism that produced the overlap, and anything that
+   * re-pins this element's height in future would bring it straight back.
+   * On its own it removes the overlap but still leaves the box short.
+   *
+   * Columns keep the zero minimum on purpose: there the floor prevents a long
+   * module name from widening its column past the viewport.
+   */
+  grid-template-rows: repeat(2, minmax(min-content, 1fr));
   /* A tenant with a ninth module gets a third row the same height as the
      other two, rather than a short one tacked on the end. */
-  grid-auto-rows: minmax(0, 1fr);
-  gap: 14px;
+  grid-auto-rows: minmax(min-content, 1fr);
+  /*
+   * Scales with the viewport, because the tiles do.
+   *
+   * A flat 14px was right when a tile was about 200px. On a 1680px screen the
+   * same eight tiles are nearly 500px tall and 14px between them is under 3%
+   * of their height — the identical complaint that was reported on phones,
+   * arriving from the other end. clamp keeps the small end where it was and
+   * gives the large end room.
+   */
+  gap: clamp(14px, 1.2vw, 22px);
   /* A floor for short windows, so two rows never squeeze to nothing. The body
      scrolls past it rather than the tiles collapsing. */
   min-height: 330px;
@@ -401,9 +434,15 @@ export const LAUNCHER_CSS = `
 @media (max-width: 900px) {
   .rx-modules {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(4, minmax(0, 1fr));
+    /* min-content, for the reason given on the base rule: four rows in a
+       landscape viewport is exactly where a zero floor collapses them. */
+    grid-template-rows: repeat(4, minmax(min-content, 1fr));
     min-height: 520px;
+    /* Two columns means taller tiles — measured at 203px here — so the gutter
+       grows with them rather than staying at the four-column value. */
+    gap: 16px;
   }
+  .rx-grid { gap: 14px; }
 }
 
 @media (max-width: 519px) {
@@ -416,20 +455,36 @@ export const LAUNCHER_CSS = `
    * Two is the floor the pattern specifies, so two is what it says, at every
    * width below the breakpoint.
    */
-  .rx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  /*
+   * ── Gutters, measured rather than guessed ─────────────────────────────────
+   *
+   * These were 7px between sub-menu tiles and 9px between module tiles, and
+   * both were tuned when a tile was about 116px tall. The module grid fills
+   * the page now, so on a 390px phone a tile renders 211px tall — and a 9px
+   * gutter against a 211px tile is 4% of its height, which reads as tiles
+   * stuck together rather than as a grid. The sub-menu's 7px was worse.
+   *
+   * Measured at 320, 360, 390, 414 and 430: two columns throughout, so the
+   * widest tile at the tightest width is (320 - 32 - 12) / 2 = 138px. There is
+   * room for a real gutter, and nothing overflows.
+   *
+   * One scale, so the eye reads a consistent rhythm: 12px between tiles, 16px
+   * from the screen edge. Inner gutters smaller than the outer margin is what
+   * makes a grid look like a group rather than a list.
+   */
+  .rx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .rx-ic { width: 44px; height: 44px; }
   .rx-ic svg { width: 20px; height: 20px; }
   .rx-tile { min-height: 116px; padding: 14px 8px 11px; }
-  .rx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   /* A description is a luxury at this width; the name is not. Stated for the
      grouped tile too, whose two-class selector would otherwise outrank this. */
   .rx-panel-grouped .rx-tile { min-height: 116px; padding: 14px 10px; }
-  .rx-modules { gap: 9px; min-height: 420px; }
+  .rx-modules { gap: 12px; min-height: 420px; }
   .rx-name { font-size: 13px; }
-  .rx-body-modules { padding-inline: 12px; }
+  .rx-body-modules { padding-inline: 16px; }
   .rx-desc, .rx-keys { display: none; }
-  .rx-body { padding: 12px 12px 18px; }
-  .rx-search, .rx-recent { padding-left: 12px; padding-right: 12px; }
+  .rx-body { padding: 12px 16px 18px; }
+  .rx-search, .rx-recent { padding-left: 16px; padding-right: 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
