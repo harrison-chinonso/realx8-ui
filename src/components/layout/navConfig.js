@@ -340,9 +340,15 @@ export const NAV = [
       // event across every module, which is why it sits here rather than under
       // Finance where the purchase-journey version of it started.
       { to: '/settings/notifications', label: 'Notification Settings',     icon: Bell,          permission: 'finance.purchase-notifications.manage' },
-      // A company's own eBulkSMS account: credentials, sender name, and the
-      // switch that decides whether anything is sent at all.
-      { to: '/settings/sms',           label: 'SMS Settings',              icon: MessageSquare, permission: 'settings.sms.manage' },
+      /*
+       * Points at the SMS TAB inside Settings, not a screen of its own.
+       *
+       * It was a separate page and nobody found it — "where do I configure
+       * SMS" is answered by looking next to where you configure email, so
+       * that is where it lives now. The entry stays because a menu is how
+       * people look, and ?tab= is what lets it land on the right one.
+       */
+      { to: '/settings?tab=sms',       label: 'SMS Settings',              icon: MessageSquare, permission: 'settings.sms.manage' },
       /**
        * Company settings, in the menu at last.
        *

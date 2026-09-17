@@ -45,7 +45,6 @@ import TransactionsPage from './pages/finance/TransactionsPage';
 import PaymentPlansPage from './pages/finance/PaymentPlansPage';
 import InstallmentPlansPage from './pages/finance/InstallmentPlansPage';
 import NotificationSettingsPage from './pages/settings/NotificationSettingsPage';
-import SmsSettingsPage from './pages/settings/SmsSettingsPage';
 import ReceiptsPage from './pages/finance/ReceiptsPage';
 import SupportPage from './pages/support/SupportPage';
 import UsersPage from './pages/users/UsersPage';
@@ -287,8 +286,13 @@ export default function App() {
           <Route path="/finance/commission-analytics" element={<CommissionAnalyticsPage />} />
           <Route path="/finance/my-commission" element={<MyCommissionStatementPage />} />
           <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
-          {/* A company's own eBulkSMS account — its own permission. */}
-          <Route path="/settings/sms" element={<SmsSettingsPage />} />
+          {/*
+            SMS moved into Settings as a tab beside Email. The old path is kept
+            as a redirect rather than deleted: it was linked from the menu for a
+            while, and a bookmark landing on "page not found" is a worse answer
+            than the settings screen it was always about.
+          */}
+          <Route path="/settings/sms" element={<Navigate to="/settings?tab=sms" replace />} />
           {/*
             Promotions live under Properties rather than Finance: they are
             configured against properties and units, and the people who run

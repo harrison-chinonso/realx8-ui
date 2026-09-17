@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   getSettings, bulkUpdateSettings, uploadLogo, getSystemConfig, saveSystemConfig,
 } from '../../api/userApi';
@@ -10,6 +11,7 @@ import { FONT_CATALOGUE, FONT_CATEGORIES } from '../../config/fonts';
 import useAuthStore from '../../store/authStore';
 import client from '../../api/client';
 import Button from '../../components/ui/Button';
+import SmsSettingsPanel from '../../components/settings/SmsSettingsPanel';
 import Input from '../../components/ui/Input';
 import { brightenForDark } from '../../utils/colorUtils';
 import { CURRENCIES, currencyOptionLabel } from '../../constants/currencies';
@@ -119,6 +121,21 @@ const SETTING_GROUPS = [
       { key: 'mail_from_name', label: 'From name', type: 'text' },
       { key: 'mail_from_address', label: 'From email', type: 'email' },
     ],
+  },
+  {
+    /*
+     * A tab of its own rather than a field list, because SMS is not a flat set
+     * of keys: four providers, each wanting different fields, and one of them
+     * live. SmsSettingsPanel renders whatever the server says the chosen
+     * provider needs.
+     *
+     * Beside Email deliberately. It was a separate screen and nobody found it
+     * — "where do I configure SMS" is answered by looking next to where you
+     * configure mail.
+     */
+    group: 'sms',
+    label: 'SMS',
+    permission: 'settings.sms.manage',
   },
   {
     group: 'payment',
@@ -1404,7 +1421,35 @@ function CompanyTargetPicker({ companyId, onChange }) {
 }
 
 export default function SettingsPage() {
-  const [activeGroup, setActiveGroup] = useState('appearance');
+  const hasPermission = useAuthStore((state) => state.hasPermission);
+  /*
+   * The tab can be named in the URL — /settings?tab=sms.
+   *
+   * Without it the menu has nowhere to point: the tab is local state, so a
+   * "SMS Settings" entry could only ever land on Appearance and leave somebody
+   * hunting. It also makes a tab linkable from anywhere else that wants to
+   * send an administrator to one.
+   */
+  const [params, setParams] = useSearchParams();
+  const requested = params.get('tab');
+  /*
+   * A tab named in the URL still has to be one this account may open.
+   * Filtering the tab BAR alone would leave /settings?tab=sms rendering the
+   * panel for somebody without the permission — hidden, not denied, which is
+   * the same mistake the menu used to make about the API behind it.
+   */
+  const mayOpen = (group) => {
+    const def = SETTING_GROUPS.find((g) => g.group === group);
+    return Boolean(def) && (!def.permission || hasPermission(def.permission));
+  };
+  const [activeGroup, setActiveGroup] = useState(mayOpen(requested) ? requested : 'appearance');
+
+  const selectGroup = (group) => {
+    setActiveGroup(group);
+    setMessage(null);
+    // Replace, not push: flipping through tabs should not fill the back button.
+    setParams(group === 'appearance' ? {} : { tab: group }, { replace: true });
+  };
   const [values, setValues] = useState({});
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -1566,11 +1611,16 @@ export default function SettingsPage() {
         those were came down to a theme choice.
       */}
       <div className="flex flex-wrap border-b border-slate-200">
-        {SETTING_GROUPS.map((g) => (
+        {/*
+          A tab gated on a permission is hidden from an account without it —
+          the same rule the menu follows. Settings is reached with
+          settings.appearance.manage, which is not the same grant as SMS.
+        */}
+        {SETTING_GROUPS.filter((g) => !g.permission || hasPermission(g.permission)).map((g) => (
           <button
             key={g.group}
             type="button"
-            onClick={() => { setActiveGroup(g.group); setMessage(null); }}
+            onClick={() => selectGroup(g.group)}
             className={`whitespace-nowrap border-b-2 px-5 py-3 text-sm font-medium transition-colors ${
               activeGroup === g.group
                 ? 'border-blue-600 text-blue-600'
@@ -1589,6 +1639,8 @@ export default function SettingsPage() {
           <SecurityTab />
         ) : activeGroup === 'system_config' ? (
           <SystemConfigTab />
+        ) : activeGroup === 'sms' ? (
+          <SmsSettingsPanel />
         ) : (
           <div className="space-y-4">
             <h1 className="text-xl font-semibold">{currentGroup?.label} Settings</h1>

@@ -9,6 +9,9 @@ import FieldMark from '../../components/ui/FieldMark';
 /**
  * A company's SMS providers, and which one is live.
  *
+ * Rendered as the SMS tab in Settings, beside Email — which is where somebody
+ * looking for it goes first. It was a screen of its own and nobody found it.
+ *
  * ── Why the form is generated rather than written ──────────────────────────
  *
  * The four providers do not want the same things: Termii assigns each account
@@ -38,7 +41,7 @@ const SOURCE_COPY = {
   none: 'No credentials anywhere yet.',
 };
 
-export default function SmsSettingsPage() {
+export default function SmsSettingsPanel() {
   const [settings, setSettings] = useState(null);
   const [active, setActive] = useState('');
   const [values, setValues] = useState({});     // { provider: { field: value } }
@@ -162,7 +165,7 @@ export default function SmsSettingsPage() {
     <div className="space-y-5">
       <div>
         <h1 className="flex items-center gap-2 text-xl font-semibold text-slate-900">
-          <MessageSquare size={18} /> SMS
+          <MessageSquare size={18} /> SMS Settings
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           Choose a provider and give it your credentials. Text messages are sent on that
