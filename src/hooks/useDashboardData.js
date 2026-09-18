@@ -120,6 +120,42 @@ function buildWeekComparison(invoices, creditTxns = []) {
   const currentToDate = days.filter((d) => !d.future).reduce((sum, d) => sum + d.current, 0);
   const previousToDate = days.filter((d) => !d.future).reduce((sum, d) => sum + d.previous, 0);
 
+  /**
+   * What the comparison actually is, rather than a percentage come what may.
+   *
+   * ── Why a percentage alone was wrong ──────────────────────────────────────
+   *
+   * A percentage change divides by last week. When last week was small, the
+   * result is enormous and means almost nothing: ₦1M against ₦20M is a true,
+   * useless "1900.0%", and it reads on the dashboard as a bug rather than as a
+   * quiet week followed by one large payment. When last week was ZERO the
+   * division is undefined, and the old code returned null for that — which the
+   * header then rendered as no comparison at all, hiding a week that went from
+   * nothing to something, which is the most interesting case there is.
+   *
+   * So the shape of the answer varies with the data:
+   *
+   *   pct          both weeks have figures and the ratio is sane
+   *   large        over 500%, said as a multiple — "20× last week" is a
+   *                sentence somebody can repeat; "1900.0%" is not
+   *   from-zero    last week was zero and this week is not. "New this week"
+   *   no-baseline  nothing to compare against in either direction
+   *
+   * changePct is kept alongside it so nothing that reads the old field breaks;
+   * it stays null exactly where it was null before.
+   */
+  const delta = (() => {
+    if (previousToDate === 0) {
+      return currentToDate > 0 ? { kind: 'from-zero' } : { kind: 'no-baseline' };
+    }
+    const pct = ((currentToDate - previousToDate) / previousToDate) * 100;
+    if (!Number.isFinite(pct)) return { kind: 'no-baseline' };
+    if (Math.abs(pct) > 500) {
+      return { kind: 'large', pct, multiple: currentToDate / previousToDate };
+    }
+    return { kind: 'pct', pct };
+  })();
+
   return {
     days,
     currentToDate,
@@ -129,6 +165,7 @@ function buildWeekComparison(invoices, creditTxns = []) {
     changePct: previousToDate > 0
       ? ((currentToDate - previousToDate) / previousToDate) * 100
       : null,
+    delta,
     throughDay: WEEKDAYS[Math.max(Math.min(dayIndex, 6), 0)],
   };
 }

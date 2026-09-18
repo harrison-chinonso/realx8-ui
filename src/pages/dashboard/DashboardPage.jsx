@@ -425,35 +425,55 @@ function StaffDashboard() {
       {/* ══ REVENUE TREND CHART ════════════════════════════════════════════════ */}
       <Section visible={widgets.revenueChart} allowed={allow('revenueChart')}>
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
+          <div className="mb-4">
+            {/*
+              Title and link share one baseline — the link is a destination for
+              this panel, not a second heading, so it sits on the title's line
+              and is muted until it is wanted.
+            */}
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className="text-sm font-semibold text-slate-900">Revenue Trend</h2>
-              {/*
-                The comparison is stated in words as well as drawn, because the
-                number people repeat to each other is "up 12% on last week" —
-                and it is compared LIKE FOR LIKE, against last week up to the
-                same day. Against last week's full total this week would be
-                behind until Sunday evening, every week.
-              */}
-              <p className="text-[11px] text-slate-400">
-                This week vs last week, day for day
-                {weekComparison?.changePct != null && (
-                  <>
-                    {' · '}
-                    <span className={weekComparison.changePct >= 0 ? 'text-emerald-600' : 'text-rose-500'}>
-                      {weekComparison.changePct >= 0 ? '▲' : '▼'}{' '}
-                      {Math.abs(weekComparison.changePct).toFixed(1)}%
-                    </span>
-                    {` through ${weekComparison.throughDay}`}
-                  </>
-                )}
-              </p>
+              <Link
+                to="/finance/reports"
+                className="rounded text-[13px] text-slate-500 underline-offset-4 transition-colors hover:text-slate-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                View detailed report →
+              </Link>
             </div>
-            <Link to="/finance/reports" className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline">
-              <ArrowUpRight size={12} /> Detailed Report
-            </Link>
+            {/*
+              The comparison is stated in words as well as drawn, because the
+              number people repeat to each other is "up 12% on last week" —
+              and it is compared LIKE FOR LIKE, against last week up to the
+              same day. Against last week's full total this week would be
+              behind until Sunday evening, every week.
+
+              What SHAPE that statement takes depends on the data: see the
+              delta classifier in useDashboardData. A percentage against a
+              near-zero baseline is arithmetically true and reads as a fault,
+              so past 500% it becomes a multiple, and a week that began from
+              nothing says so instead of dividing by zero.
+            */}
+            <p className="text-[11px] text-slate-400">
+              This week vs last week, day for day
+              {weekComparison?.delta && weekComparison.delta.kind !== 'no-baseline' && (
+                <>
+                  {' · '}
+                  {weekComparison.delta.kind === 'from-zero' ? (
+                    <span className="text-emerald-600">New this week</span>
+                  ) : (
+                    <span className={weekComparison.delta.pct >= 0 ? 'text-emerald-600' : 'text-rose-500'}>
+                      {weekComparison.delta.pct >= 0 ? '▲' : '▼'}{' '}
+                      {weekComparison.delta.kind === 'large'
+                        ? `${weekComparison.delta.multiple.toFixed(weekComparison.delta.multiple >= 10 ? 0 : 1)}× last week`
+                        : `${Math.abs(weekComparison.delta.pct).toFixed(1)}%`}
+                    </span>
+                  )}
+                  {` through ${weekComparison.throughDay}`}
+                </>
+              )}
+            </p>
           </div>
-          <RevenueChart data={weekComparison} />
+          <RevenueChart data={weekComparison} fmt={fmt} />
         </section>
       </Section>
 
