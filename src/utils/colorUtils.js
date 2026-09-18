@@ -152,3 +152,159 @@ export function readableOn(color, background = '#ffffff', min = 4.5) {
   // legibility wins over brand.
   return towardLight ? '#ffffff' : '#111827';
 }
+
+/** Blend two hex colours. `t` is how much of `b` to take: 0 → a, 1 → b. */
+function mixHex(a, b, t) {
+  const [ca, cb] = [toRgb(a), toRgb(b)];
+  if (!ca || !cb) return a;
+  const channel = (i) => Math.round(ca[i] + (cb[i] - ca[i]) * t);
+  return `#${[0, 1, 2].map((i) => channel(i).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * The darker of two colours, by relative luminance.
+ *
+ * Luminance rather than HSL lightness, for the reason readableTextOn gives:
+ * lightness misjudges saturated hues, and "which of these two is darker" is
+ * exactly the question it gets wrong on a saturated blue against a mid grey.
+ */
+export function darkerOf(a, b) {
+  const [ca, cb] = [toRgb(a), toRgb(b)];
+  if (!ca) return b;
+  if (!cb) return a;
+  return relativeLuminance(ca) <= relativeLuminance(cb) ? a : b;
+}
+
+/**
+ * Everything a filled surface needs, derived from the one colour filling it.
+ *
+ * ── The problem it solves ────────────────────────────────────────────────────
+ *
+ * A card filled with a brand colour is not one decision, it is fifteen: the
+ * heading, the muted labels, the hairline between sections, the track behind a
+ * progress bar, the border on an outline button, and the semantic greens and
+ * ambers that have to stay green and amber while remaining visible. Written by
+ * hand against one background — slate-900, say — every one of them is a guess
+ * that happens to be right for that background and silently wrong for any
+ * other. The executive card had fourteen such guesses.
+ *
+ * Deriving them means the card can be filled with anything, including a colour
+ * nobody has seen, and still be readable.
+ *
+ * ── Why solid blends rather than alpha ───────────────────────────────────────
+ *
+ * Each ink is mixed INTO the fill rather than laid over it at an opacity. The
+ * result is identical where the surface is opaque, and it stays correct when
+ * something is layered, printed, or screenshotted — and it can be measured,
+ * which an alpha cannot without compositing it first.
+ *
+ * ── The semantic pair ────────────────────────────────────────────────────────
+ *
+ * Collected-green and outstanding-amber carry meaning, so they keep their hue
+ * and move only in lightness, via readableOn. 3:1 rather than 4.5:1 because
+ * they are a bar and a swatch — graphical objects, which is the threshold WCAG
+ * sets for those. The numbers beside them are drawn in the ink, not in the
+ * semantic colour.
+ */
+export function surfaceTokens(fill) {
+  const requested = /^#[0-9a-f]{6}$/i.test(fill || '') ? fill : '#0f172a';
+
+  /*
+   * The fill itself gives way if it cannot carry text at all.
+   *
+   * A mid grey is the case: #808080 takes near-black at 4.49:1 and white at
+   * 4.67 — neither clears AA by the time the fill is that close to the middle
+   * of the range. No choice of foreground fixes it, so the background moves,
+   * 4% at a time, away from the ink it has chosen. Most colours pass straight
+   * through untouched; this is the escape hatch for the ones that cannot.
+   */
+  let base = requested;
+  for (let i = 0; i < 12 && contrastRatio(readableTextOn(base), base) < 4.5; i += 1) {
+    base = mixHex(base, readableTextOn(base) === '#ffffff' ? '#000000' : '#ffffff', 0.04);
+  }
+
+  const ink = readableTextOn(base);
+
+  /**
+   * A muted tier: `from` stepped back toward the fill, but no further than the
+   * floor allows.
+   *
+   * Written as a retreat rather than as readableOn, deliberately. readableOn
+   * decides which way to walk from isDarkColor(), which reads HSL lightness —
+   * and that disagrees with readableTextOn's luminance on saturated mid-tones.
+   * On #7C3AED the ink is white while HSL calls the background light, so
+   * readableOn walked its candidate DARKER, toward the background, and gave up
+   * at 3.11:1. Backing off a known-good colour cannot pick a wrong direction:
+   * at zero it is the full ink, which is the best contrast available.
+   */
+  const stepBack = (from, amount, min) => {
+    let t = amount;
+    let out = mixHex(from, base, t);
+    while (t > 0 && contrastRatio(out, base) < min) {
+      t = Math.max(0, t - 0.04);
+      out = mixHex(from, base, t);
+    }
+    return out;
+  };
+
+  /**
+   * Meaning, kept legible: the hue survives, the lightness moves.
+   *
+   * Both directions are tried at each step and the nearer one wins, rather
+   * than a direction being decided up front. readableOn decides up front from
+   * isDarkColor(), and on #00B3A4 — HSL lightness 35%, so "dark" — it walked
+   * emerald LIGHTER, toward a background whose luminance is nothing like dark,
+   * and stalled at 2.63:1. There is no heuristic here to be wrong.
+   *
+   * 3:1 rather than 4.5 because these are a bar and two swatches: graphical
+   * objects, which is the threshold WCAG sets for them. The figures beside
+   * them are drawn in the ink.
+   */
+  const legibleHue = (color, min) => {
+    if (contrastRatio(color, base) >= min) return color;
+    const [h, sat, l] = hexToHsl(color);
+    for (let step = 2; step <= 100; step += 2) {
+      const darker = hslToHex(h, sat, Math.max(l - step, 0));
+      if (contrastRatio(darker, base) >= min) return darker;
+      const lighter = hslToHex(h, sat, Math.min(l + step, 100));
+      if (contrastRatio(lighter, base) >= min) return lighter;
+    }
+    // A fully saturated hue against a background of similar luminance can run
+    // out of lightness before it runs out of contrast. Meaning loses to being
+    // seen at all.
+    return ink;
+  };
+
+  const positive = legibleHue('#34d399', 3);
+  const warning = legibleHue('#fcd34d', 3);
+
+  return {
+    '--sf-fill': base,
+    '--sf-ink': ink,
+    /*
+     * The two label tiers the card already had — bounded, not merely mixed.
+     *
+     * A flat 28% / 48% is right on a deep fill and illegible on a saturated
+     * mid-tone, where the full ink is only 4.9:1 to begin with. Where the floor
+     * bites, the hierarchy in COLOUR flattens, and that is the correct outcome:
+     * a background that can barely carry text cannot also carry three tiers of
+     * it, and the card already separates them by size and weight.
+     */
+    '--sf-ink-muted': stepBack(ink, 0.28, 4.5),
+    '--sf-ink-subtle': stepBack(ink, 0.48, 4.5),
+    // Surfaces and lines, as fractions of the ink: a track to draw a bar on, a
+    // rule between sections, a border an outline button can be seen by. Not
+    // text, so no floor — a hairline that shouts is worse than one that
+    // whispers.
+    '--sf-track': mixHex(ink, base, 0.84),
+    '--sf-line': mixHex(ink, base, 0.78),
+    '--sf-border': mixHex(ink, base, 0.66),
+    '--sf-border-strong': mixHex(ink, base, 0.46),
+    '--sf-positive': positive,
+    '--sf-warning': warning,
+    // The bar's outstanding segment: stepped back so the collected segment
+    // beside it stays dominant, and no further than 3:1 — it is a segment of a
+    // bar carrying meaning, which is the threshold WCAG sets for one.
+    '--sf-warning-soft': stepBack(warning, 0.45, 3),
+  };
+}

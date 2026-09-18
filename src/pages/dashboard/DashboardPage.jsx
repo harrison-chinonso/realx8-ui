@@ -8,7 +8,7 @@ import ExportProgress from '../../components/common/ExportProgress';
 import { isStaleBuildError } from '../../utils/lazyImport';
 import { exportDashboardPdf, exportDashboardExcel } from '../../utils/dashboardExport';
 import useDashboardStore from '../../store/dashboardStore';
-import { useCurrency, useAppearance } from '../../context/useAppearance';
+import { useCurrency, useAppearance, useBrandSurface } from '../../context/useAppearance';
 import useAuthStore from '../../store/authStore';
 
 import DateFilterBar from '../../components/dashboard/DateFilterBar';
@@ -122,6 +122,12 @@ export default function DashboardPage() {
 function StaffDashboard() {
   const fmt = useCurrency();
   const { primary_color, currencySymbol } = useAppearance();
+  /*
+   * The executive card's palette, derived from the tenant's darker brand
+   * colour. Spread onto the card as a style object; everything inside reads
+   * var(--sf-…) from it.
+   */
+  const surface = useBrandSurface();
   const accent = primary_color || '#2563eb';
   const user = useAuthStore((s) => s.user);
   const hasPermission = useAuthStore((s) => s.hasPermission);
@@ -319,38 +325,47 @@ function StaffDashboard() {
           can never disagree with the other two. */}
       <Section visible={widgets.kpiSummary} allowed={allow('kpiSummary')}>
         <div className="space-y-3">
-          <section aria-label="Cash position" className="rounded-2xl bg-slate-900 p-6 text-white sm:p-8">
-            <p className="text-xs text-slate-400">Invoiced to date · {preset}</p>
+          {/*
+            Filled with the tenant's darker brand colour, and everything inside
+            it derived from that fill — see useBrandSurface and surfaceTokens.
+            It was slate-900 with fourteen hand-picked slates, emeralds and
+            ambers on top, each of which was right for slate-900 and would have
+            been wrong for anything else.
+          */}
+          <section aria-label="Cash position" style={surface} className="rounded-2xl bg-[color:var(--sf-fill)] p-6 text-[color:var(--sf-ink)] sm:p-8">
+            <p className="text-xs text-[color:var(--sf-ink-subtle)]">Invoiced to date · {preset}</p>
             <p className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-3xl font-bold tabular-nums sm:text-4xl lg:text-[44px]" title={fmt(totalInvoiceAmount)}>
               {abbreviate(totalInvoiceAmount, currencySymbol)}
-              <span className="text-sm font-normal text-slate-400">across {totalInvoices.toLocaleString()} invoice{totalInvoices === 1 ? '' : 's'}</span>
+              <span className="text-sm font-normal text-[color:var(--sf-ink-subtle)]">across {totalInvoices.toLocaleString()} invoice{totalInvoices === 1 ? '' : 's'}</span>
             </p>
 
             <div
               role="img"
               aria-label={`${collectedPct.toFixed(1)} percent collected, ${outstandingPct.toFixed(1)} percent outstanding`}
-              className="mt-5 flex h-3 overflow-hidden rounded-full bg-slate-700"
+              className="mt-5 flex h-3 overflow-hidden rounded-full bg-[color:var(--sf-track)]"
             >
-              {/* Collected: positive fill. Outstanding: neutral, not red — it's expected, not a failure. */}
-              <span className="bg-emerald-400 transition-all motion-reduce:transition-none" style={{ width: `${collectedPct}%` }} />
-              <span className="bg-amber-300/40 transition-all motion-reduce:transition-none" style={{ width: `${outstandingPct}%` }} />
+              {/* Collected: positive fill. Outstanding: neutral, not red — it's expected, not a failure.
+                  Both keep their hue and move only in lightness, far enough to stay visible on whatever
+                  the card is filled with. */}
+              <span className="bg-[color:var(--sf-positive)] transition-all motion-reduce:transition-none" style={{ width: `${collectedPct}%` }} />
+              <span className="bg-[color:var(--sf-warning-soft)] transition-all motion-reduce:transition-none" style={{ width: `${outstandingPct}%` }} />
             </div>
 
             {/* Text equivalent for the bar above — kept visible, not a tooltip. */}
             <dl className="mt-5 flex flex-wrap gap-x-10 gap-y-3">
               <div className="min-w-0">
-                <dt className="flex items-center gap-1.5 text-xs text-slate-400"><span className="h-2 w-2 rounded-sm bg-emerald-400" aria-hidden="true" /> Collected</dt>
+                <dt className="flex items-center gap-1.5 text-xs text-[color:var(--sf-ink-subtle)]"><span className="h-2 w-2 rounded-sm bg-[color:var(--sf-positive)]" aria-hidden="true" /> Collected</dt>
                 <dd className="mt-1 text-lg font-semibold tabular-nums" title={fmt(collected)}>
-                  {abbreviate(collected, currencySymbol)} <span className="text-sm font-normal text-slate-400">· {totalInvoiceAmount > 0 ? collectedPct.toFixed(1) : '0.0'}%</span>
+                  {abbreviate(collected, currencySymbol)} <span className="text-sm font-normal text-[color:var(--sf-ink-subtle)]">· {totalInvoiceAmount > 0 ? collectedPct.toFixed(1) : '0.0'}%</span>
                 </dd>
               </div>
               <div className="min-w-0">
-                <dt className="flex items-center gap-1.5 text-xs text-slate-400"><span className="h-2 w-2 rounded-sm bg-amber-300/60" aria-hidden="true" /> Outstanding</dt>
+                <dt className="flex items-center gap-1.5 text-xs text-[color:var(--sf-ink-subtle)]"><span className="h-2 w-2 rounded-sm bg-[color:var(--sf-warning)]" aria-hidden="true" /> Outstanding</dt>
                 <dd className="mt-1 text-lg font-semibold tabular-nums">
                   <Link
                     to="/finance/invoices?status=unpaid&sort=oldest"
                     title={fmt(outstanding)}
-                    className="rounded underline decoration-slate-500 decoration-1 underline-offset-2 hover:decoration-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                    className="rounded underline decoration-current/50 decoration-1 underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--sf-ink)]"
                   >
                     {abbreviate(outstanding, currencySymbol)}
                   </Link>
@@ -358,17 +373,17 @@ function StaffDashboard() {
               </div>
             </dl>
 
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-700 pt-4 text-xs text-slate-300">
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--sf-line)] pt-4 text-xs text-[color:var(--sf-ink-muted)]">
               {oldestUnpaidDays !== null ? (
                 <p>
-                  {overdueCount > 0 && <span className="font-semibold text-amber-300">{overdueCount} invoice{overdueCount === 1 ? '' : 's'} overdue</span>}
+                  {overdueCount > 0 && <span className="font-semibold text-[color:var(--sf-warning)]">{overdueCount} invoice{overdueCount === 1 ? '' : 's'} overdue</span>}
                   {overdueCount > 0 && ' · '}
-                  oldest unpaid <span className="font-semibold text-white tabular-nums">{oldestUnpaidDays} day{oldestUnpaidDays === 1 ? '' : 's'}</span>
+                  oldest unpaid <span className="font-semibold text-[color:var(--sf-ink)] tabular-nums">{oldestUnpaidDays} day{oldestUnpaidDays === 1 ? '' : 's'}</span>
                 </p>
-              ) : <p className="text-slate-500">No outstanding invoices</p>}
+              ) : <p className="text-[color:var(--sf-ink-subtle)]">No outstanding invoices</p>}
               <Link
                 to="/finance/payment-reminders"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-1.5 font-medium text-white hover:border-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 transition-colors motion-reduce:transition-none"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[color:var(--sf-border)] px-3 py-1.5 font-medium text-[color:var(--sf-ink)] hover:border-[color:var(--sf-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--sf-ink)] transition-colors motion-reduce:transition-none"
               >
                 <Send size={12} /> Send reminders
               </Link>
