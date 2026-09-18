@@ -21,6 +21,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import Table from '../../components/common/Table';
 import useAuthStore from '../../store/authStore';
+import { extractError } from '../../utils/extractError';
 import BrowserNotificationsCard from '../../components/settings/BrowserNotificationsCard';
 import Select from '../../components/ui/Select';
 import FieldMark from '../../components/ui/FieldMark';
@@ -171,6 +172,79 @@ function MultiUserPicker({ users, selectedIds, onChange }) {
   );
 }
 
+// ── Single-recipient picker with search ──────────────────────────────────────
+/**
+ * The single-send modal used to ask for a "Recipient User ID" typed by hand.
+ * That put an internal number on the sender to remember, and answered every
+ * wrong guess — a typo, a deleted user, somebody at another company — with the
+ * API's 403 and no way to tell which. This is the same list MultiUserPicker
+ * draws from, narrowed to one choice, so an unsendable id cannot be named.
+ */
+function SingleUserPicker({ users, loading, selectedId, onChange }) {
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    if (!q) return users;
+    return users.filter((u) =>
+      (u.name || '').toLowerCase().includes(q) ||
+      (u.email || '').toLowerCase().includes(q) ||
+      (u.type || '').toLowerCase().includes(q)
+    );
+  }, [users, search]);
+
+  const selected = users.find((u) => String(u.id) === String(selectedId)) || null;
+
+  return (
+    <div className="space-y-2">
+      <span className="block text-sm font-medium text-slate-700">
+        Recipient<FieldMark required />
+        {selected && (
+          <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+            {selected.name}
+          </span>
+        )}
+      </span>
+
+      <input
+        type="text"
+        placeholder="Search by name, email or role…"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+      />
+
+      <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
+        {loading && <p className="px-3 py-4 text-center text-sm text-slate-400">Loading users…</p>}
+        {!loading && filtered.length === 0 && (
+          <p className="px-3 py-4 text-center text-sm text-slate-400">No users found</p>
+        )}
+        {!loading && filtered.map((u) => {
+          const isSelected = String(u.id) === String(selectedId);
+          return (
+            <label key={u.id} className={`flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors hover:bg-slate-50 ${isSelected ? 'bg-blue-50' : ''}`}>
+              <input
+                type="radio"
+                name="single-recipient"
+                checked={isSelected}
+                onChange={() => onChange(String(u.id))}
+                className="h-4 w-4 border-slate-300 accent-blue-600"
+              />
+              <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-slate-800">{u.name}</p>
+                  <p className="truncate text-xs text-slate-400">{u.email}</p>
+                </div>
+                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 capitalize">{u.type}</span>
+              </div>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [users, setUsers] = useState([]);
@@ -180,15 +254,24 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
   const [singleForm, setSingleForm] = useState(EMPTY_SINGLE_FORM);
   const [singleSending, setSingleSending] = useState(false);
   const [singleError, setSingleError] = useState('');
+  const [usersLoading, setUsersLoading] = useState(false);
 
   useEffect(() => {
-    if (form.target === 'specific') {
-      listUsers({ limit: 5000 }).then((response) => setUsers(getItems(response))).catch(() => setUsers([]));
-    } else {
-      // Clear selected users when switching away
-      setForm((c) => ({ ...c, user_ids: [] }));
-    }
+    // Clear selected users when switching away
+    if (form.target !== 'specific') setForm((c) => ({ ...c, user_ids: [] }));
   }, [form.target]);
+
+  // Both recipient pickers read this one list, so it is fetched once and kept:
+  // the single-send modal needs it as much as the "specific users" target does.
+  const needUsers = form.target === 'specific' || showSingleModal;
+  useEffect(() => {
+    if (!needUsers || users.length > 0 || usersLoading) return;
+    setUsersLoading(true);
+    listUsers({ limit: 5000 })
+      .then((response) => setUsers(getItems(response)))
+      .catch(() => setUsers([]))
+      .finally(() => setUsersLoading(false));
+  }, [needUsers, users.length, usersLoading]);
 
   const handleSend = async () => {
     if (!form.title.trim() || !form.body.trim()) {
@@ -251,8 +334,8 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
       setResult({ type: 'success', text: `Notification sent to ${response.count} user(s).${emailInfo}` });
       setForm(EMPTY_FORM);
       onSent();
-    } catch {
-      setResult({ type: 'error', text: 'Failed to send notification.' });
+    } catch (error) {
+      setResult({ type: 'error', text: extractError(error, 'Failed to send notification.') });
     } finally {
       setSending(false);
     }
@@ -298,8 +381,14 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
       }
       closeSingleModal();
       onSent();
-    } catch {
-      setSingleError(`Failed to send ${singleForm.mode === 'email' ? 'email' : 'single notification'}.`);
+    } catch (error) {
+      // The server says exactly why — the recipient is not a user of this
+      // company, the address is unknown, SMTP is not configured. Swallowing it
+      // left "Failed to send single notification." as the only clue.
+      setSingleError(extractError(
+        error,
+        `Failed to send ${singleForm.mode === 'email' ? 'email' : 'single notification'}.`,
+      ));
     } finally {
       setSingleSending(false);
     }
@@ -497,13 +586,11 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
             </>
           ) : (
             <>
-              <Input
-                label="Recipient User ID"
-                type="number"
-                min="1"
-                value={singleForm.user_id}
-                onChange={(event) => setSingleForm((current) => ({ ...current, user_id: event.target.value }))}
-                required
+              <SingleUserPicker
+                users={users}
+                loading={usersLoading}
+                selectedId={singleForm.user_id}
+                onChange={(id) => setSingleForm((current) => ({ ...current, user_id: id }))}
               />
               <Input
                 label="Title"
