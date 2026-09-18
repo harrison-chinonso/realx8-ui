@@ -11,6 +11,23 @@ server {
   root /usr/share/nginx/html;
   index index.html;
 
+  # ── Security headers ──────────────────────────────────────────────────────
+  #
+  # Identical to vercel.json and worker/index.js; whichever fronts a deployment,
+  # the app is served with the same policy. `always` so they are set on error
+  # responses too, which is where a header is most often quietly missing.
+  #
+  # The CSP was verified against a production build in a real browser — sign-in
+  # plus eight authenticated screens, zero violations. Each allowance is
+  # something the app actually loads: Cloudinary documents, OpenStreetMap tiles,
+  # the font picker's two font hosts, and the embedded video players.
+  add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' data: https://fonts.gstatic.com https://cdn.fontshare.com; img-src 'self' data: blob: https://res.cloudinary.com https://*.tile.openstreetmap.org https://images.unsplash.com https://img.youtube.com https://i.ytimg.com; media-src 'self' blob: https://res.cloudinary.com; connect-src 'self' https://res.cloudinary.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.loom.com https://drive.google.com; worker-src 'self'; manifest-src 'self'; upgrade-insecure-requests" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-Frame-Options "DENY" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+  add_header Permissions-Policy "camera=(), microphone=(), payment=(), geolocation=(self)" always;
+
   # Realx8-Core answers every route under /api, so the prefix is passed through
   # unchanged rather than stripped.
   location /api/ {

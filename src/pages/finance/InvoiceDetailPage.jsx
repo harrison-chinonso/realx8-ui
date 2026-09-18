@@ -21,6 +21,7 @@ import Select from '../../components/ui/Select';
 import MoneyInput from '../../components/ui/MoneyInput';
 import { enumLabel } from '../../utils/enumLabel';
 import FieldMark from '../../components/ui/FieldMark';
+import { safeHref } from '../../utils/safeHref';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const TEXTAREA_CLASS = `${INPUT_CLASS} resize-none`;
@@ -502,7 +503,7 @@ export default function InvoiceDetailPage() {
               label: 'Proof',
               render: (row) => (row.proof?.document_url ? (
                 <a
-                  href={row.proof.document_url}
+                  href={safeHref(row.proof.document_url) ?? undefined}
                   target="_blank"
                   rel="noreferrer"
                   className="font-medium hover:underline"

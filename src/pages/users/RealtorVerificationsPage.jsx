@@ -6,6 +6,7 @@ import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import FieldMark from '../../components/ui/FieldMark';
+import { safeHref } from '../../utils/safeHref';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -161,14 +162,14 @@ export default function RealtorVerificationsPage() {
                   <td className="px-4 py-3 text-slate-700">
                     <div>{LABELS[row.id_type] || row.id_type}</div>
                     <div className="text-xs text-slate-500">{row.id_number}</div>
-                    <a href={row.id_document_url} target="_blank" rel="noreferrer" className="text-xs font-medium hover:underline" style={{ color: 'var(--primary)' }}>
+                    <a href={safeHref(row.id_document_url) ?? undefined} target="_blank" rel="noreferrer" className="text-xs font-medium hover:underline" style={{ color: 'var(--primary)' }}>
                       View document ↗
                     </a>
                   </td>
                   <td className="px-4 py-3 text-slate-700">
                     <div>{LABELS[row.address_document_type] || row.address_document_type}</div>
                     {row.address_line && <div className="text-xs text-slate-500">{row.address_line}</div>}
-                    <a href={row.address_document_url} target="_blank" rel="noreferrer" className="text-xs font-medium hover:underline" style={{ color: 'var(--primary)' }}>
+                    <a href={safeHref(row.address_document_url) ?? undefined} target="_blank" rel="noreferrer" className="text-xs font-medium hover:underline" style={{ color: 'var(--primary)' }}>
                       View document ↗
                     </a>
                   </td>

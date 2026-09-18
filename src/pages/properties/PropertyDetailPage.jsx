@@ -36,6 +36,7 @@ import PropertyInstallmentPlansPanel from '../../components/properties/PropertyI
 import { usePermission } from '../../hooks/usePermission';
 import { enumLabel } from '../../utils/enumLabel';
 import FieldMark from '../../components/ui/FieldMark';
+import { safeHref } from '../../utils/safeHref';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const emptyAmenityForm = { name: '', description: '' };
@@ -713,7 +714,7 @@ export default function PropertyDetailPage() {
                   label: 'Download',
                   render: (d) => (d.url ? (
                     <a
-                      href={d.url}
+                      href={safeHref(d.url) ?? undefined}
                       target="_blank"
                       rel="noreferrer"
                       className="font-medium hover:underline"

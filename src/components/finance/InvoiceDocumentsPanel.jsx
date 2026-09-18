@@ -7,6 +7,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import FieldMark from '../ui/FieldMark';
+import { safeHref } from '../../utils/safeHref';
 
 /**
  * Paperwork attached to one invoice — agreements, receipts, title copies.
@@ -156,7 +157,7 @@ export default function InvoiceDocumentsPanel({ invoiceId, canManage = false }) 
 
               <div className="flex shrink-0 flex-wrap items-center gap-2 self-start sm:self-auto">
                 <a
-                  href={doc.url}
+                  href={safeHref(doc.url) ?? undefined}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ring-1 ring-slate-200 hover:bg-slate-50"
@@ -230,7 +231,7 @@ export default function InvoiceDocumentsPanel({ invoiceId, canManage = false }) 
             />
           </label>
           {form.url && (
-            <a href={form.url} target="_blank" rel="noreferrer" className="block text-xs hover:underline" style={{ color: 'var(--primary)' }}>
+            <a href={safeHref(form.url) ?? undefined} target="_blank" rel="noreferrer" className="block text-xs hover:underline" style={{ color: 'var(--primary)' }}>
               Preview the uploaded file
             </a>
           )}

@@ -9,6 +9,7 @@ import { downloadUrl } from '../../utils/downloadUrl';
 import { STATE_TONE, STATE_LABEL } from '../../utils/invoiceState';
 import SummaryTile from '../../components/dashboard/SummaryTile';
 import Button from '../../components/ui/Button';
+import { safeHref } from '../../utils/safeHref';
 
 /**
  * What a buyer owns, and everything that hangs off it.
@@ -79,7 +80,7 @@ function DocumentRow({ doc }) {
         </span>
       </span>
       <span className="flex shrink-0 items-center gap-2">
-        <a href={doc.url} target="_blank" rel="noreferrer"
+        <a href={safeHref(doc.url) ?? undefined} target="_blank" rel="noreferrer"
            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold ring-1 ring-slate-200 hover:bg-slate-50"
            style={{ color: 'var(--primary)' }}>
           <Eye size={13} /> View

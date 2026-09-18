@@ -3,6 +3,7 @@ import { listReceipts, cancelOwnReceipt } from '../../api/financeApi';
 import { useCurrency } from '../../context/useAppearance';
 import Button from '../ui/Button';
 import EditSubmittedPaymentModal from './EditSubmittedPaymentModal';
+import { safeHref } from '../../utils/safeHref';
 
 /**
  * The payments a buyer has submitted that still need something from them.
@@ -154,7 +155,7 @@ export default function MySubmittedPaymentsPanel() {
                 )}
                 {row.document_url && (
                   <a
-                    href={row.document_url}
+                    href={safeHref(row.document_url) ?? undefined}
                     target="_blank"
                     rel="noreferrer"
                     className="mt-2 inline-block text-xs font-medium hover:underline"

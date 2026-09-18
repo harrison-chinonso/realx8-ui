@@ -5,6 +5,7 @@ import { useCurrency } from '../../context/useAppearance';
 import NotePaymentModal from '../../components/finance/NotePaymentModal';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/common/Badge';
+import { safeHref } from '../../utils/safeHref';
 
 /**
  * The two documents a client or realtor is party to, from their side.
@@ -169,7 +170,7 @@ export default function MyNotesPage() {
                   {note.payment_proof_url && (
                     <>
                       {' '}
-                      <a href={note.payment_proof_url} target="_blank" rel="noreferrer" className="font-medium underline">
+                      <a href={safeHref(note.payment_proof_url) ?? undefined} target="_blank" rel="noreferrer" className="font-medium underline">
                         View what you sent
                       </a>
                     </>

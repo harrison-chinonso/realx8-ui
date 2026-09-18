@@ -10,6 +10,7 @@ import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentM
 import { enumLabel } from '../../utils/enumLabel';
 import { uploadMediaFiles } from '../../api/mediaApi';
 import FieldMark from '../ui/FieldMark';
+import { safeHref } from '../../utils/safeHref';
 
 /**
  * Staff-side settlement for one invoice: review the buyer's proof of payment,
@@ -179,7 +180,7 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
           </div>
 
           {receipt.document_url ? (
-            <a href={receipt.document_url} target="_blank" rel="noreferrer"
+            <a href={safeHref(receipt.document_url) ?? undefined} target="_blank" rel="noreferrer"
                className="mt-3 block rounded-lg border border-dashed border-amber-300 bg-white px-3 py-3 text-center text-sm font-semibold hover:border-amber-400"
                style={{ color: 'var(--primary)' }}>
               Open proof of payment
@@ -326,7 +327,7 @@ export default function InvoiceSettlementPanel({ invoiceId, onChanged }) {
             </span>
             {companyReceipt ? (
               <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2">
-                <a href={companyReceipt.url} target="_blank" rel="noreferrer"
+                <a href={safeHref(companyReceipt.url) ?? undefined} target="_blank" rel="noreferrer"
                    className="truncate text-sm font-medium" style={{ color: 'var(--primary)' }}>
                   {companyReceipt.name || 'Attached receipt'}
                 </a>

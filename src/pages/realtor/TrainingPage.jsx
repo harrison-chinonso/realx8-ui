@@ -17,6 +17,7 @@ import {
   getTrainingCertificate,
 } from '../../api/trainingApi';
 import FieldMark from '../../components/ui/FieldMark';
+import { safeHref } from '../../utils/safeHref';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const MODAL_OVERLAY_CLASS = 'fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4';
@@ -276,7 +277,7 @@ export default function TrainingPage() {
     { label: 'Duration', key: 'duration' },
     {
       label: 'Video URL',
-      render: (row) => row.video_url ? <a href={row.video_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{row.video_url}</a> : '—',
+      render: (row) => row.video_url ? <a href={safeHref(row.video_url) ?? undefined} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{row.video_url}</a> : '—',
     },
     { label: 'Status', render: (row) => <Badge value={row.status || 'draft'} /> },
     { label: 'Enrolled', render: (row) => row.enrolled_count || 0 },

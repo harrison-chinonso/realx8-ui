@@ -4,6 +4,7 @@ import { usePermission } from '../../hooks/usePermission';
 import Button from '../ui/Button';
 import Modal from '../common/Modal';
 import FieldMark from '../ui/FieldMark';
+import { safeHref } from '../../utils/safeHref';
 
 /**
  * The approve / refuse / settle buttons on a credit or debit note.
@@ -87,7 +88,7 @@ export default function NoteApprovalActions({ kind, note, onChanged }) {
           */}
           {note.payment_proof_url && (
             <a
-              href={note.payment_proof_url}
+              href={safeHref(note.payment_proof_url) ?? undefined}
               target="_blank"
               rel="noreferrer"
               className="text-xs font-medium underline underline-offset-2"

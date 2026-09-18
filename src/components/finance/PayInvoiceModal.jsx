@@ -9,6 +9,7 @@ import Input from '../ui/Input';
 import MoneyInput from '../ui/MoneyInput';
 import PaymentChoices from './PaymentChoices';
 import FieldMark from '../ui/FieldMark';
+import { safeHref } from '../../utils/safeHref';
 
 /**
  * How a buyer pays an invoice.
@@ -186,7 +187,7 @@ export default function PayInvoiceModal({ invoiceId, open, onClose, onSubmitted 
                 <input type="file" accept="image/*,application/pdf" className="hidden" onChange={handleUpload} disabled={uploading} />
               </label>
               {form.document_url && (
-                <a href={form.document_url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs hover:underline" style={{ color: 'var(--primary)' }}>
+                <a href={safeHref(form.document_url) ?? undefined} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs hover:underline" style={{ color: 'var(--primary)' }}>
                   View uploaded file
                 </a>
               )}

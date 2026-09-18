@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { uploadPropertyMedia } from '../../api/propertyApi';
 import { guessType, resolveMedia } from '../../utils/mediaUrl';
+import { safeHref } from '../../utils/safeHref';
 
 // ── Lightbox ──────────────────────────────────────────────────────────────────
 
@@ -54,7 +55,7 @@ function Lightbox({ item, onClose }) {
         <div className="mt-2 flex items-center justify-center gap-3">
           {item.name && <p className="truncate text-sm text-white/60">{item.name}</p>}
           <a
-            href={item.url}
+            href={safeHref(item.url) ?? undefined}
             target="_blank"
             rel="noreferrer"
             className="shrink-0 text-sm text-white/60 underline hover:text-white"

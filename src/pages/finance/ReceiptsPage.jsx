@@ -19,6 +19,7 @@ import useNavBadgeStore from '../../store/navBadgeStore';
 import { uploadMediaFiles } from '../../api/mediaApi';
 import { useAssistantHandoff } from '../../assistant/useAssistantHandoff';
 import FieldMark from '../../components/ui/FieldMark';
+import { safeHref } from '../../utils/safeHref';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 
@@ -303,7 +304,7 @@ export default function ReceiptsPage() {
       key: 'document_url',
       label: 'Proof',
       render: (row) => (row.document_url
-        ? <a href={row.document_url} target="_blank" rel="noreferrer" className="text-xs font-semibold hover:underline" style={{ color: 'var(--primary)' }}>View</a>
+        ? <a href={safeHref(row.document_url) ?? undefined} target="_blank" rel="noreferrer" className="text-xs font-semibold hover:underline" style={{ color: 'var(--primary)' }}>View</a>
         : <span className="text-xs text-slate-300">—</span>),
     },
     { key: 'payment_method', label: 'Payment Method', render: (row) => row.payment_method || '—' },
@@ -389,7 +390,7 @@ export default function ReceiptsPage() {
             </div>
 
             {reviewing.document_url ? (
-              <a href={reviewing.document_url} target="_blank" rel="noreferrer"
+              <a href={safeHref(reviewing.document_url) ?? undefined} target="_blank" rel="noreferrer"
                  className="block rounded-lg border border-dashed border-slate-300 px-3 py-3 text-center text-sm font-medium hover:border-slate-400"
                  style={{ color: 'var(--primary)' }}>
                 Open proof of payment
@@ -411,7 +412,7 @@ export default function ReceiptsPage() {
 
               {companyReceipt ? (
                 <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2">
-                  <a href={companyReceipt.url} target="_blank" rel="noreferrer"
+                  <a href={safeHref(companyReceipt.url) ?? undefined} target="_blank" rel="noreferrer"
                      className="truncate text-sm font-medium" style={{ color: 'var(--primary)' }}>
                     {companyReceipt.name || 'Attached receipt'}
                   </a>
