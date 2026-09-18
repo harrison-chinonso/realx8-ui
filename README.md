@@ -95,6 +95,22 @@ already rewrites all paths to `index.html` for client-side routing. Add a
 rewrite from `/api/*` to the backend to stay same-origin, or set an absolute
 `VITE_API_BASE_URL` and configure CORS on the backend.
 
+### The CSP names the backend, and Vercel cannot work it out
+
+The app is served with a Content-Security-Policy, and `connect-src` decides
+which origins it may call. Where the UI proxies `/api` to the backend, the
+browser stays same-origin and `'self'` covers it. Where a build sets an
+absolute `VITE_API_BASE_URL`, the page talks to another origin and that origin
+has to be named — otherwise every request is blocked before it leaves the
+browser, which looks like the whole application is broken.
+
+`worker/index.js` and `nginx.conf.template` read the origin off `API_TARGET`,
+so they need nothing. **Vercel reads `vercel.json` statically, with no access
+to a build variable, so the origin is a literal there** — in `connect-src`,
+`img-src` and `media-src`. When the backend moves, or a second one appears,
+that is the file to edit. There is no comment in it saying so, because Vercel's
+schema rejects any key it does not recognise.
+
 **Docker** — the image serves the built app and reverse-proxies the API:
 
 ```bash

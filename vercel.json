@@ -52,6 +52,5 @@
         }
       ]
     }
-  ],
-  "$comment": "The CSP names the API origin explicitly because Vercel reads this file statically \u2014 it cannot interpolate VITE_API_BASE_URL. When the backend moves, change it in connect-src, img-src and media-src here, and nowhere else: worker/index.js and nginx.conf.template derive it from API_TARGET."
+  ]
 }
