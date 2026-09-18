@@ -43,6 +43,26 @@ export const LAUNCHER_CSS = `
   --rx-ink-2: #5A5F63;
   --rx-ink-3: #8B9095;
   --rx-rule: #E4E4E0;
+
+  /*
+   * Where the two brand colours land, and the ink each one carries.
+   *
+   *   --rx-fill-icon    the primary, on the icon chip — the only brand colour
+   *                     visible at rest
+   *   --rx-fill-hover   the secondary, on the whole tile under the pointer
+   *   --rx-focus        the primary, darkened if need be to hold 3:1 on the
+   *                     white panel the focus ring is drawn against
+   *
+   * Defaults only — ModuleLauncher overwrites all five when the launcher opens,
+   * having resolved the tenant's colours and worked out what is legible on
+   * each. Declared here so the stylesheet is readable on its own and nothing
+   * renders unstyled in the frame before that effect runs.
+   */
+  --rx-fill-icon: var(--primary, #2563eb);
+  --rx-on-icon: #fff;
+  --rx-fill-hover: var(--secondary, #0f172a);
+  --rx-on-fill-hover: #fff;
+  --rx-focus: var(--primary, #2563eb);
 }
 
 /* ── Panel: the whole viewport ──────────────────────────────────────────────
@@ -295,19 +315,61 @@ export const LAUNCHER_CSS = `
    * of a screen of nothing.
    */
   min-height: 168px;
+  /*
+   * ── Quiet at rest, the whole tile on hover ───────────────────────────────
+   *
+   * The resting tile is the neutral surface it has always been. The brand
+   * appears at rest in exactly one place — the icon chip — so a grid of sixty
+   * tiles stays calm and the colour still says whose product this is. Under
+   * the pointer the tile itself becomes the secondary.
+   *
+   * What follows from that: on hover the name, description and slot key are
+   * sitting ON a colour this code has never seen. So none of them names one.
+   * They inherit 'currentColor' — the ink for whichever state the tile is in —
+   * and the surfaces among them are that same ink at low alpha. One value
+   * changes and the whole tile follows it, at any tenant colour, with no
+   * second set of rules for the light half of the range.
+   */
   background: var(--rx-surface-2);
+  color: var(--rx-ink);
   border: 1px solid transparent;
   border-radius: 11px;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color .12s ease, border-color .12s ease;
+  transition: background-color .16s ease, color .16s ease,
+              border-color .16s ease, transform .16s ease, box-shadow .16s ease;
 }
-/* The border was a neutral hairline; it now carries the accent at just over a
-   third, which is enough to tie the hover to the brand and far too little for
-   hue to be carrying any meaning. */
-.rx-tile:hover { background: var(--rx-surface); border-color: rgba(var(--rx-accent-rgb), .38); }
-.rx-tile:focus-visible { outline: 2px solid var(--rx-accent); outline-offset: 2px; }
+
+/*
+ * The hover does three things at once, and the third is what sells it.
+ *
+ * The fill moves to the secondary and the ink moves with it; the tile lifts two
+ * pixels; and a shadow appears UNDER it tinted from the fill rather than from
+ * black, so a blue tile casts a blue shadow and the colour reads as belonging
+ * to the object rather than painted on it.
+ */
+.rx-tile:hover {
+  background: var(--rx-fill-hover);
+  color: var(--rx-on-fill-hover);
+  border-color: color-mix(in srgb, currentColor 22%, transparent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--rx-fill-hover) 70%, transparent);
+}
+.rx-tile:active { transform: translateY(0); transition-duration: .06s; }
+
+/*
+ * The focus ring is the brand colour, darkened if it has to be.
+ *
+ * It is offset, so it lands on the white panel rather than on the tile — and a
+ * pale brand on white is a ring a keyboard user cannot find. --rx-focus is the
+ * primary taken down until it holds 3:1 there. This is the indicator the whole
+ * launcher is navigated by, so it is the one that has to survive every palette.
+ */
+.rx-tile:focus-visible {
+  outline: 2px solid var(--rx-focus);
+  outline-offset: 2px;
+}
 
 /*
  * The icon container is LIGHTER than the tile it sits in — an inversion of the
@@ -328,28 +390,47 @@ export const LAUNCHER_CSS = `
   display: flex; align-items: center; justify-content: center;
   width: clamp(48px, 4.4vw, 72px);
   height: clamp(48px, 4.4vw, 72px);
-  background: var(--rx-surface);
+  /*
+   * The one place the brand appears at rest.
+   *
+   * A single saturated chip inside a neutral tile, which is how an accent is
+   * supposed to work: it draws the eye to the thing you act on and leaves the
+   * other fifty-nine tiles alone. The glyph on it is derived from the chip's
+   * own colour, because a tenant's primary can be anything and a white glyph
+   * on a pale one is invisible.
+   */
+  background: var(--rx-fill-icon);
+  color: var(--rx-on-icon);
+  /*
+   * A hairline, for the brand that is nearly white.
+   *
+   * At any normal saturation it is invisible and does nothing. On a near-white
+   * primary it is the only thing separating the chip from the tile behind it,
+   * and without it the icon floats in a void.
+   */
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rx-ink) 10%, transparent);
   border-radius: 14px;
-  color: var(--rx-ink-2);
-  transition: background-color .12s ease, color .12s ease;
+  transition: background-color .16s ease, color .16s ease, box-shadow .16s ease;
 }
 .rx-ic svg { width: clamp(22px, 2vw, 32px); height: clamp(22px, 2vw, 32px); }
+/*
+ * On hover the chip inverts OUT of the tile.
+ *
+ * It becomes the tile's own ink and the glyph punches through it in the
+ * secondary — the one place in the tile where the figure/ground relationship
+ * flips, which is what makes the hover read as a press rather than a tint. The
+ * primary steps aside here: it has done its job at rest, and keeping it would
+ * put two brand colours a few pixels apart with nothing to separate them.
+ */
 .rx-tile:hover .rx-ic {
-  background: var(--rx-accent);
-  /*
-   * NOT hard-coded white.
-   *
-   * A tenant accent can be anything, and a white glyph on a pale one (#CCCCCC
-   * was the case that proved it) sits at about 1.6:1 — invisible. The glyph
-   * colour is chosen from the accent's luminance when the launcher opens, so
-   * "any tenant colour" is a promise that actually holds rather than one that
-   * holds for the dark half of the range.
-   */
-  color: var(--rx-on-accent, #fff);
+  background: color-mix(in srgb, var(--rx-on-fill-hover) 92%, transparent);
+  color: var(--rx-fill-hover);
+  box-shadow: none;
 }
 
 .rx-name {
-  font: 600 clamp(14px, 1.15vw, 19px)/1.25 system-ui, sans-serif; color: var(--rx-ink);
+  /* Inherits the tile's ink — see the note on .rx-tile. */
+  font: 600 clamp(14px, 1.15vw, 19px)/1.25 system-ui, sans-serif; color: inherit;
   max-width: none;
   /*
    * Two lines, reserved whether or not they are used. "Commission Statements"
@@ -377,7 +458,10 @@ export const LAUNCHER_CSS = `
  */
 .rx-panel-grouped .rx-tile { min-height: 168px; padding: 20px 12px; }
 .rx-desc {
-  font: 400 clamp(11px, .85vw, 14px)/1.3 system-ui, sans-serif; color: var(--rx-ink-3);
+  /* The ink at 72%: the same hierarchy the neutral design had between name and
+     description, expressed as opacity so it survives either ink. */
+  font: 400 clamp(11px, .85vw, 14px)/1.3 system-ui, sans-serif;
+  color: color-mix(in srgb, currentColor 72%, transparent);
   max-width: 22ch;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden;
@@ -399,14 +483,25 @@ export const LAUNCHER_CSS = `
   top: 10px;
   right: 10px;
   margin-left: 0;
+  /*
+   * A ring in the tile's own fill.
+   *
+   * The badge is semantic red on white and stays that way — a count of work
+   * waiting is not themeable. But red on a red-ish brand fill loses its edge,
+   * so the tile's colour is drawn around it as a 2px ring, which separates the
+   * two without changing either.
+   */
+  box-shadow: 0 0 0 2px var(--rx-surface-2);
+  transition: box-shadow .16s ease;
 }
+.rx-tile:hover .rx-badge { box-shadow: 0 0 0 2px var(--rx-fill-hover); }
 
 /* The slot key, on hover only — texture when wanted, silence when not. It sits
    on the LEFT so it never lands on top of a badge, which is always there. */
 .rx-slot {
   position: absolute; top: 7px; left: 8px;
   font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--rx-ink-3);
+  color: color-mix(in srgb, currentColor 60%, transparent);
   opacity: 0;
   transition: opacity .12s ease;
 }
@@ -488,6 +583,8 @@ export const LAUNCHER_CSS = `
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rx-tile, .rx-ic, .rx-search, .rx-slot { transition: none; }
+  .rx-tile, .rx-ic, .rx-search, .rx-slot, .rx-badge { transition: none; }
+  /* The colour change stays — it is the state. The movement is what goes. */
+  .rx-tile:hover, .rx-tile:active { transform: none; }
 }
 `;

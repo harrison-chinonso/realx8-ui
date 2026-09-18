@@ -413,26 +413,163 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   }, [open, close, term, visibleTiles, openTile]);
 
   /**
-   * Pick a glyph colour the accent can actually carry.
+   * Resolve the brand colours, and the ink each one can actually carry.
    *
-   * Computed when the launcher opens rather than at build time, because the
-   * accent is the tenant's and is resolved from a CSS variable at runtime. The
-   * threshold is the usual relative-luminance one: a light accent takes the ink
-   * glyph, a dark one takes white.
+   * ── Where the two colours land ───────────────────────────────────────────
+   *
+   * The primary fills the ICON, not the tile: at rest a tile is the neutral
+   * surface it always was, with one brand-coloured chip in the middle of it.
+   * The secondary fills the whole tile on hover, so the colour arrives as an
+   * event rather than as wallpaper — sixty tiles at rest stay quiet, and the
+   * one under the pointer is unmistakable.
+   *
+   * ── Why it is computed and not written in CSS ────────────────────────────
+   *
+   * Both colours end up carrying something: a glyph on the chip, and the whole
+   * tile's text on hover. A tenant colour can be anything — #CCCCCC under
+   * white is 1.6:1, invisible — so neither foreground can be a fixed value.
+   * They are derived from the fills here, once, when the launcher opens.
+   *
+   * ── And why the hover is not simply the secondary ────────────────────────
+   *
+   * A secondary close to the resting surface is a hover nobody sees: the
+   * pointer moves, the tile does nothing, and the interface feels dead rather
+   * than themed. The secondary is used exactly as given when it reads as a
+   * change against the resting tile, and moved away from it when it does not.
    */
   useEffect(() => {
     if (!open || !panelRef.current) return;
-    const accent = getComputedStyle(panelRef.current).getPropertyValue('--rx-accent').trim();
-    const match = /^#?([0-9a-f]{6})$/i.exec(accent) || /rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/i.exec(accent);
-    if (!match) return;
+    const panel = panelRef.current;
+    const styles = getComputedStyle(panel);
 
-    const [r, g, b] = match[1]?.length === 6
-      ? [0, 2, 4].map((i) => parseInt(match[1].slice(i, i + 2), 16))
-      : [Number(match[1]), Number(match[2]), Number(match[3])];
+    /** '#1e3a8a' or 'rgb(30, 58, 138)' → [30, 58, 138]. */
+    const toRgb = (value) => {
+      const text = String(value || '').trim();
+      const hex = /^#?([0-9a-f]{6})$/i.exec(text);
+      if (hex) return [0, 2, 4].map((i) => parseInt(hex[1].slice(i, i + 2), 16));
+      const rgb = /rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/i.exec(text);
+      return rgb ? [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])] : null;
+    };
 
-    // Rec. 709 luminance — the same weighting every contrast tool uses.
-    const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-    panelRef.current.style.setProperty('--rx-on-accent', luminance > 0.6 ? 'var(--rx-ink)' : '#fff');
+    const toHex = (rgb) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+
+    // WCAG relative luminance — linearised, unlike the quick Rec. 709 average,
+    // because it is being used for a contrast RATIO and not just a threshold.
+    const luminance = ([r, g, b]) => {
+      const channel = (v) => {
+        const c = v / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+
+    const ratio = (a, b) => {
+      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+      return (hi + 0.05) / (lo + 0.05);
+    };
+
+    const WHITE = [255, 255, 255];
+    const BLACK = [0, 0, 0];
+    const INK = [22, 24, 26];           // --rx-ink
+
+    const mix = (a, b, amount) => a.map((v, i) => v + (b[i] - v) * amount);
+
+    /**
+     * The ink a fill carries: whichever of the two reads better ON it.
+     *
+     * Measured, not thresholded. A luminance cutoff gets the ends of the range
+     * right and the middle wrong — #FF00AA sits just under it and takes white
+     * at 3.6:1, while the dark ink on the same pink is 5.8:1. The question is
+     * which contrasts more, so that is the question asked.
+     */
+    const inkFor = (fill) => (ratio(fill, WHITE) >= ratio(fill, INK) ? WHITE : INK);
+
+    /**
+     * Move a fill until its ink is legible on it.
+     *
+     * Some colours cannot carry either ink at 4.5:1 — a mid-tone teal is about
+     * 2.6 against white and 4.1 against the ink, and no choice of foreground
+     * fixes that. The fill itself has to give a little: away from the ink, in
+     * 4% steps, until it clears AA or the cap stops it.
+     *
+     * This is the one place the tenant's colour is not reproduced exactly, and
+     * it is the right place. The tile name is the primary navigation of the
+     * application; a brand shade that cannot be read is not a brand decision
+     * anyone made on purpose. Colours that already pass — most do — are
+     * untouched.
+     */
+    const legible = (fill, ink, min = 4.5) => {
+      const away = ink === WHITE ? BLACK : WHITE;
+      let out = fill;
+      for (let i = 0; i < 14 && ratio(out, ink) < min; i += 1) out = mix(out, away, 0.04);
+      return out;
+    };
+
+    /** Toward white for a dark colour, toward black for a light one. */
+    const lift = (rgb, amount) => mix(rgb, luminance(rgb) > 0.35 ? BLACK : WHITE, amount);
+
+    /**
+     * Has the colour visibly changed?
+     *
+     * A contrast ratio alone is the wrong question, and measuring proved it:
+     * #FF00AA to #00B3A4 — magenta to teal, about as different as two colours
+     * get — scores 1.43, because the two sit at nearly the same LIGHTNESS. A
+     * ratio only ever sees lightness. Meanwhile #1e3a8a to #0f172a, two navies,
+     * scores 1.72 on the strength of lightness alone and reads clearly.
+     *
+     * Both are real changes, arrived at differently, so both count: a lightness
+     * step of 1.5:1, or a straight-line distance of 72 in RGB, which is about
+     * where a hue shift stops being a shade of the same colour. Requiring both
+     * would have dragged the teal through a pointless lightening; requiring
+     * neither leaves the identical-colour case with no hover at all.
+     */
+    const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    const distinct = (a, b) => ratio(a, b) >= 1.5 || distance(a, b) >= 72;
+
+    const primaryRaw = toRgb(styles.getPropertyValue('--rx-accent'));
+    if (!primaryRaw) return;
+    const secondaryRaw = toRgb(styles.getPropertyValue('--secondary')) || primaryRaw;
+    // The tile at rest, which is what the hover has to distinguish itself from.
+    const resting = toRgb(styles.getPropertyValue('--rx-surface-2')) || [245, 245, 242];
+
+    /*
+     * The chip. Adjusted only if its own glyph would not be legible on it —
+     * most brand colours carry one of the two inks comfortably and pass through
+     * untouched.
+     */
+    const icon = legible(primaryRaw, inkFor(primaryRaw));
+
+    /*
+     * The hover fill, separated from the RESTING tile rather than from the
+     * primary — that is what the eye compares it against now.
+     *
+     * Separate, then make legible, then check the separation survived: the
+     * second step can walk the colour back toward the first. Three passes is
+     * enough for every palette tried and cannot loop for ever on one that is
+     * pathological.
+     */
+    let hover = secondaryRaw;
+    for (let pass = 0; pass < 3; pass += 1) {
+      for (let i = 0; i < 12 && !distinct(resting, hover); i += 1) hover = lift(hover, 0.08);
+      const adjusted = legible(hover, inkFor(hover));
+      const settled = adjusted === hover || distinct(resting, adjusted);
+      hover = adjusted;
+      if (settled) break;
+    }
+
+    /*
+     * The focus ring sits on the panel, outside the tile, so it is the brand
+     * colour against white — and a pale brand against white is a ring a
+     * keyboard user cannot find. Darkened until it holds 3:1 there, which is
+     * the threshold for a non-text indicator.
+     */
+    const focus = legible(primaryRaw, WHITE, 3);
+
+    panel.style.setProperty('--rx-fill-icon', toHex(icon));
+    panel.style.setProperty('--rx-on-icon', toHex(inkFor(icon)));
+    panel.style.setProperty('--rx-fill-hover', toHex(hover));
+    panel.style.setProperty('--rx-on-fill-hover', toHex(inkFor(hover)));
+    panel.style.setProperty('--rx-focus', toHex(focus));
   }, [open]);
 
   const recent = useMemo(() => (open ? recentVisits(allDestinations) : []), [open, allDestinations]);
