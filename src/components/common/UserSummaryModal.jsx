@@ -167,7 +167,12 @@ export default function UserSummaryModal({ user, open, onClose }) {
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-slate-600">
                 {person.type}
               </span>
-              <LevelBadge level={person.level_name ? { name: person.level_name, commission_percentage: person.commission_percentage } : null} />
+              <LevelBadge level={person.level_name ? {
+                name: person.level_name,
+                commission_percentage: person.commission_percentage,
+                // Whether that percentage is what actually pays them.
+                rate_in_force: person.rate_in_force,
+              } : null} />
               <VerificationBadge status={person.kyc_status} />
             </div>
           </div>

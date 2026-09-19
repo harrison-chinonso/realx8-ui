@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import { myCommissionStatement } from '../../api/commissionApi';
 import { requestCommissionPayout } from '../../api/financeApi';
+import { plural } from '../../utils/plural';
 
 /**
  * A realtor's own statement: what they have earned and where it has got to.
@@ -43,6 +44,9 @@ function Figure({ label, value, note, tone = 'text-slate-800' }) {
     </div>
   );
 }
+
+/** The states in which an approval is still the thing being waited on. */
+const AWAITING_APPROVAL = new Set(['ACCRUED', 'PARTIALLY_RELEASED', 'RELEASED']);
 
 export default function MyCommissionStatementPage() {
   const [statement, setStatement] = useState(null);
@@ -84,6 +88,8 @@ export default function MyCommissionStatementPage() {
   };
 
   const wallet = statement?.wallet;
+  const payable = statement?.payable;
+  const threshold = statement?.payout_threshold;
 
   return (
     <div className="space-y-4">
@@ -106,7 +112,9 @@ export default function MyCommissionStatementPage() {
           <Figure
             label="Available"
             value={money(wallet.available_minor)}
-            note="Vested — due in the next payout run"
+            note={payable && payable.deductions_minor > 0
+              ? `Before deductions — ${money(payable.net_minor)} would reach you`
+              : 'Vested — due in the next payout run'}
             tone="text-emerald-600"
           />
           <Figure label="Paid to you" value={money(wallet.paid_minor)} />
@@ -127,11 +135,92 @@ export default function MyCommissionStatementPage() {
         </div>
       )}
 
+      {/*
+        Gross and net, side by side.
+
+        Deductions are taken when a payout run is built, not when commission is
+        released, so "Available" above is the figure BEFORE withholding. Showing
+        only that number means the amount a realtor watches is larger than the
+        amount that reaches their bank, and the difference is discovered on the
+        payment. Both are shown instead, with the arithmetic between them —
+        computed by the same function the payout run uses, so the estimate and
+        the payment cannot disagree.
+      */}
+      {payable && payable.gross_minor > 0 && payable.deductions_minor > 0 && (
+        <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+          <h2 className="mb-3 text-sm font-semibold text-slate-800">If you were paid out today</h2>
+          <dl className="space-y-1.5 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate-500">Available (gross)</dt>
+              <dd className="tabular-nums font-medium text-slate-800">{money(payable.gross_minor)}</dd>
+            </div>
+            {payable.deductions.map((line, index) => (
+              <div key={`${line.code}-${index}`} className="flex justify-between gap-4">
+                <dt className="text-slate-500">
+                  {line.label}
+                  {line.type === 'PERCENTAGE' && <span className="text-slate-400"> ({line.value}%)</span>}
+                </dt>
+                <dd className="tabular-nums text-slate-600">−{money(line.amount_minor)}</dd>
+              </div>
+            ))}
+            {payable.recovered_minor > 0 && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate-500">Recovered against what you owe back</dt>
+                <dd className="tabular-nums text-slate-600">−{money(payable.recovered_minor)}</dd>
+              </div>
+            )}
+            <div className="flex justify-between gap-4 border-t border-slate-200 pt-1.5">
+              <dt className="font-semibold text-slate-800">You would receive</dt>
+              <dd className="tabular-nums font-semibold text-emerald-600">{money(payable.net_minor)}</dd>
+            </div>
+          </dl>
+          {payable.immature_lines > 0 && (
+            <p className="mt-2 text-xs text-slate-500">
+              {plural(payable.immature_lines, 'commission')} in this total {payable.immature_lines === 1 ? 'is' : 'are'} still
+              inside its holding period and would not be included in a payout run today.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/*
+        The minimum, said before it is hit rather than as a refusal afterwards.
+        Shown only when the company has configured one — with no minimum there
+        is nothing to report and a line saying so would be noise.
+      */}
+      {threshold?.enforced && (
+        <div className={`rounded-xl px-4 py-3 text-sm ring-1 ${threshold.met
+          ? 'bg-emerald-50 text-emerald-800 ring-emerald-200'
+          : 'bg-amber-50 text-amber-800 ring-amber-200'}`}
+        >
+          {threshold.met
+            ? `Your available balance is over the ${money(threshold.threshold_minor)} minimum. You can request a payout.`
+            : `You need ${money(threshold.shortfall_minor)} more in your available balance to request a payout. `
+              + `The minimum is ${money(threshold.threshold_minor)}.`}
+        </div>
+      )}
+
       <div>
         <h2 className="mb-2 text-sm font-semibold text-slate-800">Earnings by deal</h2>
         <Table
           columns={[
-            { key: 'deal_ref', label: 'Deal' },
+            {
+              /*
+               * The buyer and the property, not the deal reference.
+               *
+               * `INV-412` identifies the row to the system and to nobody else.
+               * The reference is kept on hover for anyone matching a line
+               * against an invoice, which is a support question rather than
+               * the everyday one.
+               */
+              key: 'label',
+              label: 'What for',
+              render: (row) => (
+                <span className="block max-w-[22rem] truncate" title={`${row.label || row.deal_ref} · ${row.deal_ref}`}>
+                  {row.label || row.deal_ref}
+                </span>
+              ),
+            },
             {
               key: 'role',
               label: 'How',
@@ -150,6 +239,31 @@ export default function MyCommissionStatementPage() {
                   <Badge value={row.status} />
                 </span>
               ),
+            },
+            {
+              /*
+               * Vesting and approval are different questions and a realtor has
+               * to be able to tell them apart. A line can be fully vested and
+               * still not askable because nobody has signed it off, and
+               * "Vested ₦100,000" with no Request button and no explanation is
+               * the support call this column prevents.
+               */
+              key: 'approved_at',
+              label: 'Approved',
+              render: (row) => {
+                if (row.approved_at) {
+                  return <span className="text-xs text-emerald-700">{new Date(row.approved_at).toLocaleDateString()}</span>;
+                }
+                /*
+                 * "Awaiting approval" is only true of a line an approval could
+                 * still move. One that has been paid, forfeited or reversed is
+                 * finished, and saying it is waiting on somebody reads as a
+                 * commission stuck in a queue when the money has already gone.
+                 */
+                return AWAITING_APPROVAL.has(String(row.status || '').toUpperCase())
+                  ? <span className="text-xs text-amber-700">Awaiting approval</span>
+                  : <span className="text-xs text-slate-400">—</span>;
+              },
             },
             {
               key: 'attribution_date',
@@ -171,7 +285,7 @@ export default function MyCommissionStatementPage() {
           <h2 className="mb-2 text-sm font-semibold text-slate-800">Flat-rate commissions</h2>
           <p className="mb-2 text-xs text-slate-500">
             Earned at your company&apos;s flat rate rather than under a commission plan. Ask for
-            payment when you are ready.
+            payment once an administrator has approved it.
           </p>
           <Table
             columns={[
@@ -188,8 +302,13 @@ export default function MyCommissionStatementPage() {
             loading={false}
             exportName="my-flat-rate-commissions"
             emptyMessage="Nothing here."
-            renderActions={(row) => (row.status === 'created' ? (
+            // Approved, not created. A commission sits in `created` until
+            // somebody at the company signs it off; offering the button there
+            // put a realtor in front of a request the API now refuses.
+            renderActions={(row) => (row.status === 'approved' ? (
               <Button type="button" size="sm" onClick={() => setRequesting(row)}>Request payment</Button>
+            ) : row.status === 'created' ? (
+              <span className="text-xs text-amber-700">Awaiting approval</span>
             ) : null)}
           />
         </div>
@@ -220,6 +339,30 @@ export default function MyCommissionStatementPage() {
           <Table
             columns={[
               { key: 'batch_ref', label: 'Batch' },
+              {
+                /*
+                 * What the payment was for.
+                 *
+                 * A batch reference tells a realtor that they were paid and
+                 * nothing about which of their sales it covered — and a batch
+                 * gathers everything owed, so it is usually several. The names
+                 * come off the stored advice, so they read as they did when
+                 * the payment was made.
+                 */
+                key: 'for',
+                label: 'What for',
+                render: (row) => {
+                  const lines = row.advice?.entitlements || [];
+                  if (!lines.length) return <span className="text-slate-400">—</span>;
+                  const [first, ...rest] = lines.map((line) => line.label || line.deal_ref);
+                  return (
+                    <span className="block max-w-[18rem] truncate" title={lines.map((line) => line.label || line.deal_ref).join('\n')}>
+                      {first}
+                      {rest.length > 0 && <span className="text-slate-400"> +{rest.length} more</span>}
+                    </span>
+                  );
+                },
+              },
               { key: 'gross_minor', label: 'Gross', render: (row) => money(row.gross_minor) },
               { key: 'deductions_minor', label: 'Deductions', render: (row) => money(row.deductions_minor) },
               { key: 'recovered_minor', label: 'Recovered', render: (row) => money(row.recovered_minor) },
@@ -238,7 +381,8 @@ export default function MyCommissionStatementPage() {
           />
           <p className="mt-2 text-xs text-slate-400">
             Where a payment is less than the gross, the difference is withholding and any recovery
-            against an earlier clawback. Both are itemised on the advice your finance team holds.
+            against an earlier clawback. Hover over &ldquo;What for&rdquo; to see every sale a
+            payment covered.
           </p>
         </div>
       )}

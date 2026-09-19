@@ -150,3 +150,17 @@ export const assignCommissionPlan = (id, assignment) =>
 /** Discard a draft or approved batch, releasing its lines back to the next run. */
 export const cancelCommissionPayout = (id) =>
   client.post(`/commission-payouts/${id}/cancel`).then((r) => r.data);
+
+/*
+ * Approving the COMMISSION, which is not approving a payout batch.
+ *
+ * It comes earlier and answers a different question: whether the company
+ * agrees the commission is owed at all. A realtor cannot ask to be paid until
+ * this has happened, and a payout run will not pick up a line without it.
+ */
+export const listCommissionsAwaitingApproval = () =>
+  client.get('/commission-entitlements/pending-approval').then((r) => r.data?.data ?? []);
+
+export const approveCommissions = (entitlementIds) =>
+  client.post('/commission-entitlements/approve', { entitlement_ids: entitlementIds })
+    .then((r) => r.data?.data);

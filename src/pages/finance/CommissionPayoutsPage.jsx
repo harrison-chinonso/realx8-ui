@@ -10,6 +10,7 @@ import {
   listCommissionPayouts, buildCommissionPayouts,
   approveCommissionPayout, payCommissionPayout, cancelCommissionPayout,
   listPayoutRequests, raisePayoutDebitNote,
+  listCommissionsAwaitingApproval, approveCommissions,
 } from '../../api/commissionApi';
 
 /**
@@ -45,6 +46,8 @@ export default function CommissionPayoutsPage() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [requests, setRequests] = useState([]);
+  const [awaiting, setAwaiting] = useState([]);
+  const [selected, setSelected] = useState([]);
 
   const [viewing, setViewing] = useState(null);
   const [reference, setReference] = useState('');
@@ -72,6 +75,42 @@ export default function CommissionPayoutsPage() {
   useEffect(() => {
     listPayoutRequests().then((rows) => setRequests(rows || [])).catch(() => setRequests([]));
   }, [payouts]);
+
+  /**
+   * Commission nobody has signed off yet.
+   *
+   * Earlier in the flow than everything else on this page: a realtor watches
+   * their commission accrue and cannot ask for a penny of it until it appears
+   * here and somebody approves it. Approving is not batching — a payout run
+   * still has to be built afterwards — but nothing can be batched without it.
+   */
+  const loadAwaiting = useCallback(() => {
+    listCommissionsAwaitingApproval()
+      .then((rows) => setAwaiting(rows || []))
+      .catch(() => setAwaiting([]));
+  }, []);
+  useEffect(() => { loadAwaiting(); }, [loadAwaiting]);
+
+  const approve = async (ids) => {
+    if (!ids.length) return;
+    setBusy(true);
+    setMessage('');
+    setFailed('');
+    try {
+      const result = await approveCommissions(ids);
+      setMessage(result.already
+        ? `${plural(result.approved, 'commission')} approved. `
+          + `${plural(result.already, 'was', 'were')} already approved by somebody else.`
+        : `${plural(result.approved, 'commission')} approved. `
+          + 'The earners can now ask to be paid.');
+      setSelected([]);
+      loadAwaiting();
+    } catch (error) {
+      setFailed(error?.response?.data?.message || 'Could not approve those commissions.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   /**
    * @param {boolean} requestedOnly  build only for realtors who have asked.
@@ -199,6 +238,93 @@ export default function CommissionPayoutsPage() {
         </div>
       </div>
 
+      {/*
+        Approval, which comes BEFORE anything else on this page.
+
+        A commission accrues the moment a sale is paid for, and the realtor can
+        see it — but seeing it and being owed it are different, and until
+        somebody here says yes the earner has no Request Payout button and a
+        payout run will not pick the line up. Listed rather than hidden behind
+        a filter because an unapproved commission is somebody waiting.
+      */}
+      {awaiting.length > 0 && (
+        <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-amber-200">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-800">
+                Waiting for your approval
+                <span className="ml-2 font-normal text-slate-400">{plural(awaiting.length, 'commission')}</span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                Earners cannot request payment until you approve. Nothing is paid by approving.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {selected.length > 0 && (
+                <Button size="sm" onClick={() => approve(selected)} disabled={busy}>
+                  Approve {plural(selected.length, 'selected')}
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => approve(awaiting.map((row) => row.id))}
+                disabled={busy}
+              >
+                Approve all {awaiting.length}
+              </Button>
+            </div>
+          </div>
+          <Table
+            columns={[
+              {
+                key: 'pick',
+                label: '',
+                render: (row) => (
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(row.id)}
+                    onChange={() => setSelected((current) => (current.includes(row.id)
+                      ? current.filter((id) => id !== row.id)
+                      : [...current, row.id]))}
+                    className="h-4 w-4 rounded border-slate-300 accent-blue-600"
+                    aria-label={`Select commission ${row.deal_ref}`}
+                  />
+                ),
+              },
+              { key: 'realtor_name', label: 'Earner', render: (row) => row.realtor_name || `#${row.realtor_id}` },
+              {
+                key: 'label',
+                label: 'What for',
+                render: (row) => (
+                  <span className="block max-w-[20rem] truncate" title={`${row.label || row.deal_ref} · ${row.deal_ref}`}>
+                    {row.label || row.deal_ref}
+                  </span>
+                ),
+              },
+              { key: 'role', label: 'For', render: (row) => (row.role || '').toLowerCase() },
+              { key: 'constrained_minor', label: 'Amount', render: (row) => fmt(Number(row.constrained_minor || 0) / 100) },
+              { key: 'status', label: 'Stage', render: (row) => <Badge value={row.status} /> },
+              {
+                key: 'attribution_date',
+                label: 'Sold',
+                render: (row) => (row.attribution_date ? new Date(row.attribution_date).toLocaleDateString() : '—'),
+              },
+            ]}
+            data={awaiting}
+            loading={false}
+            exportName="commissions-awaiting-approval"
+            emptyMessage="Nothing is waiting."
+            renderActions={(row) => (
+              <Button size="sm" variant="secondary" onClick={() => approve([row.id])} disabled={busy}>
+                Approve
+              </Button>
+            )}
+          />
+        </div>
+      )}
+
+
       {requests.length > 0 && (
         <div className="rounded-lg bg-info-surface px-4 py-3 text-sm text-info">
           <span className="font-semibold">
@@ -317,10 +443,19 @@ export default function CommissionPayoutsPage() {
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-500">
                   What it is made of
                 </p>
+                {/*
+                  The buyer and the property, with the deal reference on hover.
+                  A payment advice listing four lines of INV-numbers tells the
+                  person checking it nothing about what they are paying for.
+                  Older advices stored before this have no label and fall back
+                  to the reference they were written with.
+                */}
                 {advice.entitlements.map((line) => (
-                  <div key={line.entitlement_id} className="flex justify-between py-0.5 text-slate-600">
-                    <span>{line.deal_ref}</span>
-                    <span>{money(line.amount_minor)}</span>
+                  <div key={line.entitlement_id} className="flex justify-between gap-3 py-0.5 text-slate-600">
+                    <span className="min-w-0 truncate" title={`${line.label || line.deal_ref} · ${line.deal_ref}`}>
+                      {line.label || line.deal_ref}
+                    </span>
+                    <span className="shrink-0">{money(line.amount_minor)}</span>
                   </div>
                 ))}
               </div>

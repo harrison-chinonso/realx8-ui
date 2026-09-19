@@ -124,6 +124,49 @@ const SETTING_GROUPS = [
   },
   {
     /*
+     * The minimum a realtor may ask to be paid at once, in MINOR units.
+     *
+     * Minor because that is what the whole commission engine speaks and what
+     * the check compares against — asking for naira here would put a
+     * conversion between the number an administrator types and the number the
+     * rule applies, which is exactly where an off-by-one-hundred lives.
+     *
+     * Empty or zero means no minimum, which is how every company behaves until
+     * somebody sets one. There is deliberately no separate on/off switch to
+     * fall out of step with the number.
+     */
+    group: 'commission',
+    label: 'Commission',
+    permission: 'finance.commissions.manage',
+    fields: [
+      {
+        key: 'min_payout_minor',
+        label: 'Minimum payout (in kobo — 5000000 is ₦50,000)',
+        type: 'text',
+        placeholder: '0 — no minimum',
+      },
+      /*
+       * Off until it is turned on, deliberately.
+       *
+       * With no commission rules and this off, a completed sale pays nothing —
+       * which is what every company does today. Turning it on starts paying
+       * the rate on each realtor's level for any sale no rule covers, so it is
+       * a decision to spend money and is written as one. An explicit rule
+       * always wins over it.
+       */
+      {
+        key: 'use_level_rate',
+        label: 'Pay each realtor level’s own rate when no commission rule matches',
+        type: 'select',
+        options: [
+          { value: 'false', label: 'No — pay nothing unless a commission rule matches' },
+          { value: 'true', label: 'Yes — fall back to the level’s rate' },
+        ],
+      },
+    ],
+  },
+  {
+    /*
      * A tab of its own rather than a field list, because SMS is not a flat set
      * of keys: four providers, each wanting different fields, and one of them
      * live. SmsSettingsPanel renders whatever the server says the chosen

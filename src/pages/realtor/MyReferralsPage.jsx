@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { plural } from '../../utils/plural';
 import { Link } from 'react-router-dom';
 import { listMyReferrals } from '../../api/userApi';
 import Badge from '../../components/common/Badge';
@@ -26,6 +27,21 @@ const TABS = [
 ];
 
 /** People this realtor referred — clients and realtors alike. */
+/**
+ * The rungs, in the order an introduction climbs them.
+ *
+ * Kept in step with STATUS in shared/src/referralRecord.js. Counted by CURRENT
+ * position rather than cumulatively, so the columns sum to the total and a
+ * realtor can see where people stop — which is the only thing a funnel is for.
+ */
+const FUNNEL_STAGES = [
+  { key: 'invited', label: 'Opened your link' },
+  { key: 'registered', label: 'Registered' },
+  { key: 'interested', label: 'Interested' },
+  { key: 'reserved', label: 'Reserved a unit' },
+  { key: 'commission_generated', label: 'Earned you commission' },
+];
+
 export default function MyReferralsPage() {
   const [tree, setTree] = useState([]);
   const [summaryFor, setSummaryFor] = useState(null);
@@ -100,6 +116,33 @@ export default function MyReferralsPage() {
       {error && <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
 
       <ReferralLinkPanel realtorCode={meta.realtor_code} companyCode={meta.company_code} />
+
+      {/*
+        The funnel, which is not the network above it.
+
+        The network is accounts that exist under you. This counts
+        INTRODUCTIONS by how far each one got — including the ones that
+        registered and went no further, which the network cannot show because
+        there is nothing about an account that says it stalled.
+      */}
+      {meta.funnel?.total > 0 && (
+        <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+          <h2 className="mb-3 text-sm font-semibold text-slate-800">
+            How your introductions are doing
+            <span className="ml-2 font-normal text-slate-400">{plural(meta.funnel.total, 'introduction')}</span>
+          </h2>
+          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+            {FUNNEL_STAGES.map((stage) => (
+              <div key={stage.key} className="rounded-lg bg-slate-50 px-3 py-2.5 ring-1 ring-slate-100">
+                <p className="text-lg font-semibold tabular-nums text-slate-800">
+                  {meta.funnel.by_status?.[stage.key] ?? 0}
+                </p>
+                <p className="text-xs text-slate-500">{stage.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 md:flex-row md:items-end md:justify-between">
         <div className="flex-1">
