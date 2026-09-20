@@ -148,6 +148,13 @@ function EntryDetail({ entry }) {
   );
 }
 
+const MATCH_LABEL = { role: 'Role', name: 'Name', email: 'Email' };
+const MATCH_PLACEHOLDER = {
+  role: 'e.g. super_admin',
+  name: 'Any part of a name',
+  email: 'Any part of an email',
+};
+
 export default function AuditLogPage() {
   const isSuperiorAdmin = useAuthStore((state) => state.isSuperiorAdmin);
 
@@ -156,12 +163,19 @@ export default function AuditLogPage() {
   const [failed, setFailed] = useState('');
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [facets, setFacets] = useState({ actions: [], modules: [], actors: [] });
+  const [facets, setFacets] = useState({ actions: [], modules: [], actors: [], roles: [] });
   const [open, setOpen] = useState(null);      // the entry being read, or null
   const [entry, setEntry] = useState(null);
 
+  /**
+   * Which field the box searches.
+   *
+   * Role by default, because "what have the admins been doing" is the question
+   * this screen is opened with more than any other, and because a role is the
+   * one of the three a reader can be sure of without looking anything up.
+   */
   const [filters, setFilters] = useState({
-    module: '', action: '', actor_id: '', from: '', to: '', company_id: '',
+    action: '', match_field: 'role', match: '', from: '', to: '', company_id: '',
   });
 
   const query = useMemo(() => ({
@@ -171,9 +185,12 @@ export default function AuditLogPage() {
     ...(filters.from ? { from: filters.from } : {}),
     ...(filters.to ? { to: filters.to } : {}),
     ...(filters.company_id ? { company_id: filters.company_id } : {}),
-    ...(filters.module ? { 'filter[module]': filters.module } : {}),
     ...(filters.action ? { 'filter[action]': filters.action } : {}),
-    ...(filters.actor_id ? { 'filter[actor_id]': filters.actor_id } : {}),
+    // The field travels with the value: on its own it narrows nothing, and
+    // sending it anyway would make an empty box look like a filter.
+    ...(filters.match.trim()
+      ? { match_field: filters.match_field, match: filters.match.trim() }
+      : {}),
   }), [page, search, filters]);
 
   useEffect(() => {
@@ -238,7 +255,13 @@ export default function AuditLogPage() {
       : []),
   ];
 
-  const clearable = Object.values(filters).some(Boolean) || search;
+  /*
+   * match_field always holds a value — it is a chooser, not a filter — so
+   * counting it would leave "Clear filters" permanently on with nothing to
+   * clear.
+   */
+  const clearable = search
+    || Object.entries(filters).some(([key, value]) => key !== 'match_field' && Boolean(value));
 
   return (
     <div className="space-y-4">
@@ -267,15 +290,6 @@ export default function AuditLogPage() {
           />
         )}
         <label className="space-y-1">
-          <span className="block text-sm font-medium text-slate-700">Area<FieldMark /></span>
-          <Select value={filters.module} onChange={setFilter('module')}>
-            <option value="">All areas</option>
-            {facets.modules.filter((m) => m.module).map((m) => (
-              <option key={m.module} value={m.module}>{titleise(m.module)} ({m.total})</option>
-            ))}
-          </Select>
-        </label>
-        <label className="space-y-1">
           <span className="block text-sm font-medium text-slate-700">Action<FieldMark /></span>
           <Select value={filters.action} onChange={setFilter('action')}>
             <option value="">All actions</option>
@@ -286,16 +300,57 @@ export default function AuditLogPage() {
             ))}
           </Select>
         </label>
+
+        {/*
+          Pick the field, then type the value.
+
+          This replaces a dropdown of every area and a dropdown of every person
+          who has ever appeared. Neither answered the question somebody arrives
+          with — "what did Kelvin do", "what have the admins been doing" — and a
+          person with one entry was as hard to find as one with a thousand.
+          Two controls where there were three, and a name no longer has to be in
+          a list to be searched for.
+        */}
         <label className="space-y-1">
-          <span className="block text-sm font-medium text-slate-700">Performed by<FieldMark /></span>
-          <Select value={filters.actor_id} onChange={setFilter('actor_id')}>
-            <option value="">Anyone</option>
-            {facets.actors.filter((a) => a.actor_id).map((a) => (
-              <option key={a.actor_id} value={a.actor_id}>
-                {a.actor_name || `User #${a.actor_id}`} ({a.total})
-              </option>
-            ))}
+          <span className="block text-sm font-medium text-slate-700">Filter by<FieldMark /></span>
+          <Select
+            value={filters.match_field}
+            onChange={(event) => {
+              setPage(1);
+              setFilters((current) => ({ ...current, match_field: event.target.value }));
+            }}
+          >
+            <option value="role">Role</option>
+            <option value="name">Name</option>
+            <option value="email">Email</option>
           </Select>
+        </label>
+        <label className="space-y-1">
+          <span className="block text-sm font-medium text-slate-700">
+            {MATCH_LABEL[filters.match_field] || 'Value'}<FieldMark />
+          </span>
+          <input
+            type="search"
+            value={filters.match}
+            onChange={setFilter('match')}
+            placeholder={MATCH_PLACEHOLDER[filters.match_field] || ''}
+            list={filters.match_field === 'role' ? 'audit-roles' : undefined}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          />
+          {/*
+            Suggestions, not a constraint — the box still takes anything. Role
+            is the one field where the exact spelling matters and is not
+            guessable: super_admin and superior_admin are a keystroke apart and
+            mean very different things.
+          */}
+          <datalist id="audit-roles">
+            {(facets.roles || []).map((r) => (
+              <option key={r.actor_type} value={r.actor_type}>{titleise(r.actor_type)} ({r.total})</option>
+            ))}
+          </datalist>
+          {filters.match_field === 'role' && (
+            <span className="block text-xs text-slate-400">Matches the whole role, not part of it.</span>
+          )}
         </label>
         <Input label="From" type="date" value={filters.from} onChange={setFilter('from')} />
         <Input label="To" type="date" value={filters.to} onChange={setFilter('to')} />
@@ -307,7 +362,9 @@ export default function AuditLogPage() {
               onClick={() => {
                 setPage(1);
                 setSearch('');
-                setFilters({ module: '', action: '', actor_id: '', from: '', to: '', company_id: '' });
+                setFilters({
+                  action: '', match_field: 'role', match: '', from: '', to: '', company_id: '',
+                });
               }}
             >
               Clear filters
