@@ -35,7 +35,7 @@ export const commissionRecipes = [
   {
     id: 'commission-payout',
     title: 'Pay a realtor their commission',
-    summary: 'Build a payout run, raise a debit note for it, and record the payment.',
+    summary: 'Build a payout run, approve it, and record the payment.',
     category: 'Commission',
     route: '/finance/commission-payouts',
     trail: 'Finance → Commission → Commission Payouts',
@@ -52,11 +52,8 @@ export const commissionRecipes = [
       { text: 'Review a draft with **Advice** — it shows gross, deductions and net.' },
       { text: 'Approve it.' },
       {
-        text: 'Choose **Raise debit note**. It fills in the realtor, the net amount and the reference.',
-        note: 'The note goes for approval by somebody holding Approve Credit & Debit Notes.',
-      },
-      {
-        text: 'Once the note is approved and marked paid — which is what writes the ledger entry — come back and **Record payment** on the payout.',
+        text: 'When the transfer has gone, choose **Record payment** on the payout.',
+        note: 'That is what writes the ledger entry — and it posts the NET, because withholding never left the building.',
       },
     ],
     related: ['commission-plan'],

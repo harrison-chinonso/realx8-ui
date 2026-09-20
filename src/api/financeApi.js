@@ -55,10 +55,15 @@ export const listCreditNotes = (params) => client.get('/credit-notes', { params 
 export const createCreditNote = (payload) => client.post('/credit-notes', payload).then(r => r.data);
 export const updateCreditNote = (id, payload) => client.put(`/credit-notes/${id}`, payload).then(r => r.data);
 export const deleteCreditNote = (id) => client.delete(`/credit-notes/${id}`).then(r => r.data);
-export const listDebitNotes = (params) => client.get('/debit-notes', { params }).then(r => r.data);
-export const createDebitNote = (payload) => client.post('/debit-notes', payload).then(r => r.data);
-export const updateDebitNote = (id, payload) => client.put(`/debit-notes/${id}`, payload).then(r => r.data);
-export const deleteDebitNote = (id) => client.delete(`/debit-notes/${id}`).then(r => r.data);
+/*
+ * The debit note is gone (ACC-0.6), and with it these four calls.
+ *
+ * It was doing three unrelated jobs under a name that meant a fourth: paying a
+ * commission (now the payout run), refunding an overpayment (now a refund),
+ * and charging a realtor a fee (now a service-fee invoice). Every one of those
+ * routes 404s; leaving the functions here would be leaving a loaded trap for
+ * whoever autocompletes into one.
+ */
 
 /*
  * Credit and debit note approval.

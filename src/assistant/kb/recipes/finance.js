@@ -70,23 +70,29 @@ export const financeRecipes = [
   {
     id: 'overpayment',
     title: 'Deal with a client who overpaid',
-    summary: 'The surplus becomes a debit note that goes for approval before it is refunded.',
+    summary: 'The surplus becomes a refund that goes for approval — or stays on the plan against the next instalment.',
     category: 'Finance',
-    route: '/finance/debit-notes',
-    trail: 'Finance → Debit Note',
-    permissions: ['finance.debit-notes.manage'],
+    route: '/finance/refunds',
+    trail: 'Finance → Refunds',
+    permissions: ['finance.invoices.view'],
     keywords: [
       'client overpaid', 'overpayment', 'paid too much', 'refund a client',
       'credit balance', 'extra money', 'surplus payment',
     ],
     steps: [
       {
-        text: 'Nothing to do at the moment of payment — the surplus raises a debit note on its own.',
+        text: 'Nothing to do at the moment of payment — the surplus raises a refund on its own.',
         note: 'It is created as Waiting for approval, against the buyer, for exactly the amount over.',
       },
-      { text: 'Open **Finance → Debit Note** to find it on the **Waiting for approval** tab.' },
-      { text: 'Approve it to refund the buyer, or refuse it with a reason to leave the money on their plan for the next instalment.' },
-      { text: 'Once approved, **Mark as paid** when the money actually goes out — that is what records it in the ledger.' },
+      { text: 'Open **Finance → Refunds** to find it.' },
+      {
+        text: 'Approve it to send the money back, or choose **Leave it on the plan** with a reason.',
+        note: 'Leaving it is often what the buyer wants and always cheaper than two transfers.',
+      },
+      {
+        text: 'Once approved, **Record payment** when the money actually goes out.',
+        note: 'Their credit balance clears then, not at approval — until the transfer is made the company is still holding their money.',
+      },
     ],
     related: ['approve-payment', 'credit-note'],
   },

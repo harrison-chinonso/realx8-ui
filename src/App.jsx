@@ -37,7 +37,9 @@ import TaxesPage from './pages/finance/TaxesPage';
 import PromotionsPage from './pages/promotions/PromotionsPage';
 import BankAccountsPage from './pages/finance/BankAccountsPage';
 import CreditNotesPage from './pages/finance/CreditNotesPage';
-import DebitNotesPage from './pages/finance/DebitNotesPage';
+import PayablesPage from './pages/finance/PayablesPage';
+import RefundsPage from './pages/finance/RefundsPage';
+import LedgerPage from './pages/finance/LedgerPage';
 import MyNotesPage from './pages/finance/MyNotesPage';
 import PaymentRemindersPage from './pages/finance/PaymentRemindersPage';
 import ReportsPage from './pages/finance/ReportsPage';
@@ -303,7 +305,15 @@ export default function App() {
           <Route path="/finance/taxes" element={<TaxesPage />} />
           <Route path="/finance/bank-accounts" element={<BankAccountsPage />} />
           <Route path="/finance/credit-notes" element={<CreditNotesPage />} />
-          <Route path="/finance/debit-notes" element={<DebitNotesPage />} />
+          {/*
+            No /finance/debit-notes. The instrument was retired in ACC-0.6 —
+            it was doing three unrelated jobs under a name that meant a fourth,
+            and each of them has its own screen now: payables, refunds, and the
+            commission payout run.
+          */}
+          <Route path="/finance/payables" element={<PayablesPage />} />
+          <Route path="/finance/refunds" element={<RefundsPage />} />
+          <Route path="/finance/ledger" element={<LedgerPage />} />
           {/* The same two documents, own-scoped, for the party they concern. */}
           <Route path="/finance/my-notes" element={<MyNotesPage />} />
           <Route path="/finance/payment-reminders" element={<PaymentRemindersPage />} />

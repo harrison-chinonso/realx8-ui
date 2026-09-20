@@ -3,7 +3,7 @@
     "route": "/",
     "label": "Dashboard",
     "section": "Dashboard",
-    "trail": "Dashboard → Dashboard",
+    "trail": "Dashboard \u2192 Dashboard",
     "permissions": [
       "dashboard.view"
     ],
@@ -17,7 +17,7 @@
     "route": "/audit-logs",
     "label": "Audit Trail",
     "section": "People & Access",
-    "trail": "People & Access → Realtor → Audit Trail",
+    "trail": "People & Access \u2192 Realtor \u2192 Audit Trail",
     "permissions": [
       "audit.view"
     ],
@@ -31,7 +31,7 @@
     "route": "/branches",
     "label": "Branches",
     "section": "Properties",
-    "trail": "Properties → Branches",
+    "trail": "Properties \u2192 Branches",
     "permissions": [
       "properties.view"
     ],
@@ -48,7 +48,7 @@
     "route": "/care",
     "label": "VIP Clients",
     "section": "Operations & Support",
-    "trail": "Operations & Support → VIP Clients",
+    "trail": "Operations & Support \u2192 VIP Clients",
     "permissions": [
       "care.view"
     ],
@@ -62,7 +62,7 @@
     "route": "/care/alerts",
     "label": "Scheduled Alerts",
     "section": "Operations & Support",
-    "trail": "Operations & Support → Scheduled Alerts",
+    "trail": "Operations & Support \u2192 Scheduled Alerts",
     "permissions": [
       "care.view"
     ],
@@ -76,7 +76,7 @@
     "route": "/care/communications",
     "label": "Messaging",
     "section": "Operations & Support",
-    "trail": "Operations & Support → Messaging",
+    "trail": "Operations & Support \u2192 Messaging",
     "permissions": [
       "care.view"
     ],
@@ -114,7 +114,7 @@
     "route": "/crm/agent-performance",
     "label": "Realtor Performance",
     "section": "Sales & CRM",
-    "trail": "Sales & CRM → Realtor Performance",
+    "trail": "Sales & CRM \u2192 Realtor Performance",
     "permissions": [
       "crm.analytics.view"
     ],
@@ -128,7 +128,7 @@
     "route": "/crm/analytics",
     "label": "Analytics & Reports",
     "section": "Sales & CRM",
-    "trail": "Sales & CRM → Analytics & Reports",
+    "trail": "Sales & CRM \u2192 Analytics & Reports",
     "permissions": [
       "crm.analytics.view"
     ],
@@ -142,7 +142,7 @@
     "route": "/crm/deals",
     "label": "Manage Deals",
     "section": "Sales & CRM",
-    "trail": "Sales & CRM → Manage Deals",
+    "trail": "Sales & CRM \u2192 Manage Deals",
     "permissions": [
       "crm.deals.view"
     ],
@@ -156,7 +156,7 @@
     "route": "/crm/leads",
     "label": "Manage Leads",
     "section": "Sales & CRM",
-    "trail": "Sales & CRM → Manage Leads",
+    "trail": "Sales & CRM \u2192 Manage Leads",
     "permissions": [
       "crm.leads.view"
     ],
@@ -170,7 +170,7 @@
     "route": "/crm/pipelines",
     "label": "Pipeline",
     "section": "Sales & CRM",
-    "trail": "Sales & CRM → Pipeline",
+    "trail": "Sales & CRM \u2192 Pipeline",
     "permissions": [
       "crm.pipelines.manage"
     ],
@@ -184,7 +184,7 @@
     "route": "/crm/sources-labels",
     "label": "Sources & Labels",
     "section": "Sales & CRM",
-    "trail": "Sales & CRM → Sources & Labels",
+    "trail": "Sales & CRM \u2192 Sources & Labels",
     "permissions": [
       "crm.leads.view"
     ],
@@ -198,7 +198,7 @@
     "route": "/crm/tasks",
     "label": "Tasks",
     "section": "Sales & CRM",
-    "trail": "Sales & CRM → Tasks",
+    "trail": "Sales & CRM \u2192 Tasks",
     "permissions": [
       "crm.tasks.view"
     ],
@@ -212,7 +212,7 @@
     "route": "/finance/bank-accounts",
     "label": "Bank Accounts",
     "section": "Finance",
-    "trail": "Finance → Payments → Bank Accounts",
+    "trail": "Finance \u2192 Payments \u2192 Bank Accounts",
     "permissions": [
       "finance.bank-accounts.manage"
     ],
@@ -226,7 +226,7 @@
     "route": "/finance/commission-analytics",
     "label": "Commission Analytics",
     "section": "Finance",
-    "trail": "Finance → Commission → Commission Analytics",
+    "trail": "Finance \u2192 Commission \u2192 Commission Analytics",
     "permissions": [
       "finance.commissions.view"
     ],
@@ -240,7 +240,7 @@
     "route": "/finance/commission-payouts",
     "label": "Payouts",
     "section": "Finance",
-    "trail": "Finance → Commission → Payouts",
+    "trail": "Finance \u2192 Commission \u2192 Payouts",
     "permissions": [
       "finance.commissions.manage"
     ],
@@ -254,7 +254,7 @@
     "route": "/finance/commission-plans",
     "label": "Plans",
     "section": "Finance",
-    "trail": "Finance → Commission → Plans",
+    "trail": "Finance \u2192 Commission \u2192 Plans",
     "permissions": [
       "finance.commissions.manage"
     ],
@@ -268,7 +268,7 @@
     "route": "/finance/credit-notes",
     "label": "Credit Notes",
     "section": "Finance",
-    "trail": "Finance → Commission → Credit Notes",
+    "trail": "Finance \u2192 Commission \u2192 Credit Notes",
     "permissions": [
       "finance.credit-notes.manage"
     ],
@@ -279,24 +279,31 @@
     "source": "nav"
   },
   {
-    "route": "/finance/debit-notes",
-    "label": "Debit Notes",
+    "route": "/finance/payables",
+    "label": "Payables",
     "section": "Finance",
-    "trail": "Finance → Commission → Debit Notes",
-    "permissions": [
-      "finance.debit-notes.manage"
-    ],
-    "showForTypes": [],
-    "hideForTypes": [],
-    "hideForSuperior": false,
-    "superiorAdminOnly": false,
-    "source": "nav"
+    "trail": "Finance \u2192 Payables",
+    "permission": "finance.bills.view"
+  },
+  {
+    "route": "/finance/refunds",
+    "label": "Refunds",
+    "section": "Finance",
+    "trail": "Finance \u2192 Refunds",
+    "permission": "finance.invoices.view"
+  },
+  {
+    "route": "/finance/ledger",
+    "label": "The Ledger",
+    "section": "Finance",
+    "trail": "Finance \u2192 The Ledger",
+    "permission": "accounting.view"
   },
   {
     "route": "/finance/installment-plans",
     "label": "Installment Plans",
     "section": "Finance",
-    "trail": "Finance → Payments → Installment Plans",
+    "trail": "Finance \u2192 Payments \u2192 Installment Plans",
     "permissions": [
       "finance.installment-plans.view"
     ],
@@ -310,7 +317,7 @@
     "route": "/finance/invoices",
     "label": "All Invoices",
     "section": "Finance",
-    "trail": "Finance → Invoicing → All Invoices",
+    "trail": "Finance \u2192 Invoicing \u2192 All Invoices",
     "permissions": [
       "finance.invoices.view"
     ],
@@ -324,7 +331,7 @@
     "route": "/finance/invoices/create",
     "label": "Create",
     "section": "Finance",
-    "trail": "Finance → Invoicing → All Invoices → Create",
+    "trail": "Finance \u2192 Invoicing \u2192 All Invoices \u2192 Create",
     "permissions": [
       "finance.invoices.view"
     ],
@@ -338,7 +345,7 @@
     "route": "/finance/invoices/due",
     "label": "Due Invoices",
     "section": "Finance",
-    "trail": "Finance → Invoicing → Due Invoices",
+    "trail": "Finance \u2192 Invoicing \u2192 Due Invoices",
     "permissions": [
       "finance.invoices.view"
     ],
@@ -352,7 +359,7 @@
     "route": "/finance/my-commission",
     "label": "My Commissions",
     "section": "Finance",
-    "trail": "Finance → Commission → My Commissions",
+    "trail": "Finance \u2192 Commission \u2192 My Commissions",
     "permissions": [],
     "showForTypes": [
       "realtor"
@@ -366,7 +373,7 @@
     "route": "/finance/my-invoices",
     "label": "My Invoices",
     "section": "My Portfolio",
-    "trail": "My Portfolio → My Invoices",
+    "trail": "My Portfolio \u2192 My Invoices",
     "permissions": [],
     "showForTypes": [
       "client"
@@ -380,7 +387,7 @@
     "route": "/finance/my-payments",
     "label": "My Payments",
     "section": "My Portfolio",
-    "trail": "My Portfolio → My Payments",
+    "trail": "My Portfolio \u2192 My Payments",
     "permissions": [],
     "showForTypes": [
       "client"
@@ -394,7 +401,7 @@
     "route": "/finance/my-properties",
     "label": "My Properties",
     "section": "My Portfolio",
-    "trail": "My Portfolio → My Properties",
+    "trail": "My Portfolio \u2192 My Properties",
     "permissions": [],
     "showForTypes": [
       "client"
@@ -408,7 +415,7 @@
     "route": "/finance/payment-plans",
     "label": "Payment Plans",
     "section": "Finance",
-    "trail": "Finance → Payments → Payment Plans",
+    "trail": "Finance \u2192 Payments \u2192 Payment Plans",
     "permissions": [
       "finance.invoices.view"
     ],
@@ -422,7 +429,7 @@
     "route": "/finance/payment-reminders",
     "label": "Payment Reminders",
     "section": "Finance",
-    "trail": "Finance → Payments → Payment Reminders",
+    "trail": "Finance \u2192 Payments \u2192 Payment Reminders",
     "permissions": [
       "finance.payment-reminders.manage"
     ],
@@ -436,7 +443,7 @@
     "route": "/finance/reports",
     "label": "Reports",
     "section": "Finance",
-    "trail": "Finance → Commission → Reports",
+    "trail": "Finance \u2192 Commission \u2192 Reports",
     "permissions": [
       "finance.reports.view"
     ],
@@ -450,7 +457,7 @@
     "route": "/finance/taxes",
     "label": "Taxes",
     "section": "Finance",
-    "trail": "Finance → Commission → Taxes",
+    "trail": "Finance \u2192 Commission \u2192 Taxes",
     "permissions": [
       "finance.taxes.manage"
     ],
@@ -464,7 +471,7 @@
     "route": "/finance/transactions",
     "label": "All Payments",
     "section": "Finance",
-    "trail": "Finance → Payments → All Payments",
+    "trail": "Finance \u2192 Payments \u2192 All Payments",
     "permissions": [
       "finance.invoices.view"
     ],
@@ -478,7 +485,7 @@
     "route": "/finance/transactions/pending",
     "label": "Pending",
     "section": "Finance",
-    "trail": "Finance → Payments → All Payments → Pending",
+    "trail": "Finance \u2192 Payments \u2192 All Payments \u2192 Pending",
     "permissions": [
       "finance.invoices.view"
     ],
@@ -492,7 +499,7 @@
     "route": "/front-desk",
     "label": "Visitor Log & Attendance",
     "section": "Operations & Support",
-    "trail": "Operations & Support → Visitor Log & Attendance",
+    "trail": "Operations & Support \u2192 Visitor Log & Attendance",
     "permissions": [
       "frontdesk.visitors.manage"
     ],
@@ -506,7 +513,7 @@
     "route": "/investments",
     "label": "Investments",
     "section": "Investments",
-    "trail": "Investments → Investments",
+    "trail": "Investments \u2192 Investments",
     "permissions": [
       "investments.view"
     ],
@@ -520,7 +527,7 @@
     "route": "/investments/portfolio",
     "label": "Investments",
     "section": "Realtor Hub",
-    "trail": "Realtor Hub → Investments",
+    "trail": "Realtor Hub \u2192 Investments",
     "permissions": [
       "investments.own.view"
     ],
@@ -537,7 +544,7 @@
     "route": "/investments/retention-alerts",
     "label": "Manage Schedule",
     "section": "Investments",
-    "trail": "Investments → Manage Schedule",
+    "trail": "Investments \u2192 Manage Schedule",
     "permissions": [
       "investments.view"
     ],
@@ -551,7 +558,7 @@
     "route": "/media/analytics",
     "label": "Marketing Analytics",
     "section": "Marketing & Content",
-    "trail": "Marketing & Content → Marketing Analytics",
+    "trail": "Marketing & Content \u2192 Marketing Analytics",
     "permissions": [
       "media.analytics.view"
     ],
@@ -565,7 +572,7 @@
     "route": "/media/blog",
     "label": "Blog",
     "section": "Marketing & Content",
-    "trail": "Marketing & Content → Blog",
+    "trail": "Marketing & Content \u2192 Blog",
     "permissions": [
       "media.blog.manage"
     ],
@@ -579,7 +586,7 @@
     "route": "/media/posts",
     "label": "Content Posts",
     "section": "Marketing & Content",
-    "trail": "Marketing & Content → Content Posts",
+    "trail": "Marketing & Content \u2192 Content Posts",
     "permissions": [
       "media.view"
     ],
@@ -593,7 +600,7 @@
     "route": "/media/social-accounts",
     "label": "Social Media Accounts",
     "section": "Marketing & Content",
-    "trail": "Marketing & Content → Social Media Accounts",
+    "trail": "Marketing & Content \u2192 Social Media Accounts",
     "permissions": [
       "media.schedule"
     ],
@@ -607,7 +614,7 @@
     "route": "/notifications",
     "label": "Notifications",
     "section": "Operations & Support",
-    "trail": "Operations & Support → Notifications",
+    "trail": "Operations & Support \u2192 Notifications",
     "permissions": [
       "notifications.view"
     ],
@@ -633,7 +640,7 @@
     "route": "/promotions",
     "label": "Promotions & Offers",
     "section": "Properties",
-    "trail": "Properties → Promotions & Offers",
+    "trail": "Properties \u2192 Promotions & Offers",
     "permissions": [
       "promotions.view"
     ],
@@ -647,7 +654,7 @@
     "route": "/properties",
     "label": "Property Listing",
     "section": "Properties",
-    "trail": "Properties → Property Listing",
+    "trail": "Properties \u2192 Property Listing",
     "permissions": [
       "properties.view"
     ],
@@ -664,7 +671,7 @@
     "route": "/properties/create",
     "label": "Create",
     "section": "Properties",
-    "trail": "Properties → Property Listing → Create",
+    "trail": "Properties \u2192 Property Listing \u2192 Create",
     "permissions": [
       "properties.view"
     ],
@@ -681,7 +688,7 @@
     "route": "/properties/inspections",
     "label": "Property Inspection",
     "section": "Properties",
-    "trail": "Properties → Property Inspection",
+    "trail": "Properties \u2192 Property Inspection",
     "permissions": [
       "properties.inspections.view"
     ],
@@ -695,7 +702,7 @@
     "route": "/properties/listed",
     "label": "Listed Properties",
     "section": "Properties",
-    "trail": "Properties → Listed Properties",
+    "trail": "Properties \u2192 Listed Properties",
     "permissions": [],
     "showForTypes": [
       "realtor",
@@ -710,7 +717,7 @@
     "route": "/properties/types",
     "label": "Property Setup",
     "section": "Properties",
-    "trail": "Properties → Property Setup",
+    "trail": "Properties \u2192 Property Setup",
     "permissions": [
       "properties.manage"
     ],
@@ -724,7 +731,7 @@
     "route": "/realtor/clients",
     "label": "My Clients",
     "section": "People & Access",
-    "trail": "People & Access → Realtor → My Clients",
+    "trail": "People & Access \u2192 Realtor \u2192 My Clients",
     "permissions": [],
     "showForTypes": [
       "realtor"
@@ -738,7 +745,7 @@
     "route": "/realtor/leaderboard",
     "label": "Realtor Leaderboard",
     "section": "People & Access",
-    "trail": "People & Access → Realtor → Realtor Leaderboard",
+    "trail": "People & Access \u2192 Realtor \u2192 Realtor Leaderboard",
     "permissions": [
       "realtors.leaderboard.view"
     ],
@@ -755,7 +762,7 @@
     "route": "/realtor/levels",
     "label": "Realtor Levels",
     "section": "People & Access",
-    "trail": "People & Access → Realtor → Realtor Levels",
+    "trail": "People & Access \u2192 Realtor \u2192 Realtor Levels",
     "permissions": [
       "users.manage"
     ],
@@ -769,7 +776,7 @@
     "route": "/realtor/recruitment",
     "label": "Recruitment",
     "section": "Operations & Support",
-    "trail": "Operations & Support → Recruitment",
+    "trail": "Operations & Support \u2192 Recruitment",
     "permissions": [
       "realtors.recruitment.view"
     ],
@@ -785,7 +792,7 @@
     "route": "/realtor/referrals",
     "label": "My Referrals",
     "section": "People & Access",
-    "trail": "People & Access → Realtor → My Referrals",
+    "trail": "People & Access \u2192 Realtor \u2192 My Referrals",
     "permissions": [],
     "showForTypes": [
       "realtor"
@@ -799,7 +806,7 @@
     "route": "/realtor/training",
     "label": "Training & LMS",
     "section": "Operations & Support",
-    "trail": "Operations & Support → Training & LMS",
+    "trail": "Operations & Support \u2192 Training & LMS",
     "permissions": [
       "realtors.training.view"
     ],
@@ -825,7 +832,7 @@
     "route": "/receipts",
     "label": "Payment Approvals",
     "section": "Finance",
-    "trail": "Finance → Payments → Payment Approvals",
+    "trail": "Finance \u2192 Payments \u2192 Payment Approvals",
     "permissions": [
       "finance.commissions.view"
     ],
@@ -851,7 +858,7 @@
     "route": "/roles",
     "label": "Roles & Permissions",
     "section": "People & Access",
-    "trail": "People & Access → Realtor → Roles & Permissions",
+    "trail": "People & Access \u2192 Realtor \u2192 Roles & Permissions",
     "permissions": [
       "roles.view"
     ],
@@ -865,7 +872,7 @@
     "route": "/settings",
     "label": "Settings",
     "section": "Operations & Support",
-    "trail": "Operations & Support → Settings",
+    "trail": "Operations & Support \u2192 Settings",
     "permissions": [
       "settings.appearance.manage"
     ],
@@ -882,7 +889,7 @@
     "route": "/settings/notifications",
     "label": "Notification Settings",
     "section": "Operations & Support",
-    "trail": "Operations & Support → Notification Settings",
+    "trail": "Operations & Support \u2192 Notification Settings",
     "permissions": [
       "finance.purchase-notifications.manage"
     ],
@@ -896,7 +903,7 @@
     "route": "/superior/companies",
     "label": "Companies",
     "section": "Platform Admin",
-    "trail": "Platform Admin → Companies",
+    "trail": "Platform Admin \u2192 Companies",
     "permissions": [],
     "showForTypes": [],
     "hideForTypes": [],
@@ -908,7 +915,7 @@
     "route": "/superior/companies/new",
     "label": "New",
     "section": "Platform Admin",
-    "trail": "Platform Admin → Companies → New",
+    "trail": "Platform Admin \u2192 Companies \u2192 New",
     "permissions": [],
     "showForTypes": [],
     "hideForTypes": [],
@@ -920,7 +927,7 @@
     "route": "/superior/dashboard",
     "label": "Platform Dashboard",
     "section": "Platform Admin",
-    "trail": "Platform Admin → Platform Dashboard",
+    "trail": "Platform Admin \u2192 Platform Dashboard",
     "permissions": [],
     "showForTypes": [],
     "hideForTypes": [],
@@ -944,7 +951,7 @@
     "route": "/superior/users",
     "label": "All Users",
     "section": "Platform Admin",
-    "trail": "Platform Admin → All Users",
+    "trail": "Platform Admin \u2192 All Users",
     "permissions": [],
     "showForTypes": [],
     "hideForTypes": [],
@@ -956,7 +963,7 @@
     "route": "/support",
     "label": "Support Centre",
     "section": "Operations & Support",
-    "trail": "Operations & Support → Support Centre",
+    "trail": "Operations & Support \u2192 Support Centre",
     "permissions": [
       "support.view"
     ],
@@ -982,7 +989,7 @@
     "route": "/users/clients",
     "label": "Clients",
     "section": "People & Access",
-    "trail": "People & Access → Clients",
+    "trail": "People & Access \u2192 Clients",
     "permissions": [
       "users.manage"
     ],
@@ -996,7 +1003,7 @@
     "route": "/users/employees",
     "label": "Staff",
     "section": "People & Access",
-    "trail": "People & Access → Staff",
+    "trail": "People & Access \u2192 Staff",
     "permissions": [
       "users.manage"
     ],
@@ -1010,7 +1017,7 @@
     "route": "/users/realtors",
     "label": "Realtors",
     "section": "People & Access",
-    "trail": "People & Access → Realtor → Realtors",
+    "trail": "People & Access \u2192 Realtor \u2192 Realtors",
     "permissions": [
       "users.manage"
     ],
@@ -1024,7 +1031,7 @@
     "route": "/users/verifications",
     "label": "Realtor Verification",
     "section": "People & Access",
-    "trail": "People & Access → Realtor → Realtor Verification",
+    "trail": "People & Access \u2192 Realtor \u2192 Realtor Verification",
     "permissions": [
       "users.manage"
     ],

@@ -15,7 +15,7 @@ import {
   TrendingUp, ListTree, LayoutList, CreditCard,
   Users, UserCheck, Briefcase, UserCog, ShieldCheck,
   Target, Handshake, CheckSquare, GitBranch, BarChart2, Tags,
-  FileText, AlertCircle,
+  FileText, AlertCircle, BookOpen,
   Receipt, FileMinus, FilePlus, Landmark, CalendarDays, FolderOpen,
   DollarSign, Share2,
   FileEdit, Newspaper, Link2, LineChart,
@@ -269,7 +269,7 @@ export const NAV = [
        * them back. After the statement: what they have earned is the question
        * they come here with, and what they owe is the one they leave with.
        */
-      { to: '/finance/my-notes', label: 'Credit & Debit Notes', icon: FileMinus, permission: null, showForTypes: ['realtor'] },
+      { to: '/finance/my-notes', label: 'My Credit Notes', icon: FileMinus, permission: null, showForTypes: ['realtor'] },
       /**
        * Both carry the SAME badge count, because the queue is one queue.
        *
@@ -283,11 +283,19 @@ export const NAV = [
         permission: 'finance.credit-notes.manage',
         badge: 'pendingNotes', badgeLabel: 'notes awaiting approval',
       },
+      /*
+       * Debit Notes is gone (ACC-0.6). It was one screen for three unrelated
+       * things — paying a commission, refunding an overpayment, and charging a
+       * realtor a fee — under a name that means none of them. Each has its own
+       * entry now.
+       */
       {
-        to: '/finance/debit-notes', label: 'Debit Notes', icon: FilePlus,
-        permission: 'finance.debit-notes.manage',
-        badge: 'pendingNotes', badgeLabel: 'notes awaiting approval',
+        to: '/finance/payables', label: 'Payables', icon: FilePlus,
+        permission: 'finance.bills.view',
+        badgeLabel: 'bills awaiting approval',
       },
+      { to: '/finance/refunds', label: 'Refunds', icon: FileMinus, permission: 'finance.invoices.view' },
+      { to: '/finance/ledger',  label: 'The Ledger', icon: BookOpen, permission: 'accounting.view' },
       { to: '/finance/taxes',   label: 'Taxes',   icon: Tag,        permission: 'finance.taxes.manage' },
       { to: '/finance/reports', label: 'Reports', icon: FolderOpen, permission: 'finance.reports.view' },
     ],
