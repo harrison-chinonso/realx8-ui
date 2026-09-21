@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, LayoutGrid, Search, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
@@ -115,6 +115,28 @@ function Tile({ icon: Icon, name, description, slot, badge, onOpen, to, innerRef
     : <button ref={innerRef} type="button" className="rx-tile" onClick={onOpen} {...props}>{body}</button>;
 }
 
+/**
+ * Where the launcher was standing when it sent you somewhere.
+ *
+ * ── Why this is remembered at all ───────────────────────────────────────────
+ *
+ * Drilling to a sub-menu is work: two clicks and a change of context. Somebody
+ * who opened Payables from inside Finance and comes back to the menu is almost
+ * always after its neighbour — the Ledger, the Statements — and putting them
+ * at the top level makes them redo both clicks to get back to where they
+ * already were.
+ *
+ * ── And why only when you are still on that page ────────────────────────────
+ *
+ * The restore is tied to the destination, not to the launcher. Once you have
+ * moved on somewhere else, the sub-menu you drilled through is no longer where
+ * you were; reopening at the top is then the honest answer rather than a stale
+ * one. Held outside the component so it survives a remount, and holding two
+ * labels rather than the objects themselves, so a navConfig rebuilt from a
+ * changed permission set cannot restore a level that no longer exists.
+ */
+let lastDrill = null;
+
 export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   const [query, setQuery] = useState('');
   const [section, setSection] = useState(null);
@@ -134,16 +156,35 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
   const panelRef = useRef(null);
   const searchRef = useRef(null);
   const tileRefs = useRef([]);
+  const { pathname } = useLocation();
 
   useEffect(() => {
-    if (open) {
-      setQuery('');
-      setSection(null);
-      setGroup(null);
-      setShowOverflow(false);
-      searchRef.current?.focus();
-    }
-  }, [open]);
+    if (!open) return;
+    setQuery('');
+    setShowOverflow(false);
+    searchRef.current?.focus();
+
+    /*
+     * Back to the sub-menu you came through, not to the top.
+     *
+     * Only while you are still on the page it sent you to — see lastDrill.
+     * The levels are re-resolved from the CURRENT sections rather than
+     * restored as objects, so a menu rebuilt since (a permission changed, a
+     * screen retired) cannot put back a level that no longer exists; it falls
+     * to whatever part of the path still resolves, and to the top if none of
+     * it does.
+     */
+    const remembered = lastDrill && lastDrill.to === pathname ? lastDrill : null;
+    const restoredSection = remembered
+      ? sections.find((entry) => entry.section === remembered.section) || null
+      : null;
+    const restoredGroup = restoredSection && remembered.group
+      ? (restoredSection.items || []).find((item) => item.label === remembered.group) || null
+      : null;
+
+    setSection(restoredSection);
+    setGroup(restoredGroup);
+  }, [open, pathname, sections]);
 
   const term = query.trim().toLowerCase();
 
@@ -283,6 +324,20 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
     return mainTiles;
   }, [isGrouped, term, matches, group, section, showOverflow, mainTiles, overflowTiles]);
 
+  /**
+   * Remember the level this destination was opened from.
+   *
+   * Called at every place a leaf can be clicked rather than inside `close`,
+   * because closing also happens on Escape and on a click outside — neither of
+   * which went anywhere, and neither of which should leave a level behind to
+   * be restored.
+   */
+  const noteDrill = useCallback((item) => {
+    lastDrill = item?.to
+      ? { to: item.to, section: section?.section ?? null, group: group?.label ?? null }
+      : null;
+  }, [section, group]);
+
   const openTile = useCallback((tile) => {
     if (tile.kind === 'overflow') { setShowOverflow(true); return; }
     if (tile.kind === 'group') { setGroup(tile.item); return; }
@@ -290,13 +345,14 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
       const entry = tile.item;
       const only = entry.destinations.length === 1 ? entry.destinations[0] : null;
       // A section holding one destination IS that destination.
-      if (only) { rememberVisit(only); close(); return; }
+      if (only) { rememberVisit(only); noteDrill(only); close(); return; }
       setSection(entry);
       return;
     }
     rememberVisit(tile.item);
+    noteDrill(tile.item);
     close();
-  }, [close]);
+  }, [close, noteDrill]);
 
   /**
    * Keyboard. The keycaps in the search row advertise this as keyboard-driven,
@@ -657,7 +713,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
           icon={item.icon}
           name={item.label}
           to={item.to}
-          onOpen={() => { rememberVisit(item); close(); }}
+          onOpen={() => { rememberVisit(item); noteDrill(item); close(); }}
         />
       ))}
     </div>
@@ -711,7 +767,12 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
           <div className="rx-recent">
             <span className="rx-recent-label">Recent</span>
             {recent.map((item) => (
-              <Link key={item.to} to={item.to} className="rx-chip" onClick={() => { rememberVisit(item); close(); }}>
+              <Link
+                key={item.to}
+                to={item.to}
+                className="rx-chip"
+                onClick={() => { rememberVisit(item); noteDrill(item); close(); }}
+              >
                 <item.icon aria-hidden="true" size={13} />
                 {item.label}
               </Link>
