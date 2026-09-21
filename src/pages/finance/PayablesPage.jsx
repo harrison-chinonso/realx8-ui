@@ -12,6 +12,7 @@ import { plural } from '../../utils/plural';
 import {
   listVendors, createVendor, listBills, createBill,
   approveBill, rejectBill, payBill, agedPayables, listLedgerAccounts,
+  listCostTypes,
 } from '../../api/accountingApi';
 
 /**
@@ -48,7 +49,7 @@ const STATUS_TONE = {
 const EMPTY_BILL = {
   vendor_id: '', net_minor: '', tax_minor: '', withholding_minor: '',
   account_id: '', property_id: '', bill_date: '', due_date: '',
-  description: '', vendor_reference: '', capitalise: false, type: 'bill',
+  description: '', vendor_reference: '', expense_type_id: '', type: 'bill',
 };
 
 const EMPTY_VENDOR = {
@@ -75,6 +76,7 @@ export default function PayablesPage() {
   const [busy, setBusy] = useState(false);
 
   const [billForm, setBillForm] = useState(EMPTY_BILL);
+  const [costTypes, setCostTypes] = useState([]);
   const [showBill, setShowBill] = useState(false);
   const [vendorForm, setVendorForm] = useState(EMPTY_VENDOR);
   const [showVendor, setShowVendor] = useState(false);
@@ -106,6 +108,11 @@ export default function PayablesPage() {
   }, [showBill, accounts.length]);
 
   useEffect(() => {
+    if (!showBill || costTypes.length) return;
+    listCostTypes({ active: 'true' }).then(setCostTypes).catch(() => setCostTypes([]));
+  }, [showBill, costTypes.length]);
+
+  useEffect(() => {
     if (tab !== 'ageing' || ageing) return;
     agedPayables().then(setAgeing).catch(() => setAgeing(null));
   }, [tab, ageing]);
@@ -128,6 +135,8 @@ export default function PayablesPage() {
     }
   };
 
+  const chosenType = costTypes.find((t) => String(t.id) === String(billForm.expense_type_id));
+
   const submitBill = async (event) => {
     event.preventDefault();
     const ok = await act(
@@ -143,6 +152,7 @@ export default function PayablesPage() {
           : {}),
         account_id: billForm.account_id || null,
         property_id: billForm.property_id || null,
+        expense_type_id: billForm.expense_type_id || null,
       }),
       'Bill raised. It now needs approving by somebody else.',
     );
@@ -429,25 +439,39 @@ export default function PayablesPage() {
           </div>
 
           {/*
-            Capitalising is not the same as coding to a property. A marketing
-            spend on an estate is coded to it and expensed; a contractor's
-            foundation pour is coded to it and capitalised into the unit's cost.
+            What KIND of cost this is, which is what decides whether it goes on
+            the balance sheet (ACC-10.2).
+
+            This was a "This is a build cost" checkbox. A checkbox put the
+            difference between this month's profit and the balance sheet in the
+            hands of whoever was typing, so the same contractor's invoice could
+            capitalise or not depending on who raised it. The decision belongs
+            to the kind of cost, taken once by somebody with the standing to
+            take it — here it is only being named.
           */}
-          <label className="flex items-start gap-2 rounded-lg bg-slate-50 p-3">
-            <input
-              type="checkbox"
-              checked={billForm.capitalise}
-              onChange={(e) => setBillForm((c) => ({ ...c, capitalise: e.target.checked }))}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-blue-600"
-            />
-            <span className="text-sm text-slate-700">
-              This is a build cost
-              <span className="block text-xs text-slate-500">
-                It goes onto the balance sheet as work in progress and is charged against the sale
-                when the unit is handed over, rather than hitting this month&apos;s profit.
-              </span>
-            </span>
+          <label className="block space-y-1">
+            <span className="text-sm font-medium text-slate-700">What kind of cost<FieldMark /></span>
+            <Select
+              value={billForm.expense_type_id}
+              onChange={(e) => setBillForm((c) => ({ ...c, expense_type_id: e.target.value }))}
+            >
+              <option value="">Not stated</option>
+              {costTypes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}{t.capitalisable ? ' — build cost' : ''}
+                </option>
+              ))}
+            </Select>
           </label>
+          {chosenType && (
+            <p className={`rounded-lg px-3 py-2 text-xs ${chosenType.capitalisable ? 'bg-blue-50 text-blue-800' : 'bg-slate-50 text-slate-600'}`}>
+              {chosenType.capitalisable
+                ? 'This goes onto the balance sheet as work in progress and is charged against the sale when '
+                  + 'the unit is handed over. It needs a project to be coded to.'
+                : 'This hits this month\u2019s profit.'}
+              {chosenType.note ? ` ${chosenType.note}` : ''}
+            </p>
+          )}
 
           <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
             <Button type="button" variant="secondary" onClick={() => setShowBill(false)} disabled={busy}>Cancel</Button>

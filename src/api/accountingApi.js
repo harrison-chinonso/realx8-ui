@@ -96,3 +96,187 @@ export const rejectRefund = (id, reason) =>
 
 export const markRefundPaid = (id, payload) =>
   client.post(`/refunds/${id}/pay`, payload).then((r) => r.data?.data);
+
+// ── Development cost (ACC-10) ───────────────────────────────────────────────
+
+export const listCostTypes = (params) =>
+  client.get('/development/cost-types', { params }).then((r) => r.data?.data ?? []);
+
+export const createCostType = (payload) =>
+  client.post('/development/cost-types', payload).then((r) => r.data?.data);
+
+export const updateCostType = (id, payload) =>
+  client.put(`/development/cost-types/${id}`, payload).then((r) => r.data);
+
+export const listCodingAccounts = () =>
+  client.get('/development/coding-accounts').then((r) => r.data?.data ?? []);
+
+export const listAccountingPolicies = () =>
+  client.get('/development/policies').then((r) => r.data?.data ?? []);
+
+export const saveAccountingPolicy = (payload) =>
+  client.post('/development/policies', payload).then((r) => r.data?.data);
+
+/** Every project carrying development cost, and the control account behind it. */
+export const wipReport = (params) =>
+  client.get('/development/wip', { params }).then((r) => r.data?.data);
+
+export const projectCost = (propertyId) =>
+  client.get(`/development/projects/${propertyId}`).then((r) => r.data?.data);
+
+/** What the project is now expected to fetch — the write-down follows from it. */
+export const assessNrv = (propertyId, payload) =>
+  client.post(`/development/projects/${propertyId}/nrv`, payload).then((r) => r.data?.data);
+
+export const releaseCatchUp = (propertyId, payload) =>
+  client.post(`/development/projects/${propertyId}/catch-up`, payload).then((r) => r.data);
+
+export const writeDownProject = (propertyId, payload) =>
+  client.post(`/development/projects/${propertyId}/write-down`, payload).then((r) => r.data);
+
+// ── Handover (ACC-8) ────────────────────────────────────────────────────────
+
+export const listHandovers = (params) =>
+  client.get('/handovers', { params }).then((r) => r.data?.data ?? []);
+
+/** Sales whose revenue is still deferred, waiting for control to pass. */
+export const awaitingHandover = (params) =>
+  client.get('/handovers/awaiting', { params }).then((r) => r.data?.data ?? []);
+
+export const deferredRevenue = (params) =>
+  client.get('/handovers/deferred-revenue', { params }).then((r) => r.data?.data);
+
+export const recordHandover = (payload) =>
+  client.post('/handovers', payload).then((r) => r.data);
+
+/** Revenue does not move until this is attached. */
+export const attachAcknowledgement = (id, url) =>
+  client.post(`/handovers/${id}/acknowledgement`, { acknowledgement_url: url }).then((r) => r.data);
+
+export const reverseHandover = (id, reason) =>
+  client.post(`/handovers/${id}/reverse`, { reason }).then((r) => r.data);
+
+// ── The statements (ACC-5) ──────────────────────────────────────────────────
+
+export const profitAndLoss = (params) =>
+  client.get('/ledger/profit-and-loss', { params }).then((r) => r.data?.data);
+
+export const balanceSheet = (params) =>
+  client.get('/ledger/balance-sheet', { params }).then((r) => r.data?.data);
+
+export const cashFlow = (params) =>
+  client.get('/ledger/cash-flow', { params }).then((r) => r.data?.data);
+
+/** Derived from the accrual ledger, never posted a second way. */
+export const cashBasis = (params) =>
+  client.get('/ledger/cash-basis', { params }).then((r) => r.data?.data);
+
+export const agedReceivables = (params) =>
+  client.get('/ledger/aged-receivables', { params }).then((r) => r.data?.data);
+
+export const vatReturn = (params) =>
+  client.get('/ledger/vat-return', { params }).then((r) => r.data?.data);
+
+export const withholdingSchedule = (params) =>
+  client.get('/ledger/withholding', { params }).then((r) => r.data?.data);
+
+/** Every statement from one read, so they cannot straddle a posting. */
+export const statementPack = (params) =>
+  client.get('/ledger/pack', { params }).then((r) => r.data?.data);
+
+/**
+ * The journal as CSV — the exit guarantee.
+ *
+ * Fetched as text and handed back, because the viewer sandbox blocks a page
+ * from starting its own download; the caller decides what to do with it.
+ */
+export const exportJournalCsv = (params) =>
+  client.get('/ledger/export', { params, responseType: 'text' }).then((r) => r.data);
+
+// ── Period close (ACC-7) ────────────────────────────────────────────────────
+
+export const listPeriods = () =>
+  client.get('/periods').then((r) => r.data?.data ?? []);
+
+/** A year of months, or one named period with its own dates. */
+export const createPeriods = (payload) =>
+  client.post('/periods', payload).then((r) => r.data);
+
+/** Run the checklist without closing anything. */
+export const checkPeriod = (id) =>
+  client.get(`/periods/${id}/check`).then((r) => r.data?.data);
+
+export const closePeriod = (id) =>
+  client.post(`/periods/${id}/close`, {}).then((r) => r.data);
+
+/** Permissioned separately, and refused without a reason. */
+export const reopenPeriod = (id, reason) =>
+  client.post(`/periods/${id}/reopen`, { reason }).then((r) => r.data);
+
+/** The statements, journals and reconciliations for a closed period. */
+export const auditPack = (id) =>
+  client.get(`/periods/${id}/audit-pack`).then((r) => r.data?.data);
+
+// ── Bank reconciliation (ACC-6) ─────────────────────────────────────────────
+
+export const bankRecAccounts = () =>
+  client.get('/bank-rec/accounts').then((r) => r.data?.data ?? []);
+
+export const bankMappings = (kind = 'bank_statement') =>
+  client.get('/bank-rec/mappings', { params: { kind } }).then((r) => r.data?.data ?? []);
+
+/** `preview` reads the file and says what would happen, without writing. */
+export const importStatement = (payload, { preview = false } = {}) =>
+  client.post('/bank-rec/import', payload, { params: preview ? { preview: 'true' } : {} })
+    .then((r) => r.data);
+
+export const bankLines = (params) =>
+  client.get('/bank-rec/lines', { params }).then((r) => r.data?.data ?? []);
+
+/** Candidates for each unmatched line. Nothing is matched automatically. */
+export const bankSuggestions = (params) =>
+  client.get('/bank-rec/suggestions', { params }).then((r) => r.data);
+
+export const bankSummary = (params) =>
+  client.get('/bank-rec/summary', { params }).then((r) => r.data?.data);
+
+export const matchBankLine = (id, entryId) =>
+  client.post(`/bank-rec/lines/${id}/match`, { entry_id: entryId }).then((r) => r.data);
+
+export const unmatchBankLine = (id) =>
+  client.post(`/bank-rec/lines/${id}/unmatch`, {}).then((r) => r.data);
+
+/** Bank charges and interest — the bank is the only document there is. */
+export const postBankLine = (id, payload) =>
+  client.post(`/bank-rec/lines/${id}/post`, payload).then((r) => r.data);
+
+export const ignoreBankLine = (id, reason) =>
+  client.post(`/bank-rec/lines/${id}/ignore`, { reason }).then((r) => r.data);
+
+export const lockReconciliation = (payload) =>
+  client.post('/bank-rec/lock', payload).then((r) => r.data);
+
+export const listReconciliations = () =>
+  client.get('/bank-rec/reconciliations').then((r) => r.data?.data ?? []);
+
+// ── Moving a company's books in (ACC-9) ─────────────────────────────────────
+
+export const migrationStatus = () =>
+  client.get('/migration/status').then((r) => r.data?.data);
+
+/** The five types, and what each package calls them. */
+export const migrationTypes = () =>
+  client.get('/migration/types').then((r) => r.data?.data);
+
+export const importChart = (payload, { preview = false } = {}) =>
+  client.post('/migration/chart', payload, { params: preview ? { preview: 'true' } : {} })
+    .then((r) => r.data);
+
+/** Will not post without the tenant's own written confirmation. */
+export const importOpeningBalances = (payload, { preview = false } = {}) =>
+  client.post('/migration/opening-balances', payload, { params: preview ? { preview: 'true' } : {} })
+    .then((r) => r.data);
+
+export const importOpenItems = (payload, { preview = false } = {}) =>
+  client.post('/migration/open-items', payload, { params: preview ? { preview: 'true' } : {} })
+    .then((r) => r.data);

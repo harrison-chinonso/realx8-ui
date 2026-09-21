@@ -15,7 +15,7 @@ import {
   TrendingUp, ListTree, LayoutList, CreditCard,
   Users, UserCheck, Briefcase, UserCog, ShieldCheck,
   Target, Handshake, CheckSquare, GitBranch, BarChart2, Tags,
-  FileText, AlertCircle, BookOpen,
+  FileText, AlertCircle, BookOpen, HardHat, KeyRound, Scale, CalendarCheck, Upload,
   Receipt, FileMinus, FilePlus, Landmark, CalendarDays, FolderOpen,
   DollarSign, Share2,
   FileEdit, Newspaper, Link2, LineChart,
@@ -296,6 +296,54 @@ export const NAV = [
       },
       { to: '/finance/refunds', label: 'Refunds', icon: FileMinus, permission: 'finance.invoices.view' },
       { to: '/finance/ledger',  label: 'The Ledger', icon: BookOpen, permission: 'accounting.view' },
+      /*
+       * Directly under the ledger, because that is what it reads. Distinct
+       * from Reports below, which is the sales and commission reporting that
+       * predates the accounting module and answers different questions.
+       */
+      {
+        to: '/finance/statements', label: 'Statements', icon: Scale,
+        permission: 'accounting.view',
+      },
+      /*
+       * After the statements, because that is the order of the work: read the
+       * month, then close it. Its own permission — closing is a stronger act
+       * than reading, and the people who do it are usually fewer.
+       */
+      /*
+       * Before Period close, because that is the order the work happens in:
+       * a month cannot be closed until its bank accounts are reconciled.
+       */
+      {
+        to: '/finance/bank-reconciliation', label: 'Bank reconciliation', icon: Landmark,
+        permission: 'accounting.view',
+      },
+      {
+        to: '/finance/periods', label: 'Period close', icon: CalendarCheck,
+        permission: 'accounting.periods.manage',
+      },
+      /*
+       * Last in the group and behind the chart's own permission: it is used
+       * once, when a company arrives, by whoever owns the chart of accounts.
+       */
+      {
+        to: '/finance/migration', label: 'Bring books in', icon: Upload,
+        permission: 'accounting.settings.manage',
+      },
+      /*
+       * The two halves of a developer's margin, kept next to each other on
+       * purpose: what a project cost, and when its sale becomes revenue. They
+       * post as one journal, so reading them from two distant places in the
+       * menu would misrepresent how they work.
+       */
+      {
+        to: '/finance/project-cost', label: 'Project cost', icon: HardHat,
+        permission: 'accounting.view',
+      },
+      {
+        to: '/finance/handovers', label: 'Handovers', icon: KeyRound,
+        permission: 'finance.invoices.view',
+      },
       { to: '/finance/taxes',   label: 'Taxes',   icon: Tag,        permission: 'finance.taxes.manage' },
       { to: '/finance/reports', label: 'Reports', icon: FolderOpen, permission: 'finance.reports.view' },
     ],

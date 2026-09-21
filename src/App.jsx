@@ -40,6 +40,12 @@ import CreditNotesPage from './pages/finance/CreditNotesPage';
 import PayablesPage from './pages/finance/PayablesPage';
 import RefundsPage from './pages/finance/RefundsPage';
 import LedgerPage from './pages/finance/LedgerPage';
+import DevelopmentCostPage from './pages/finance/DevelopmentCostPage';
+import HandoverPage from './pages/finance/HandoverPage';
+import StatementsPage from './pages/finance/StatementsPage';
+import PeriodsPage from './pages/finance/PeriodsPage';
+import BankReconciliationPage from './pages/finance/BankReconciliationPage';
+import MigrationPage from './pages/finance/MigrationPage';
 import MyNotesPage from './pages/finance/MyNotesPage';
 import PaymentRemindersPage from './pages/finance/PaymentRemindersPage';
 import ReportsPage from './pages/finance/ReportsPage';
@@ -314,6 +320,12 @@ export default function App() {
           <Route path="/finance/payables" element={<PayablesPage />} />
           <Route path="/finance/refunds" element={<RefundsPage />} />
           <Route path="/finance/ledger" element={<LedgerPage />} />
+          <Route path="/finance/project-cost" element={<DevelopmentCostPage />} />
+          <Route path="/finance/handovers" element={<HandoverPage />} />
+          <Route path="/finance/statements" element={<StatementsPage />} />
+          <Route path="/finance/periods" element={<PeriodsPage />} />
+          <Route path="/finance/bank-reconciliation" element={<BankReconciliationPage />} />
+          <Route path="/finance/migration" element={<MigrationPage />} />
           {/* The same two documents, own-scoped, for the party they concern. */}
           <Route path="/finance/my-notes" element={<MyNotesPage />} />
           <Route path="/finance/payment-reminders" element={<PaymentRemindersPage />} />
