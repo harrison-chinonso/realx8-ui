@@ -5,7 +5,6 @@ import Modal from '../../components/common/Modal';
 import PropertyCarousel from '../../components/common/PropertyCarousel';
 import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
-import { apiUrl } from '../../api/apiBase';
 import { googleAuthUrl, codesFromLocation } from '../../utils/googleAuthUrl';
 import FieldMark from '../../components/ui/FieldMark';
 
@@ -41,14 +40,14 @@ function RealtoBrand({ light = false }) {
       >
         <img
           src={app_logo}
-          alt={app_name || 'Platform'}
+          alt={app_name || 'Realx8'}
           className="object-contain"
           style={{ height: 40, maxWidth: 180 }}
         />
       </div>
     );
   }
-  const name = app_name || 'Platform';
+  const name = app_name || 'Realx8';
   const lastSpace = name.lastIndexOf(' ');
   const head = lastSpace > 0 ? name.slice(0, lastSpace + 1) : '';
   const tail = lastSpace > 0 ? name.slice(lastSpace + 1) : name;
@@ -563,7 +562,7 @@ export default function LoginPage() {
       )}
 
       <p className="text-xs text-white/20 text-center mt-8">
-        Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Platform'}
+        Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Realx8'}
       </p>
     </div>
   );

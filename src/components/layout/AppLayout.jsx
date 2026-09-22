@@ -19,7 +19,7 @@ const TEMPLATES = {
 
 export default function AppLayout({ children }) {
   const { template } = useAppearance();
-  const Layout = TEMPLATES[template] || ClassicLayout;
+  const Layout = TEMPLATES[template] || LauncherLayout;
   return (
     <>
       {/*
