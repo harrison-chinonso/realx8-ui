@@ -11,6 +11,16 @@
  * below feeds data that no viewport could have shown all of at once, and
  * asserts it comes out the other side.
  *
+ * ── Kept in step with the dashboard ─────────────────────────────────────────
+ *
+ * This suite asserted a "Monthly revenue" section long after the dashboard's
+ * revenue chart had become a week-on-week comparison, so it was failing on a
+ * section the product had deliberately replaced — and, worse, reading a sheet
+ * that no longer existed, which threw rather than failing a check. The shape
+ * it feeds and the sections it expects follow buildSections; what it ASSERTS
+ * is unchanged, because the property being tested never depended on which
+ * chart the dashboard happened to draw.
+ *
  * Run with: npm run verify:dashboard-export
  */
 const fs = require('fs');
@@ -68,10 +78,19 @@ const DATA = {
   totalInvoiceAmount: 412000000, totalPaid: 260000000, outstanding: 152000000,
   totalDue: 38000000, totalRevenue: 512000000, rangedRevenue: 91000000,
   ytdRevenue: 260000000, collectionRate: 63.1, overdueCount: 41, oldestUnpaidDays: 212,
-  monthlyRevenue: Array.from({ length: 12 }, (_, i) => ({
-    label: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][i],
-    amount: (i + 1) * 1000000,
-  })),
+  /*
+   * This week against last week, which is what the dashboard's revenue chart
+   * became. The last two days have not happened yet — the export writes those
+   * as a dash rather than as zero, and that distinction is checked below.
+   */
+  weekComparison: {
+    days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label, i) => ({
+      label,
+      previous: (i + 1) * 400000,
+      current: i < 5 ? (i + 1) * 500000 : 0,
+      future: i >= 5,
+    })),
+  },
   propertyStatusMap: { available: 60, sold: 48, reserved: 20 },
   leadStatusMap: { new: 120, contacted: 90, won: 30, lost: 44 },
   conversionRate: 10.4,
@@ -96,14 +115,20 @@ const flat = JSON.stringify(sections);
 console.log('\n── The report is built from data, not from the screen ───────────');
 
 check('Every section the data supports is present',
-  ['Summary', 'Finance', 'Monthly revenue', 'Properties by status',
+  ['Summary', 'Finance', 'This week vs last week', 'Properties by status',
     'Leads by status', 'Top due payments', 'Realtor leaderboard', 'Support']
     .every((t) => titles.includes(t)),
   titles.join(' · '));
 
-check('All twelve months are included, not the few a chart had room for',
-  ['Jan', 'Jun', 'Dec'].every((m) => flat.includes(`"${m}"`)),
-  'a widget showing a rolling six months still exports the full year');
+check('Every day of the comparison is included, both weeks of it',
+  ['Mon', 'Wed', 'Sun'].every((d) => flat.includes(`"${d}"`))
+    && sections.find((s) => s.title === 'This week vs last week').body.length === 7,
+  'a chart narrow enough to drop the weekend still exports all seven days');
+
+check('A day that has not happened is a dash, not a zero',
+  sections.find((s) => s.title === 'This week vs last week').body
+    .filter((row) => row[2] === '—').length === 2,
+  'a reader months later cannot tell "no sales on Saturday" from "Saturday had not happened"');
 
 check('Support figures survive even though that widget sits far down the page',
   flat.includes('Average resolution (hours)') && flat.includes('18.4'),
@@ -133,8 +158,8 @@ console.log('\n── An empty section is dropped, not left as a bare heading �
     totalProperties: 3, totalClients: 4, openTickets: 1,
   }, '');
   const sparseTitles = sparse.map((s) => s.title);
-  check('No monthly revenue means no "Monthly revenue" heading',
-    !sparseTitles.includes('Monthly revenue'),
+  check('No week comparison means no "This week vs last week" heading',
+    !sparseTitles.includes('This week vs last week'),
     'an empty heading over blank space reads as a rendering fault');
   check('No leads means no "Leads by status"', !sparseTitles.includes('Leads by status'));
   check('Summary and Finance are always there, being the figures that always exist',
@@ -178,9 +203,9 @@ console.log('\n── The files themselves ────────────�
   check('Excel: one sheet per section, so nothing is merged away',
     sheetNames.length === sections.length,
     sheetNames.join(' · '));
-  check('Excel: the monthly sheet holds all twelve rows plus a header',
-    workbook.getWorksheet('Monthly revenue').rowCount === 13,
-    `${workbook.getWorksheet('Monthly revenue').rowCount} rows`);
+  const week = workbook.getWorksheet('This week vs last week');
+  check('Excel: the week sheet holds all seven days plus a header',
+    week?.rowCount === 8, `${week?.rowCount ?? 'no such sheet'} rows`);
 
   // ── PDF ──────────────────────────────────────────────────────────────────
   const { jsPDF } = require('jspdf');
