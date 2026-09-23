@@ -9,6 +9,7 @@ import FieldMark from '../../components/ui/FieldMark';
 import { useCurrency } from '../../context/useAppearance';
 import { extractError } from '../../utils/extractError';
 import { plural } from '../../utils/plural';
+import CsvFileInput from '../../components/common/CsvFileInput';
 import {
   listLedgerAccounts, listJournal, getJournalEntry, createManualJournal,
   reverseJournalEntry, importJournalCsv, trialBalance,
@@ -464,14 +465,16 @@ export default function LedgerPage() {
       <Modal open={showImport} onClose={() => !busy && setShowImport(false)} title="Import a journal" size="lg">
         <div className="space-y-3">
           <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            Paste a CSV with <strong>account, debit, credit</strong> columns — a payroll bureau&apos;s
+            A CSV or Excel file with <strong>account, debit, credit</strong> columns — a payroll bureau&apos;s
             monthly summary, a depreciation schedule kept in a spreadsheet. A date and memo column
             are used if present. It posts through the same checks as a journal typed by hand.
           </p>
-          <textarea
-            rows={10} value={csv} onChange={(e) => setCsv(e.target.value)}
-            placeholder={'account,debit,credit,date,memo\n5210,1250000,,2026-09-30,September payroll\n2330,,150000,2026-09-30,PAYE\n1020,,1100000,2026-09-30,Net pay'}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs focus:border-blue-500 focus:outline-none"
+          <CsvFileInput
+            value={csv}
+            onChange={(text) => { setCsv(text); setImportErrors([]); }}
+            onError={(message) => setImportErrors([message])}
+            label="The journal"
+            hint="Columns: account, debit, credit — and optionally date and memo"
           />
           <Input label="Date (if the file has no date column)" type="date" value={entryDate}
             onChange={(e) => setEntryDate(e.target.value)} />

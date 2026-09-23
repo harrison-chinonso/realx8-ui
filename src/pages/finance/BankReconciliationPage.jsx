@@ -6,6 +6,7 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import FieldMark from '../../components/ui/FieldMark';
 import CsvFileInput from '../../components/common/CsvFileInput';
+import { bankOptions, isKnownBank } from '../../data/nigerianBanks';
 import { useCurrency } from '../../context/useAppearance';
 import { extractError } from '../../utils/extractError';
 import {
@@ -43,6 +44,27 @@ const TONE = {
   unmatched: 'warning', matched: 'success', posted: 'info', ignored: 'muted',
 };
 
+const MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+/**
+ * The two dates an ambiguous cell could be, written out.
+ *
+ * "03/08/2026 is either 3 August 2026 or 8 March 2026" is a question somebody
+ * can answer. The first version of this built the sentence from the raw parts
+ * and produced "the 3th of month 8", which is a question about arithmetic.
+ */
+const bothReadings = (raw) => {
+  const parts = String(raw || '').match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})/);
+  if (!parts) return null;
+  const [, first, second, rawYear] = parts;
+  const year = rawYear.length === 2 ? `20${rawYear}` : rawYear;
+  const asDate = (day, month) => `${Number(day)} ${MONTHS[Number(month) - 1]} ${year}`;
+  return { dayFirst: asDate(first, second), monthFirst: asDate(second, first) };
+};
+
 export default function BankReconciliationPage() {
   const fmt = useCurrency();
   const show = useMemo(() => (minor) => fmt(Number(minor || 0) / 100), [fmt]);
@@ -67,6 +89,8 @@ export default function BankReconciliationPage() {
   const [preview, setPreview] = useState(null);
   const [problems, setProblems] = useState([]);
   const [sources, setSources] = useState([]);
+  const [otherBank, setOtherBank] = useState(false);
+  const { alive, gone } = useMemo(() => bankOptions(), []);
 
   const [posting, setPosting] = useState(null);
   const [postAccount, setPostAccount] = useState('');
@@ -129,6 +153,7 @@ export default function BankReconciliationPage() {
   };
 
   const lastLock = locks.find((row) => String(row.account_id) === String(accountId));
+  const readings = preview?.ambiguous_example ? bothReadings(preview.ambiguous_example) : null;
 
   return (
     <div className="space-y-4">
@@ -334,40 +359,73 @@ export default function BankReconciliationPage() {
         <div className="space-y-3 text-sm">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">Which bank<FieldMark /></span>
-              <Select value={source} onChange={(e) => setSource(e.target.value)}>
-                <option value="">Not saved — read the columns from the file</option>
-                {sources.map((name) => <option key={name} value={name}>{name}</option>)}
+              <span className="text-sm font-medium text-slate-700">Which bank<FieldMark required /></span>
+              <Select
+                value={otherBank ? '__other__' : source}
+                onChange={(e) => {
+                  if (e.target.value === '__other__') { setOtherBank(true); setSource(''); return; }
+                  setOtherBank(false);
+                  setSource(e.target.value);
+                }}
+              >
+                <option value="">Choose…</option>
+                {/*
+                  Banks this company has already imported from come first: it
+                  is almost always one of them again, and those are the ones
+                  with a saved column mapping behind them.
+                */}
+                {sources.length > 0 && (
+                  <optgroup label="Imported before">
+                    {sources.map((name) => <option key={name} value={name}>{name}</option>)}
+                  </optgroup>
+                )}
+                <optgroup label="Nigerian banks">
+                  {alive.filter((bank) => !sources.includes(bank.name)).map((bank) => (
+                    <option key={bank.name} value={bank.name}>
+                      {bank.name}{bank.short ? ` (${bank.short})` : ''}
+                    </option>
+                  ))}
+                </optgroup>
+                {/*
+                  Kept, because statements from those years still need
+                  importing — and separated, so nobody picks one for an
+                  account opened last week.
+                */}
+                <optgroup label="No longer trading">
+                  {gone.map((bank) => (
+                    <option key={bank.name} value={bank.name}>
+                      {bank.name} — {bank.former}
+                    </option>
+                  ))}
+                </optgroup>
+                <option value="__other__">Another bank — type its name</option>
               </Select>
             </label>
-            <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">This bank writes 03/04 as<FieldMark /></span>
-              <Select value={dayFirst} onChange={(e) => setDayFirst(e.target.value)}>
-                <option value="true">the third of April</option>
-                <option value="false">the fourth of March</option>
-              </Select>
-            </label>
+
+            {otherBank && (
+              <Input
+                label="The bank's name"
+                required
+                value={source}
+                onChange={(e) => setSource(e.target.value)}
+                placeholder="As it appears on the statement"
+              />
+            )}
           </div>
-          {!source && (
-            <Input
-              label="Name this bank, so next month's columns are already known"
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              placeholder="GTBank"
-            />
+
+          {otherBank && source.trim() && isKnownBank(source) && (
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              {source.trim()} is already in the list above — picking it there keeps the name
+              consistent, so next month&apos;s import finds the columns you set today.
+            </p>
           )}
-          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            The date format cannot be worked out from the file: a month where every day is below
-            the thirteenth reads the same either way and would put every transaction in the wrong
-            month. It is asked rather than guessed.
-          </p>
 
           <CsvFileInput
             value={csv}
             onChange={(text) => { setCsv(text); setPreview(null); setProblems([]); }}
             onError={setFailed}
             label="The statement"
-            placeholder="Date,Narration,Reference,Withdrawals,Lodgement"
+            hint="The CSV or Excel file your bank gives you — date, narration, reference and the amounts"
           />
 
           {problems.length > 0 && (
@@ -380,15 +438,63 @@ export default function BankReconciliationPage() {
           )}
 
           {preview && (
-            <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700">
-              <p>
-                <strong>{preview.to_import}</strong> line(s) to import
-                {preview.already_imported > 0 && `, ${preview.already_imported} already seen`}
-                {preview.from && `, ${preview.from} to ${preview.to}`}.
-              </p>
-              <p>
-                {show(preview.money_in_minor)} in, {show(Math.abs(preview.money_out_minor))} out.
-              </p>
+            <div className="space-y-2">
+              <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <p>
+                  <strong>{preview.to_import}</strong> line(s) to import
+                  {preview.already_imported > 0 && `, ${preview.already_imported} already seen`}
+                  {preview.from && `, ${preview.from} to ${preview.to}`}.
+                </p>
+                <p>
+                  {show(preview.money_in_minor)} in, {show(Math.abs(preview.money_out_minor))} out.
+                </p>
+              </div>
+
+              {/*
+                The date question, asked only where the file leaves it open.
+
+                An all-numeric date with both parts at twelve or below is the
+                only ambiguous case: "03 Aug 2026" says which it is, and so
+                does 25/04. Asking everybody every time made a reader answer a
+                question their file had already answered, in wording that
+                described neither of the formats in front of them.
+              */}
+              {preview.ambiguous_dates > 0 ? (
+                <div className="space-y-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  <p>
+                    {preview.ambiguous_dates} date{preview.ambiguous_dates === 1 ? '' : 's'} in this
+                    file could be read two ways.
+                    {readings && (
+                      <>
+                        {' '}<strong>{preview.ambiguous_example}</strong> is either{' '}
+                        <strong>{readings.dayFirst}</strong> or{' '}
+                        <strong>{readings.monthFirst}</strong>. Which does this bank mean?
+                      </>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                      className="h-8 w-auto"
+                      value={dayFirst}
+                      onChange={(e) => setDayFirst(e.target.value)}
+                    >
+                      <option value="true">
+                        {readings ? readings.dayFirst : 'Day first'}
+                      </option>
+                      <option value="false">
+                        {readings ? readings.monthFirst : 'Month first'}
+                      </option>
+                    </Select>
+                    <span className="text-amber-800">
+                      Check it again after changing this. The answer is remembered for this bank.
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="rounded-lg bg-green-50 px-3 py-2 text-xs text-green-800">
+                  The dates in this file say which they are — nothing to choose.
+                </p>
+              )}
             </div>
           )}
 

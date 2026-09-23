@@ -132,8 +132,9 @@ export default function MigrationPage() {
         <h1 className="text-xl font-bold text-slate-800">Bring the books in</h1>
         <p className="text-sm text-slate-500">
           A company moving its statutory books here arrives with balances and open items. This is
-          where they go. Historical transactions are deliberately not imported — a year of
-          comparatives goes in as one summary journal per month.
+          where they go — as a CSV or an Excel file, whichever their old package exports. Historical
+          transactions are deliberately not imported: a year of comparatives goes in as one summary
+          journal per month.
         </p>
       </div>
 
@@ -257,17 +258,16 @@ export default function MigrationPage() {
           value={csv}
           onChange={(text) => { setCsv(text); setPreview(null); setProblems([]); }}
           onError={setFailed}
-          rows={10}
           label={step === 'chart'
             ? 'Their chart, exported'
             : step === 'balances'
               ? 'Their closing trial balance'
               : 'The open items'}
-          placeholder={step === 'chart'
-            ? 'Code,Name,Type,Parent'
+          hint={step === 'chart'
+            ? 'Columns: code, name, type, parent'
             : step === 'balances'
-              ? 'Account,Name,Debit,Credit'
-              : 'Customer,Invoice No,Date,Due Date,Amount,Paid'}
+              ? 'Columns: account, name, debit, credit'
+              : 'Columns: customer, document number, date, due date, amount, paid'}
         />
 
         {problems.length > 0 && (

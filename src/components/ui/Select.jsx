@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  Fragment, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState,
+} from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../../lib/cn';
 import FieldMark from './FieldMark';
@@ -21,19 +23,39 @@ import FieldMark from './FieldMark';
 
 const isOptionElement = (node) => node?.props && node.props.value !== undefined;
 
+/**
+ * An <optgroup>: a label and children, but no value of its own.
+ *
+ * Worth recognising rather than skipping. The walker used to test only for a
+ * `value` prop, so a group was not an option AND its children were never
+ * reached — a grouped list rendered as whatever plain options happened to sit
+ * outside the groups, with no error anywhere. A fifty-bank picker came out
+ * with two entries in it.
+ */
+const isGroupElement = (node) => node?.props
+  && node.props.value === undefined
+  && node.props.label !== undefined
+  && node.props.children !== undefined;
+
 /** Accepts either an `options` array or <option> children, so call sites can migrate as-is. */
 function normaliseOptions(options, children) {
   if (Array.isArray(options)) {
     return options.map((o) => (
       typeof o === 'object' && o !== null
-        ? { value: String(o.value ?? ''), label: String(o.label ?? o.value ?? ''), disabled: !!o.disabled }
-        : { value: String(o), label: String(o), disabled: false }
+        ? {
+          value: String(o.value ?? ''),
+          label: String(o.label ?? o.value ?? ''),
+          disabled: !!o.disabled,
+          group: o.group ?? null,
+        }
+        : { value: String(o), label: String(o), disabled: false, group: null }
     ));
   }
   const flat = [];
-  const walk = (nodes) => {
+  const walk = (nodes, group = null) => {
     if (nodes === null || nodes === undefined || nodes === false) return;
-    if (Array.isArray(nodes)) { nodes.forEach(walk); return; }
+    if (Array.isArray(nodes)) { nodes.forEach((node) => walk(node, group)); return; }
+    if (isGroupElement(nodes)) { walk(nodes.props.children, String(nodes.props.label)); return; }
     if (!isOptionElement(nodes)) return;
     const { value, children: text, disabled } = nodes.props;
     flat.push({
@@ -41,6 +63,7 @@ function normaliseOptions(options, children) {
       // <option>{a}{b}</option> arrives as an array; join so labels never render "[object Object]".
       label: Array.isArray(text) ? text.filter((t) => typeof t !== 'object').join('') : String(text ?? ''),
       disabled: !!disabled,
+      group,
     });
   };
   walk(children);
@@ -74,6 +97,8 @@ export default function Select({
   required = false,
   name,
   placeholder = 'Select…',
+  /* true / false to force a search box; omitted, it appears on long lists. */
+  searchable,
   id,
   ...props
 }) {
@@ -90,12 +115,41 @@ export default function Select({
 
   const triggerRef = useRef(null);
   const listRef = useRef(null);
+  const searchRef = useRef(null);
   const typeahead = useRef({ buffer: '', at: 0 });
   const reactId = useId();
   const listId = `${id || reactId}-listbox`;
 
-  const selectedIndex = items.findIndex((o) => o.value === current);
-  const selected = selectedIndex >= 0 ? items[selectedIndex] : null;
+  /**
+   * A search box, once the list is long enough to need one.
+   *
+   * Typeahead alone was the only way through a long list, and it has two
+   * problems: nothing on screen says it exists, and it matches only the START
+   * of a label — so "IBTC" never finds "Stanbic IBTC Bank Plc". A sixty-bank
+   * picker is unusable that way.
+   *
+   * The threshold is deliberate rather than always-on: a search box above four
+   * options is noise, and it costs a keystroke on every list somebody was
+   * going to click anyway.
+   */
+  const [search, setSearch] = useState('');
+  const canSearch = searchable === undefined ? items.length >= 10 : Boolean(searchable);
+
+  /*
+   * Matched anywhere in the label, and in the GROUP name too — somebody
+   * looking for a microfinance bank types "microfinance", which is the
+   * heading rather than part of most of the names under it.
+   */
+  const query = search.trim().toLowerCase();
+  const shown = useMemo(() => (
+    canSearch && query
+      ? items.filter((option) => option.label.toLowerCase().includes(query)
+        || String(option.group || '').toLowerCase().includes(query))
+      : items
+  ), [items, canSearch, query]);
+
+  const selectedIndex = shown.findIndex((o) => o.value === current);
+  const selected = items.find((o) => o.value === current) || null;
 
   const position = useCallback(() => {
     const el = triggerRef.current;
@@ -108,6 +162,34 @@ export default function Select({
   }, []);
 
   useLayoutEffect(() => { if (open) position(); }, [open, position]);
+
+  /*
+   * A fresh query each time it opens, and focus in the box.
+   *
+   * Reopening onto last time's search would show a filtered list with no
+   * obvious reason, and the first thing somebody does with a long list is
+   * type.
+   */
+  useEffect(() => {
+    if (!open) { setSearch(''); return; }
+    if (canSearch) {
+      // After the portal has painted, or there is nothing to focus yet.
+      const id = requestAnimationFrame(() => searchRef.current?.focus());
+      return () => cancelAnimationFrame(id);
+    }
+    return undefined;
+  }, [open, canSearch]);
+
+  /*
+   * Typing narrows the list, so the old highlight may no longer be in it.
+   *
+   * Keyed on the QUERY alone on purpose: re-running this whenever the list
+   * length changed would drag the highlight back to the top every time the
+   * options were rebuilt, which on a parent that recreates its array each
+   * render is every keystroke somewhere else on the page.
+   */
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open && canSearch) setActiveIndex(shown.length ? 0 : -1); }, [query]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -156,10 +238,11 @@ export default function Select({
   };
 
   const step = (from, delta) => {
-    const n = items.length;
+    const n = shown.length;
+    if (!n) return -1;
     for (let i = 1; i <= n; i += 1) {
       const next = (from + delta * i + n * i) % n;
-      if (!items[next].disabled) return next;
+      if (!shown[next].disabled) return next;
     }
     return from;
   };
@@ -187,30 +270,36 @@ export default function Select({
       case 'Home':
         e.preventDefault(); setActiveIndex(step(-1, 1)); break;
       case 'End':
-        e.preventDefault(); setActiveIndex(step(items.length, -1)); break;
+        e.preventDefault(); setActiveIndex(step(shown.length, -1)); break;
       case 'Enter':
       case ' ':
-        e.preventDefault(); commit(items[activeIndex]); break;
+        e.preventDefault(); commit(shown[activeIndex]); break;
       default:
-        // Typeahead: consecutive keystrokes within a second build one search string.
-        if (e.key.length === 1) {
+        // Typeahead: consecutive keystrokes within a second build one search
+        // string. Skipped where a search box is shown — that IS the typeahead,
+        // and running both would fight over the highlight.
+        if (!canSearch && e.key.length === 1) {
           const now = e.timeStamp;
           const t = typeahead.current;
           t.buffer = now - t.at < 1000 ? t.buffer + e.key : e.key;
           t.at = now;
           const q = t.buffer.toLowerCase();
-          const hit = items.findIndex((o) => !o.disabled && o.label.toLowerCase().startsWith(q));
+          const hit = shown.findIndex((o) => !o.disabled && o.label.toLowerCase().startsWith(q));
           if (hit >= 0) setActiveIndex(hit);
         }
     }
   };
 
   const panel = open && rect ? createPortal(
+    /*
+     * The popup is the container; the LISTBOX is the options inside it.
+     *
+     * With a search box in the panel the two cannot be the same element: a
+     * listbox whose children include a textbox is not a listbox, and a screen
+     * reader announces the option count wrongly for the rest of the session.
+     */
     <div
       ref={listRef}
-      role="listbox"
-      id={listId}
-      aria-label={typeof label === 'string' ? label : undefined}
       className="fixed z-[100] overflow-y-auto rounded-md border p-1 shadow-pop"
       style={{
         top: dropUp ? undefined : rect.bottom + 4,
@@ -223,16 +312,59 @@ export default function Select({
         borderColor: 'var(--line)',
       }}
     >
-      {items.length === 0 ? (
-        <div className="px-2 py-6 text-center text-sm" style={{ color: 'var(--content-muted)' }}>
-          No options
+      {canSearch && (
+        <div className="sticky top-0 z-10 p-1" style={{ backgroundColor: 'var(--surface)' }}>
+          <input
+            ref={searchRef}
+            type="text"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Type to narrow the list…"
+            aria-label="Search the list"
+            aria-controls={listId}
+            className="w-full rounded-sm border px-2 py-1.5 text-sm focus-visible:outline-none"
+            style={{
+              borderColor: 'var(--line)',
+              backgroundColor: 'var(--surface-sunken)',
+              color: 'var(--content)',
+            }}
+          />
         </div>
-      ) : items.map((option, index) => {
+      )}
+
+      <div
+        role="listbox"
+        id={listId}
+        aria-label={typeof label === 'string' ? label : undefined}
+      >
+      {shown.length === 0 ? (
+        <div className="px-2 py-6 text-center text-sm" style={{ color: 'var(--content-muted)' }}>
+          {query ? `Nothing matches “${search.trim()}”` : 'No options'}
+        </div>
+      ) : shown.map((option, index) => {
         const isSelected = option.value === current;
         const isActive = index === activeIndex;
+        /*
+          A heading when the group changes, so a long list reads as sections
+          rather than as one run. Not focusable and not an option — arrow keys
+          and typeahead step over it, because it is not a thing to choose.
+        */
+        const heading = option.group && option.group !== shown[index - 1]?.group
+          ? (
+            <div
+              key={`group-${option.group}`}
+              className="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide"
+              style={{ color: 'var(--content-subtle)' }}
+            >
+              {option.group}
+            </div>
+          )
+          : null;
         return (
+          <Fragment key={`${option.value}-${index}`}>
+            {heading}
           <div
-            key={`${option.value}-${index}`}
             data-index={index}
             role="option"
             aria-selected={isSelected}
@@ -257,8 +389,10 @@ export default function Select({
             )}
             <span className="truncate">{option.label}</span>
           </div>
+          </Fragment>
         );
       })}
+      </div>
     </div>,
     document.body,
   ) : null;
