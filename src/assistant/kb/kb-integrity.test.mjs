@@ -1,5 +1,7 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 /**
  * Every recipe must point at a screen that exists.
@@ -167,6 +169,32 @@ const dangerous = map.filter((entry) => /\/(create|new|approve|settings|roles)\b
     && !entry.unverified && !entry.superiorAdminOnly);
 check('No create/approve/configure screen is left unguarded',
   dangerous.length === 0, dangerous.map((e) => e.route).join(', '));
+
+/**
+ * The committed map is what the generator would write today.
+ *
+ * ── Why this is worth a check of its own ────────────────────────────────────
+ *
+ * The map is a build artefact that lives in the repository, and it went stale
+ * without anybody noticing: the generator learned about permissions, role
+ * limits and unverifiable screens, and the committed file was still the older
+ * shape carrying a single `permission` string. Every rule-based check above
+ * then read `permissions` as absent and reported three screens as unguarded —
+ * a failure that described the artefact rather than the application, and
+ * survived for that reason.
+ *
+ * Regenerated into a temporary file rather than over the real one: a test that
+ * fixes what it is testing reports success on a repository that is still
+ * wrong.
+ */
+const fresh = path.join(os.tmpdir(), `app-map-check-${process.pid}.json`);
+execFileSync('node', [path.join(root, 'scripts/build-assistant-kb.mjs'), '--out', fresh], { stdio: 'ignore' });
+const generated = fs.readFileSync(fresh, 'utf8');
+fs.unlinkSync(fresh);
+const committed = fs.readFileSync(path.join(kb, 'app-map.generated.json'), 'utf8');
+check('The committed app map is what the generator writes today',
+  generated === committed,
+  generated === committed ? `${map.length} screens` : 'run: npm run assistant:build-kb');
 
 console.log(`\n  ${pass} passed, ${fail} failed\n`);
 process.exit(fail ? 1 : 0);

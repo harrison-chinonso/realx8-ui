@@ -234,7 +234,15 @@ for (const entry of [...nav, ...unlinked]) {
 
 const map = [...byRoute.values()].sort((a, b) => a.route.localeCompare(b.route));
 
-const out = path.join(root, 'src/assistant/kb/app-map.generated.json');
+/*
+ * `--out <path>` so the integrity test can regenerate into a temporary file
+ * and compare, rather than either trusting the committed artefact or
+ * rewriting it as a side effect of running tests. Default unchanged.
+ */
+const outFlag = process.argv.indexOf('--out');
+const out = outFlag !== -1 && process.argv[outFlag + 1]
+  ? path.resolve(process.argv[outFlag + 1])
+  : path.join(root, 'src/assistant/kb/app-map.generated.json');
 fs.writeFileSync(out, `${JSON.stringify(map, null, 2)}\n`);
 
 console.log(`app map: ${map.length} screens (${nav.length} in the menu, ${unlinked.length} reachable but unlinked)`);
