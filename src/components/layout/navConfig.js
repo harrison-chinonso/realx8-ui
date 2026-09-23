@@ -16,6 +16,7 @@ import {
   Users, UserCheck, Briefcase, UserCog, ShieldCheck,
   Target, Handshake, CheckSquare, GitBranch, BarChart2, Tags,
   FileText, AlertCircle, BookOpen, HardHat, KeyRound, Scale, CalendarCheck, Upload,
+  TrendingDown,
   Receipt, FileMinus, FilePlus, Landmark, CalendarDays, FolderOpen,
   DollarSign, Share2,
   FileEdit, Newspaper, Link2, LineChart,
@@ -168,27 +169,44 @@ export const NAV = [
   {
     section: 'Finance',
     primary: true,
+    /**
+     * Three sub-menus: money in, money out, and proving the books.
+     *
+     * ── Why this shape rather than by document type ─────────────────────────
+     *
+     * Finance had grown to twenty-odd screens grouped by what each one IS —
+     * Invoicing, Payments, Commission — which meant somebody chasing a
+     * question had to already know which document answered it. "Has the buyer
+     * paid?" and "what do we owe the contractor?" sat three clicks apart under
+     * headings that gave no hint which was which.
+     *
+     * Income, Expenditure and Reconciliation is how a finance officer already
+     * thinks about the day: what is owed to us, what we owe, and whether the
+     * two agree. Every screen answers a question in exactly one of those, so
+     * every screen has exactly one place to live.
+     *
+     * ── The sub-menus that were dissolved into it ───────────────────────────
+     *
+     * Invoicing, Payments and Commission are gone AS HEADINGS — the nav
+     * renders one level of nesting, so a group inside a group would simply not
+     * appear. Nothing they held was lost; each item moved to whichever of the
+     * three answers its question. Commission is expenditure: it is what the
+     * company pays a realtor.
+     *
+     * ── The realtor's own screens stay flat ─────────────────────────────────
+     *
+     * They are below these three rather than inside them. A realtor sees
+     * neither Income nor Expenditure nor Reconciliation — every item in all
+     * three is hidden from them — so nesting theirs would render as a heading
+     * holding one link, which is the problem flattening them solved before.
+     */
     items: [
+      /* ── Money owed to us, and money received ───────────────────────────── */
       {
-        label: 'Invoicing', icon: FileText,
+        label: 'Income', icon: TrendingUp,
         children: [
           { to: '/finance/invoices',     label: 'All Invoices', icon: FileText,    permission: 'finance.invoices.view' },
           { to: '/finance/invoices/due', label: 'Due Invoices', icon: AlertCircle, permission: 'finance.invoices.view' },
-        ],
-      },
-      {
-        label: 'Payments', icon: CreditCard,
-        children: [
-          /**
-           * Two screens, two different things, and the split is the point.
-           *
-           * "All Payments" is the settled ledger — every row in it is money
-           * that has already moved. "Payment Approvals" is the queue of
-           * receipts a buyer has submitted and nobody has decided on yet.
-           * They read from different tables and neither can show the other's
-           * rows, which is why the first has no Pending tab.
-           */
-          { to: '/finance/transactions', label: 'All Payments', icon: CreditCard, permission: 'finance.invoices.view' },
           /**
            * `badge` names a count in navBadgeStore; the pill is drawn only when
            * that count is above zero. `badgeLabel` completes the sentence a
@@ -200,34 +218,92 @@ export const NAV = [
             permission: 'finance.commissions.view',
             badge: 'pendingApprovals', badgeLabel: 'payments awaiting approval',
           },
+          /**
+           * Two screens, two different things, and the split is the point.
+           *
+           * "All Payments" is the settled ledger — every row in it is money
+           * that has already moved. "Payment Approvals" above is the queue of
+           * receipts a buyer has submitted and nobody has decided on yet. They
+           * read from different tables and neither can show the other's rows,
+           * which is why the first has no Pending tab.
+           */
+          { to: '/finance/transactions', label: 'All Payments', icon: CreditCard, permission: 'finance.invoices.view' },
           { to: '/finance/payment-plans',     label: 'Payment Plans',     icon: CalendarDays, permission: 'finance.invoices.view' },
           { to: '/finance/installment-plans', label: 'Installment Plans', icon: CalendarDays, permission: 'finance.installment-plans.view' },
           { to: '/finance/payment-reminders', label: 'Payment Reminders', icon: Bell,         permission: 'finance.payment-reminders.manage' },
-          // Lives with the payment settings it configures: these are the accounts
-          // buyers are shown for a bank deposit.
-          { to: '/finance/bank-accounts',     label: 'Bank Accounts',     icon: Landmark,     permission: 'finance.bank-accounts.manage' },
+          /**
+           * Both carry the SAME badge count, because the queue is one queue.
+           *
+           * A note waiting for approval is waiting whichever kind it is, and an
+           * approver who has to remember to check two screens will eventually
+           * check neither.
+           */
+          {
+            to: '/finance/credit-notes', label: 'Credit Notes', icon: FileMinus,
+            permission: 'finance.credit-notes.manage',
+            badge: 'pendingNotes', badgeLabel: 'notes awaiting approval',
+          },
+          /*
+           * The moment a sale becomes revenue, which is why it is income
+           * rather than a property screen.
+           */
+          {
+            to: '/finance/handovers', label: 'Handovers', icon: KeyRound,
+            permission: 'finance.invoices.view',
+          },
+          // The accounts a buyer is shown for a deposit — a payment setting,
+          // so it sits at the end of the money-in group rather than in a
+          // settings screen nobody would look in.
+          { to: '/finance/bank-accounts', label: 'Bank Accounts', icon: Landmark, permission: 'finance.bank-accounts.manage' },
         ],
       },
+
+      /* ── Money we owe, and money paid out ───────────────────────────────── */
       {
-        label: 'Commission', icon: DollarSign,
+        label: 'Expenditure', icon: TrendingDown,
         children: [
+          {
+            to: '/finance/payables', label: 'Payables', icon: FilePlus,
+            permission: 'finance.bills.view',
+            badgeLabel: 'bills awaiting approval',
+          },
+          /*
+           * Money back to a buyer who paid too much.
+           *
+           * It was briefly filed under Income, on the reasoning that a refund
+           * arises from a receipt and so is a receivables question. That is
+           * where it came FROM, not what anybody does here: this screen is a
+           * queue of payments to approve and make, which is the same job as
+           * the two entries either side of it. Somebody asking "what do we
+           * have to pay out?" looks in one place, and every answer is now in
+           * it.
+           */
+          { to: '/finance/refunds', label: 'Refunds', icon: FileMinus, permission: 'finance.invoices.view' },
           /**
            * Running a payout is what moves money, so it is gated on manage.
            * Reading what the engine has cost is not, which is why analytics
            * takes the view permission — an admin reviewing the bill should not
            * need the permission that changes what it will be.
            */
-          { to: '/finance/commission-payouts', label: 'Payouts', icon: DollarSign, permission: 'finance.commissions.manage' },
-          { to: '/finance/commission-plans',   label: 'Plans',   icon: DollarSign, permission: 'finance.commissions.manage' },
+          { to: '/finance/commission-payouts', label: 'Commission Payouts', icon: DollarSign, permission: 'finance.commissions.manage' },
+          { to: '/finance/commission-plans',   label: 'Commission Plans',   icon: DollarSign, permission: 'finance.commissions.manage' },
           /*
            * "Commission Analytics", not "Financial Analytics".
            *
            * It reports on commissions and nothing else. A name promising
            * company-wide figures would send an admin here for revenue or cash
-           * position and leave them concluding the numbers were missing —
-           * the same trap two identically named realtor screens set above.
+           * position and leave them concluding the numbers were missing.
            */
           { to: '/finance/commission-analytics', label: 'Commission Analytics', icon: DollarSign, permission: 'finance.commissions.view' },
+          /*
+           * What a development has cost so far. Expenditure rather than
+           * Reconciliation: the question it answers is "what have we spent on
+           * this estate", and the answer is a list of bills.
+           */
+          {
+            to: '/finance/project-cost', label: 'Project Cost', icon: HardHat,
+            permission: 'accounting.view',
+          },
           /**
            * The older flat-rate payables are deliberately NOT in this menu.
            *
@@ -244,18 +320,44 @@ export const NAV = [
            */
         ],
       },
+
+      /* ── Whether the two agree, and closing the books ───────────────────── */
+      {
+        label: 'Reconciliation', icon: Scale,
+        /*
+         * In the order the work actually happens: agree the bank, read what
+         * the ledger says, read what it adds up to, then close the month. The
+         * last two are used rarely — Taxes when a rate changes, Bring books in
+         * once, when a company arrives.
+         */
+        children: [
+          {
+            to: '/finance/bank-reconciliation', label: 'Bank Reconciliation', icon: Landmark,
+            permission: 'accounting.view',
+          },
+          { to: '/finance/ledger',     label: 'The Ledger', icon: BookOpen, permission: 'accounting.view' },
+          { to: '/finance/statements', label: 'Statements', icon: Scale,    permission: 'accounting.view' },
+          {
+            to: '/finance/periods', label: 'Period Close', icon: CalendarCheck,
+            permission: 'accounting.periods.manage',
+          },
+          { to: '/finance/taxes',   label: 'Taxes',   icon: Tag,        permission: 'finance.taxes.manage' },
+          { to: '/finance/reports', label: 'Reports', icon: FolderOpen, permission: 'finance.reports.view' },
+          {
+            to: '/finance/migration', label: 'Bring Books In', icon: Upload,
+            permission: 'accounting.settings.manage',
+          },
+        ],
+      },
+
       /**
-       * A realtor's two money screens, directly under Finance.
+       * A realtor's two money screens, flat and below the three.
        *
-       * Neither is inside the Commission sub-menu, and the reason is what a
-       * realtor sees rather than how the entries are grouped: every other item
-       * in that sub-menu is hidden from them, so it rendered as Finance →
-       * Commission → one link — a heading that exists only to be clicked
-       * through. Flattened, Finance opens onto the two screens themselves.
-       *
-       * Staff are unaffected: the Commission sub-menu still holds payouts,
-       * plans and analytics, which is a real grouping for the people who can
-       * see all three.
+       * Neither is inside a sub-menu, and the reason is what a realtor sees
+       * rather than how the entries are grouped: every item in Income,
+       * Expenditure and Reconciliation is hidden from them, so nesting these
+       * would render as a heading holding one link — something to be clicked
+       * through rather than read.
        */
       /**
        * ONE entry for the earner, not two. The statement carries both the
@@ -270,82 +372,6 @@ export const NAV = [
        * they come here with, and what they owe is the one they leave with.
        */
       { to: '/finance/my-notes', label: 'My Credit Notes', icon: FileMinus, permission: null, showForTypes: ['realtor'] },
-      /**
-       * Both carry the SAME badge count, because the queue is one queue.
-       *
-       * A note waiting for approval is waiting whichever kind it is, and an
-       * approver who has to remember to check two screens will eventually check
-       * neither. The count is the combined figure; the row you open filters it
-       * to its own kind.
-       */
-      {
-        to: '/finance/credit-notes', label: 'Credit Notes', icon: FileMinus,
-        permission: 'finance.credit-notes.manage',
-        badge: 'pendingNotes', badgeLabel: 'notes awaiting approval',
-      },
-      /*
-       * Debit Notes is gone (ACC-0.6). It was one screen for three unrelated
-       * things — paying a commission, refunding an overpayment, and charging a
-       * realtor a fee — under a name that means none of them. Each has its own
-       * entry now.
-       */
-      {
-        to: '/finance/payables', label: 'Payables', icon: FilePlus,
-        permission: 'finance.bills.view',
-        badgeLabel: 'bills awaiting approval',
-      },
-      { to: '/finance/refunds', label: 'Refunds', icon: FileMinus, permission: 'finance.invoices.view' },
-      { to: '/finance/ledger',  label: 'The Ledger', icon: BookOpen, permission: 'accounting.view' },
-      /*
-       * Directly under the ledger, because that is what it reads. Distinct
-       * from Reports below, which is the sales and commission reporting that
-       * predates the accounting module and answers different questions.
-       */
-      {
-        to: '/finance/statements', label: 'Statements', icon: Scale,
-        permission: 'accounting.view',
-      },
-      /*
-       * After the statements, because that is the order of the work: read the
-       * month, then close it. Its own permission — closing is a stronger act
-       * than reading, and the people who do it are usually fewer.
-       */
-      /*
-       * Before Period close, because that is the order the work happens in:
-       * a month cannot be closed until its bank accounts are reconciled.
-       */
-      {
-        to: '/finance/bank-reconciliation', label: 'Bank reconciliation', icon: Landmark,
-        permission: 'accounting.view',
-      },
-      {
-        to: '/finance/periods', label: 'Period close', icon: CalendarCheck,
-        permission: 'accounting.periods.manage',
-      },
-      /*
-       * Last in the group and behind the chart's own permission: it is used
-       * once, when a company arrives, by whoever owns the chart of accounts.
-       */
-      {
-        to: '/finance/migration', label: 'Bring books in', icon: Upload,
-        permission: 'accounting.settings.manage',
-      },
-      /*
-       * The two halves of a developer's margin, kept next to each other on
-       * purpose: what a project cost, and when its sale becomes revenue. They
-       * post as one journal, so reading them from two distant places in the
-       * menu would misrepresent how they work.
-       */
-      {
-        to: '/finance/project-cost', label: 'Project cost', icon: HardHat,
-        permission: 'accounting.view',
-      },
-      {
-        to: '/finance/handovers', label: 'Handovers', icon: KeyRound,
-        permission: 'finance.invoices.view',
-      },
-      { to: '/finance/taxes',   label: 'Taxes',   icon: Tag,        permission: 'finance.taxes.manage' },
-      { to: '/finance/reports', label: 'Reports', icon: FolderOpen, permission: 'finance.reports.view' },
     ],
   },
 
