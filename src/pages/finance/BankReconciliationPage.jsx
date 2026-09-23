@@ -7,7 +7,7 @@ import Select from '../../components/ui/Select';
 import FieldMark from '../../components/ui/FieldMark';
 import CsvFileInput from '../../components/common/CsvFileInput';
 import { bankOptions, isKnownBank } from '../../data/nigerianBanks';
-import { useCurrency } from '../../context/useAppearance';
+import { useAppearance } from '../../context/useAppearance';
 import { extractError } from '../../utils/extractError';
 import {
   bankRecAccounts, bankMappings, importStatement, bankSuggestions, bankSummary,
@@ -44,6 +44,52 @@ const TONE = {
   unmatched: 'warning', matched: 'success', posted: 'info', ignored: 'muted',
 };
 
+/**
+ * The three shapes a statement's amounts come in, in the words a person would
+ * use to recognise their own file.
+ *
+ * Offered as a choice rather than worked out from which columns got mapped.
+ * Inferring it meant that mapping Inflow to a generic "amount" slot, while
+ * Outflow had been picked up as the debit column, silently read the file as
+ * two columns with nothing in the money-in side — every row came out as money
+ * going out, and the totals balanced while being backwards.
+ */
+const SHAPES = [
+  {
+    id: 'two_columns',
+    label: 'Two columns',
+    hint: 'One column for money in and another for money out — Inflow / Outflow, Credit / Debit, Lodgement / Withdrawal.',
+    fields: ['debit', 'credit'],
+  },
+  {
+    id: 'with_direction',
+    label: 'One amount, plus a column saying which way',
+    hint: 'A single amount column, and a separate column holding CR or DR.',
+    fields: ['amount', 'direction'],
+  },
+  {
+    id: 'signed',
+    label: 'One signed amount',
+    hint: 'A single column where money out is negative, bracketed, or marked DR inside the cell.',
+    fields: ['amount'],
+  },
+];
+
+/** [field, what to call it on screen] — the ones every shape needs. */
+const COMMON_FIELDS = [
+  ['date', 'Date'],
+  ['description', 'Narration'],
+  ['reference', 'Reference'],
+  ['balance', 'Balance'],
+];
+
+const FIELD_LABELS = {
+  debit: 'Money out',
+  credit: 'Money in',
+  amount: 'Amount',
+  direction: 'CR / DR column',
+};
+
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -66,8 +112,16 @@ const bothReadings = (raw) => {
 };
 
 export default function BankReconciliationPage() {
-  const fmt = useCurrency();
-  const show = useMemo(() => (minor) => fmt(Number(minor || 0) / 100), [fmt]);
+  /*
+   * Kobo shown, always — this is the one screen where they decide whether the
+   * account agrees. The application's usual formatter drops a trailing zero,
+   * so a statement total came out as ₦874,273.7, which reads like a figure
+   * that lost something on the way.
+   */
+  const { currencySymbol } = useAppearance();
+  const show = useMemo(() => (minor) => `${currencySymbol}${(Number(minor || 0) / 100)
+    .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  [currencySymbol]);
 
   const [accounts, setAccounts] = useState([]);
   const [accountId, setAccountId] = useState('');
@@ -87,6 +141,18 @@ export default function BankReconciliationPage() {
   const [source, setSource] = useState('');
   const [dayFirst, setDayFirst] = useState('true');
   const [preview, setPreview] = useState(null);
+  /*
+   * field → the file's own column heading. Empty until somebody corrects
+   * something; sent with the import and remembered against the bank.
+   */
+  const [columns, setColumns] = useState({});
+  /*
+   * 'only' or 'none' — the answer to what the reference column actually holds.
+   * Empty until asked, and only asked where the file gives cause to.
+   */
+  const [referenceChoice, setReferenceChoice] = useState('');
+  /* row number → the reference a person typed or accepted for that row. */
+  const [references, setReferences] = useState({});
   const [problems, setProblems] = useState([]);
   const [sources, setSources] = useState([]);
   const [otherBank, setOtherBank] = useState(false);
@@ -145,6 +211,10 @@ export default function BankReconciliationPage() {
       setLocks(await listReconciliations());
       return result;
     } catch (error) {
+      setProblems(error?.response?.data?.errors || []);
+      // Same as the preview: a refusal that carries the columns keeps the
+      // mapping panel up, so the complaint and its fix are on one screen.
+      if (error?.response?.data?.data?.header) setPreview(error.response.data.data);
       setFailed(extractError(error, 'That could not be done.'));
       return null;
     } finally {
@@ -153,6 +223,18 @@ export default function BankReconciliationPage() {
   };
 
   const lastLock = locks.find((row) => String(row.account_id) === String(accountId));
+  /*
+   * Chosen on screen, else whatever the file looked like to the server.
+   *
+   * EMPTY until one of those exists, and nothing is sent while it is empty:
+   * sending a default with the first check told the server the shape before
+   * it had looked at the file, and a statement with an Amount column and a
+   * DR/CR column beside it was then read as two columns with neither of them
+   * present — "no amount column was recognised", about a file that plainly
+   * had one.
+   */
+  const chosenShape = columns.__shape || preview?.shape || '';
+  const shape = chosenShape || 'two_columns';
   const readings = preview?.ambiguous_example ? bothReadings(preview.ambiguous_example) : null;
 
   return (
@@ -357,6 +439,16 @@ export default function BankReconciliationPage() {
       {/* ── Import ───────────────────────────────────────────────────────── */}
       <Modal open={importing} onClose={() => !busy && setImporting(false)} title="Import a statement" size="lg">
         <div className="space-y-3 text-sm">
+          {/*
+            Why a refusal is repeated in here.
+
+            The banner on the page behind says the same thing, and while this
+            is open nobody can see it — so a refused import looked like a
+            button that did nothing at all.
+          */}
+          {failed && (
+            <div className="rounded-lg bg-danger-surface px-3 py-2 text-xs text-danger">{failed}</div>
+          )}
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block space-y-1">
               <span className="text-sm font-medium text-slate-700">Which bank<FieldMark required /></span>
@@ -422,7 +514,9 @@ export default function BankReconciliationPage() {
 
           <CsvFileInput
             value={csv}
-            onChange={(text) => { setCsv(text); setPreview(null); setProblems([]); }}
+            onChange={(text) => {
+              setCsv(text); setPreview(null); setProblems([]); setColumns({}); setReferenceChoice(''); setReferences({});
+            }}
             onError={setFailed}
             label="The statement"
             hint="The CSV or Excel file your bank gives you — date, narration, reference and the amounts"
@@ -437,7 +531,234 @@ export default function BankReconciliationPage() {
             </div>
           )}
 
-          {preview && (
+          {/*
+            Which of the file's columns is which.
+            
+            Shown whenever a file has been read, not only when something is
+            missing: seeing that "Outflow" was read as the debit column is how
+            somebody catches it having been read as the balance instead. When a
+            column could NOT be worked out the row is marked and the import is
+            refused until it is answered — asking costs two clicks once per
+            bank, and is then remembered against that bank for ever.
+          */}
+          {preview?.header?.length > 0 && (
+            <div className={`space-y-2 rounded-lg px-3 py-2 ${
+              preview.needs_mapping ? 'bg-amber-50' : 'bg-slate-50'
+            }`}
+            >
+              <p className={`text-xs ${preview.needs_mapping ? 'text-amber-900' : 'text-slate-600'}`}>
+                {preview.needs_mapping
+                  ? preview.message
+                  : 'Read from your file as follows. Change any that is wrong.'}
+              </p>
+              {/*
+                The shape first, because it decides which columns are even
+                asked about. Offering all of debit, credit and amount at once
+                invited mapping one column into the wrong one of them.
+              */}
+              <div className="space-y-1">
+                <span className="text-xs font-medium text-slate-700">
+                  How does your statement show the amounts?
+                </span>
+                <div className="grid gap-1">
+                  {SHAPES.map((option) => (
+                    <label
+                      key={option.id}
+                      className={`flex cursor-pointer items-start gap-2 rounded px-2 py-1.5 text-xs ${
+                        shape === option.id ? 'bg-white ring-1 ring-blue-300' : 'hover:bg-white/60'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="statement-shape"
+                        className="mt-0.5 accent-blue-600"
+                        checked={shape === option.id}
+                        onChange={() => setColumns((current) => ({ ...current, __shape: option.id }))}
+                      />
+                      <span>
+                        <span className="font-medium text-slate-800">{option.label}</span>
+                        <span className="block text-slate-500">{option.hint}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                {[
+                  /* The columns THIS shape needs, then the ones every shape does. */
+                  ...(SHAPES.find((option) => option.id === shape)?.fields || [])
+                    .map((field) => [
+                      field,
+                      FIELD_LABELS[field],
+                      field === 'direction' ? 'direction' : 'amount',
+                    ]),
+                  ...COMMON_FIELDS.map(([field, label]) => [
+                    field, label, field === 'date' ? 'date' : null,
+                  ]),
+                ].map(([field, label, essential]) => {
+                  const chosen = columns[field] ?? preview.columns?.[field] ?? '';
+                  const wanted = (essential && preview.missing?.includes(essential))
+                    || preview.unreadable?.some((item) => item.field === field);
+                  return (
+                    <label key={field} className="flex items-center gap-2 text-xs">
+                      <span className={`w-28 shrink-0 ${wanted ? 'font-semibold text-danger' : 'text-slate-600'}`}>
+                        {label}
+                      </span>
+                      <select
+                        value={chosen}
+                        onChange={(event) => setColumns((current) => ({
+                          ...current, [field]: event.target.value,
+                        }))}
+                        className={`min-w-0 flex-1 rounded border px-2 py-1 text-xs ${
+                          wanted ? 'border-danger bg-white' : 'border-slate-300 bg-white'
+                        }`}
+                      >
+                        <option value="">— none —</option>
+                        {preview.header.map((name) => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {/*
+                What the reference column actually holds.
+
+                Asked only where the file gives cause — no reference column at
+                all, or one that reads like a sentence. A narration imported as
+                a reference is invisible afterwards: the lines look right and
+                simply match badly, because the reference is half of what says
+                a statement line is the payment already in the books.
+              */}
+              {preview.reference_note && preview.reference_note.state !== 'ok'
+                && !preview.reference_choice && (
+                <div className="space-y-1 rounded border border-amber-200 bg-white px-2 py-2">
+                  <p className="text-xs font-medium text-slate-800">
+                    {preview.reference_note.state === 'absent'
+                      ? 'No column here holds a transaction reference.'
+                      : `Does "${preview.reference_note.column}" hold only the reference?`}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {preview.reference_note.state === 'absent'
+                      ? 'If one of the columns above is the reference, pick it for Reference. '
+                        + 'Otherwise say so — the lines will import without one.'
+                      : `It holds ${(preview.reference_note.examples || [])
+                        .map((example) => `"${example}"`).join(', ')}.`}
+                  </p>
+                  <div className="grid gap-1">
+                    {[
+                      preview.reference_note.state === 'absent' ? null : [
+                        'only',
+                        `"${preview.reference_note.column}" is the reference and nothing else`,
+                      ],
+                      [
+                        'extract',
+                        'Pull the reference out of each narration and let me check them',
+                      ],
+                      [
+                        'none',
+                        preview.reference_note.state === 'absent'
+                          ? 'This statement has no references — import without them'
+                          : 'It is a narration — import these lines without a reference',
+                      ],
+                    ].filter(Boolean).map(([id, label]) => (
+                      <label key={id} className="flex cursor-pointer items-start gap-2 text-xs">
+                        <input
+                          type="radio"
+                          name="reference-choice"
+                          className="mt-0.5 accent-blue-600"
+                          checked={referenceChoice === id}
+                          onChange={() => setReferenceChoice(id)}
+                        />
+                        <span className="text-slate-700">{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {/*
+                    The references, read out of the narrations and put in front
+                    of somebody.
+
+                    Every row of the file, not only the ones being imported:
+                    what is being checked is the READING, and a table missing
+                    half its rows cannot be checked. Only this column can be
+                    typed in — the rest is what the file says, shown so each
+                    reference can be judged against the payment it belongs to.
+
+                    A guess is never imported unquestioned. That is the whole
+                    of the safeguard, because a wrong reference is worse than
+                    none: it matches something.
+                  */}
+                  {referenceChoice === 'extract' && (
+                    <div className="space-y-1">
+                      {(preview.reference_rows || []).length === 0 ? (
+                        <p className="text-xs text-slate-500">
+                          Choose “Check it” to read the references out of the narrations.
+                        </p>
+                      ) : (
+                        <>
+                          <p className="text-xs text-slate-600">
+                            Checked against the narration each came from. Correct any that is
+                            wrong, and empty the box where a row has no reference.
+                          </p>
+                          <div className="max-h-72 overflow-auto rounded border border-slate-200">
+                            <table className="w-full text-xs">
+                              <thead className="sticky top-0 bg-slate-50 text-slate-600">
+                                <tr>
+                                  <th className="px-2 py-1 text-left font-medium">Date</th>
+                                  <th className="px-2 py-1 text-left font-medium">Narration</th>
+                                  <th className="px-2 py-1 text-right font-medium">Amount</th>
+                                  <th className="px-2 py-1 text-left font-medium">Reference</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {preview.reference_rows.map((row) => (
+                                  <tr key={row.row} className="border-t border-slate-100 align-top">
+                                    <td className="whitespace-nowrap px-2 py-1 text-slate-600">{row.date}</td>
+                                    <td className="px-2 py-1 text-slate-600">{row.description}</td>
+                                    <td className={`whitespace-nowrap px-2 py-1 text-right ${
+                                      row.amount_minor < 0 ? 'text-danger' : 'text-green-700'
+                                    }`}
+                                    >
+                                      {show(row.amount_minor)}
+                                    </td>
+                                    <td className="px-2 py-1">
+                                      <input
+                                        value={references[row.row] ?? row.suggestion ?? ''}
+                                        onChange={(event) => setReferences((current) => ({
+                                          ...current, [row.row]: event.target.value,
+                                        }))}
+                                        placeholder="none"
+                                        className="w-40 rounded border border-slate-300 px-1.5 py-0.5 text-xs"
+                                      />
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-xs text-slate-500">
+                    A reference is half of what decides that a statement line is the payment
+                    already in the books, so nothing here is imported on a guess alone.
+                  </p>
+                </div>
+              )}
+
+              <p className="text-xs text-slate-500">
+                Check it again after changing anything. What you choose is remembered for
+                {source ? ` ${source}` : ' this bank'}, so next month imports without asking.
+              </p>
+            </div>
+          )}
+
+          {preview && !preview.needs_mapping && (
             <div className="space-y-2">
               <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700">
                 <p>
@@ -449,6 +770,30 @@ export default function BankReconciliationPage() {
                   {show(preview.money_in_minor)} in, {show(Math.abs(preview.money_out_minor))} out.
                 </p>
               </div>
+
+              {/*
+                Rows that were not transactions.
+
+                Shown rather than silently dropped. A balance brought forward
+                is not a movement and importing it would invent one — but a
+                statement that comes in two lines shorter than the file, with
+                nothing said about it, is how a reconciliation goes wrong
+                somewhere nobody thinks to look.
+              */}
+              {preview.passed_over_count > 0 && (
+                <div className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  <p className="font-medium text-slate-700">
+                    {preview.passed_over_count} row(s) were not transactions and are left out:
+                  </p>
+                  <ul className="mt-1 list-disc pl-4">
+                    {preview.passed_over.map((row) => (
+                      <li key={row.row}>
+                        Row {row.row} — {row.description || row.text || 'no amount on it'}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/*
                 The date question, asked only where the file leaves it open.
@@ -512,10 +857,20 @@ export default function BankReconciliationPage() {
                     csv,
                     source: source || undefined,
                     day_first: dayFirst === 'true',
+                    columns,
+                    shape: chosenShape || undefined,
+                    reference_choice: referenceChoice || undefined,
+                    references,
                   }, { preview: true });
                   setPreview(result.data);
                 } catch (error) {
                   setProblems(error?.response?.data?.errors || []);
+                  /*
+                   * A refusal carries the columns it read. Keeping them is
+                   * what lets the mapping panel stay on screen so the thing
+                   * the message is complaining about can actually be fixed.
+                   */
+                  if (error?.response?.data?.data) setPreview(error.response.data.data);
                   setFailed(extractError(error, 'The file could not be read.'));
                 } finally {
                   setBusy(false);
@@ -533,10 +888,14 @@ export default function BankReconciliationPage() {
                     csv,
                     source: source || undefined,
                     day_first: dayFirst === 'true',
+                    columns,
+                    shape: chosenShape || undefined,
+                    reference_choice: referenceChoice || undefined,
+                    references,
                   }),
                   'Imported.',
                 );
-                if (result) { setImporting(false); setCsv(''); setPreview(null); }
+                if (result) { setImporting(false); setCsv(''); setPreview(null); setReferenceChoice(''); setReferences({}); }
               }}
             >
               {busy ? 'Importing…' : 'Import it'}

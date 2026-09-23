@@ -2,6 +2,8 @@ import { useId, useRef, useState } from 'react';
 import Button from '../ui/Button';
 import FieldMark from '../ui/FieldMark';
 import { readSpreadsheet } from '../../utils/readSpreadsheet';
+import { readPdfTable, PdfPasswordRequired } from '../../utils/readPdfTable';
+import Input from '../ui/Input';
 
 /**
  * A CSV or a spreadsheet, chosen as a file.
@@ -116,9 +118,6 @@ const ACCEPTED = [
 const REFUSALS = {
   'legacy-excel': (name) => `${name} is in the older Excel format, which cannot be read here. `
     + 'Open it and use "Save as" to produce an .xlsx or a CSV.',
-  pdf: (name) => `${name} is a PDF, which cannot be read here yet. Whatever produced it — `
-    + 'a bank, an accounting package — almost always offers the same thing as CSV or Excel '
-    + 'beside the PDF. Choose that and it will import.',
   word: (name) => `${name} is a Word document. Use the CSV or Excel your bank or accounting `
     + 'package exports instead — a table pasted into Word loses the columns this needs.',
 };
@@ -139,8 +138,15 @@ export default function CsvFileInput({
   // A large workbook takes a moment to parse; a drop zone that looks inert
   // while it does gets clicked again.
   const [reading, setReading] = useState(false);
+  /*
+   * A PDF that needs a password is not an error — it is a question. The file
+   * is held while it is asked, so answering does not mean choosing the file
+   * again.
+   */
+  const [locked, setLocked] = useState(null);
+  const [password, setPassword] = useState('');
 
-  const take = async (chosen) => {
+  const take = async (chosen, secret = '') => {
     if (!chosen) return;
     setProblem('');
     setReading(true);
@@ -159,9 +165,13 @@ export default function CsvFileInput({
 
       let text;
       let workbook = null;
+      let pdf = null;
       if (kind === 'workbook') {
         workbook = await readSpreadsheet(chosen);
         text = workbook.suggested.csv;
+      } else if (kind === 'pdf') {
+        pdf = await readPdfTable(chosen, { password: secret });
+        text = pdf.csv;
       } else {
         text = await chosen.text();
       }
@@ -173,16 +183,33 @@ export default function CsvFileInput({
         return;
       }
 
+      setLocked(null);
+      setPassword('');
       setFile({
         name: chosen.name,
         size: chosen.size,
         /* Kept so the sheet can be swapped without re-reading the file. */
         sheets: workbook?.sheets ?? null,
         sheet: workbook?.suggested.name ?? null,
+        pdf,
       });
       onChange(text);
     } catch (error) {
-      const message = /workbook|sheet/i.test(error?.message || '')
+      if (error instanceof PdfPasswordRequired) {
+        /*
+         * Choosing a locked file REPLACES whatever was chosen before, so the
+         * previous file has to go now rather than when the password succeeds.
+         * Leaving it meant the password prompt — which only shows when
+         * nothing is selected — was hidden behind the file it was replacing,
+         * and the click appeared to do nothing at all.
+         */
+        setFile(null);
+        onChange('');
+        setLocked(chosen);
+        setProblem(error.wrong ? error.message : '');
+        return;
+      }
+      const message = /workbook|sheet|PDF|table|columns|scan/i.test(error?.message || '')
         ? error.message
         : `${chosen.name} could not be read.`;
       setProblem(message);
@@ -199,11 +226,21 @@ export default function CsvFileInput({
    */
   const lines = String(value || '').trim().split(/\r?\n/).filter(Boolean);
   const rowCount = Math.max(lines.length - 1, 0);
-  const head = lines.slice(0, 3);
+  /*
+   * Three lines is enough to recognise a file you exported yourself. A PDF is
+   * different: what is shown is a RECONSTRUCTION, and the mistakes it can make
+   * — two columns read as one, a narration taken for an amount — are only
+   * visible across several rows. So a PDF shows more of itself, in a box that
+   * scrolls rather than one that grows.
+   */
+  const shown = file?.pdf ? 12 : 3;
+  const head = lines.slice(0, shown);
 
   const clear = () => {
     setFile(null);
     setProblem('');
+    setLocked(null);
+    setPassword('');
     onChange('');
     // So re-picking the same file fires change again.
     if (input.current) input.current.value = '';
@@ -243,7 +280,43 @@ export default function CsvFileInput({
         }}
       />
 
-      {!value && (
+      {/*
+        A locked PDF asks rather than fails. The file is still held, so
+        answering does not mean finding it again — and the password is used to
+        open the document here in the browser and is never sent anywhere.
+      */}
+      {locked && !value && (
+        <form
+          className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3"
+          onSubmit={(event) => { event.preventDefault(); take(locked, password); }}
+        >
+          <p className="text-sm text-amber-900">
+            <strong>{locked.name}</strong> is password protected. Banks usually use your date of
+            birth, or the last digits of the account number — whatever the covering email said.
+          </p>
+          <div className="flex flex-wrap items-end gap-2">
+            <Input
+              label="Password"
+              type="password"
+              required
+              autoFocus
+              autoComplete="off"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              containerClassName="flex-1 min-w-[12rem]"
+            />
+            <Button type="submit" size="sm" disabled={reading || !password}>
+              {reading ? 'Opening…' : 'Open it'}
+            </Button>
+            <Button type="button" size="sm" variant="secondary" onClick={clear}>Cancel</Button>
+          </div>
+          <p className="text-xs text-amber-800">
+            It is used to open the file on this device and is not stored or sent anywhere.
+          </p>
+        </form>
+      )}
+
+      {!value && !locked && (
         /*
           Drag and drop as well as click, because a statement is usually
           already sitting in a downloads folder beside the browser window.
@@ -272,10 +345,10 @@ export default function CsvFileInput({
           }`}
         >
           <span className="text-sm font-medium text-slate-700">
-            {reading ? 'Reading…' : 'Drop a CSV or Excel file here, or click to choose one'}
+            {reading ? 'Reading…' : 'Drop a file here, or click to choose one'}
           </span>
           <span className="text-xs text-slate-500">
-            {hint || 'Exported from your bank or accounting package'}
+            {hint || 'CSV, Excel or a PDF statement'}
           </span>
         </div>
       )}
@@ -328,9 +401,36 @@ export default function CsvFileInput({
             </label>
           )}
 
-          <pre className="overflow-x-auto rounded bg-slate-50 p-2 text-[11px] leading-relaxed text-slate-600">
+          {/*
+            A PDF has no rows or columns in it — what is shown was inferred
+            from where the text sits on the page. That is worth saying once,
+            here, beside the reconstruction, rather than trusting somebody to
+            remember it later.
+          */}
+          {file.pdf && (
+            <p className={`rounded px-2 py-1.5 text-xs ${
+              file.pdf.confidence > 0.6 ? 'bg-blue-50 text-blue-800' : 'bg-amber-50 text-amber-900'
+            }`}
+            >
+              Read from {file.pdf.pages} page{file.pdf.pages === 1 ? '' : 's'} of PDF —
+              {' '}{file.pdf.columns} columns worked out from the layout.
+              {file.pdf.dropped > 0 && (
+                /* Page furniture: a disclaimer, a footer, the next account's
+                   letterhead. Said out loud rather than dropped in silence —
+                   a count that looks wrong is the cue to check the rows. */
+                ` ${file.pdf.dropped} line${file.pdf.dropped === 1 ? '' : 's'} outside the table `
+                + '(footers, disclaimers, account details) were left out.'
+              )}
+              {file.pdf.confidence > 0.6
+                ? ' Check the rows below look right before importing.'
+                : ' The columns came out patchy, so check this carefully — the CSV or Excel export'
+                  + ' from your bank would import more reliably.'}
+            </p>
+          )}
+
+          <pre className="max-h-56 overflow-auto rounded bg-slate-50 p-2 text-[11px] leading-relaxed text-slate-600">
             {head.join('\n')}
-            {rowCount > 3 ? `\n… and ${rowCount - 3} more` : ''}
+            {rowCount > shown - 1 ? `\n… and ${rowCount - (shown - 1)} more` : ''}
           </pre>
         </div>
       )}
