@@ -24,8 +24,8 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '�
  */
 const STAGE_HELP = {
   created: 'Yours to request whenever you are ready.',
-  payment_requested: 'Waiting on an administrator to approve.',
-  approved: 'Approved — waiting to be paid out.',
+  payment_requested: 'Requested — waiting on the payment to be approved.',
+  approved: 'Payment approved — waiting to be paid out.',
   paid: 'Paid in full.',
   cancelled: 'Cancelled.',
 };
@@ -138,9 +138,9 @@ export default function MyCommissionsPage() {
                     </td>
                     <td className="px-4 py-3 text-slate-600">{formatDate(row.createdAt || row.created_at)}</td>
                     <td className="px-4 py-3 text-right">
-                      {/* The one action: only a CREATED commission is the
-                          earner's to move, and only for its full amount. */}
-                      {row.status === 'created' && (
+                      {/* The one action: an earned commission is the earner's
+                          to ask for, in full, without waiting on a sign-off. */}
+                      {['created', 'approved'].includes(row.status) && (
                         <Button type="button" onClick={() => setRequesting(row)}>Request payment</Button>
                       )}
                     </td>
@@ -159,8 +159,8 @@ export default function MyCommissionsPage() {
               Request payment of <strong>{fmt(requesting.amount)}</strong> for &ldquo;{requesting.title}&rdquo;?
             </p>
             <p className="rounded-lg bg-slate-50 px-4 py-3 text-xs text-slate-600">
-              Commissions are paid in full — there is no partial payout. An administrator approves the
-              request, and you will be notified when it is paid.
+              Commissions are paid in full — there is no partial payout. Somebody at the company
+              approves the payment, and you will be notified when it is paid.
             </p>
             <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
               <Button type="button" variant="secondary" onClick={() => setRequesting(null)} disabled={busy}>

@@ -121,7 +121,7 @@ export const buyerRecipes = [
   {
     id: 'realtor-commissions',
     title: 'See what you have earned',
-    summary: 'Your commission statement — earned, approved, and paid.',
+    summary: 'Your commission statement — earned, released, requested and paid.',
     category: 'My account',
     route: '/finance/my-commission',
     trail: 'Finance → My Commissions',
@@ -133,9 +133,9 @@ export const buyerRecipes = [
       { text: 'Open **My Commissions**.' },
       {
         text: 'Each sale you are due on is listed with its stage.',
-        note: 'An amount stays hidden until the commission has been approved — until then the figure could still change.',
+        note: 'An amount stays hidden while it is still accruing — until the buyer has paid enough for it to be released, the figure could still change.',
       },
-      { text: 'Select the approved ones you want paid and request a payout.' },
+      { text: 'Select the released ones you want paid and request a payout. Nobody has to approve them first.' },
       { text: 'A requested payout is picked up in the next payout run.' },
     ],
     related: ['realtor-referral'],

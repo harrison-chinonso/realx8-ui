@@ -3,7 +3,7 @@ import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
-import { myCommissionStatement } from '../../api/commissionApi';
+import { myCommissionStatement, requestMyCommissionPayout } from '../../api/commissionApi';
 import { requestCommissionPayout } from '../../api/financeApi';
 import { plural } from '../../utils/plural';
 
@@ -28,7 +28,7 @@ const money = (minor) => (Number(minor || 0) / 100)
 const EXPLAIN = {
   ACCRUED: 'Earned on the sale. It becomes available as the buyer pays.',
   PARTIALLY_RELEASED: 'Partly available — the rest follows the buyer’s remaining installments.',
-  RELEASED: 'Available, and included in the next payout run.',
+  RELEASED: 'Available — ask to be paid, or wait for the next payout run.',
   PAID: 'Paid out.',
   FORFEITED: 'Not paid — you were not active at a release checkpoint.',
   HELD: 'Suspended pending reinstatement.',
@@ -45,9 +45,6 @@ function Figure({ label, value, note, tone = 'text-slate-800' }) {
   );
 }
 
-/** The states in which an approval is still the thing being waited on. */
-const AWAITING_APPROVAL = new Set(['ACCRUED', 'PARTIALLY_RELEASED', 'RELEASED']);
-
 export default function MyCommissionStatementPage() {
   const [statement, setStatement] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +55,34 @@ export default function MyCommissionStatementPage() {
    */
   const [requesting, setRequesting] = useState(null);
   const [busy, setBusy] = useState(false);
+  /*
+   * Asking to be paid for an engine line, from the statement itself.
+   *
+   * The control used to live only on a second screen that a realtor's menu
+   * does not offer them — so the statement showed vested money with no way to
+   * ask for it, which is the same dead end the old approval gate produced and
+   * for a sillier reason.
+   */
+  const [asking, setAsking] = useState(null);
+  const [asked, setAsked] = useState('');
+
+  const requestOne = async (row) => {
+    setBusy(true);
+    setFailed('');
+    setAsked('');
+    try {
+      const result = await requestMyCommissionPayout([row.id]);
+      setAsked(result?.requested
+        ? `Requested ${money(result.amount_minor)}. It goes into the next payout run.`
+        : 'That one is not ready to be paid yet.');
+      setAsking(null);
+      await load();
+    } catch (error) {
+      setFailed(error?.response?.data?.message || 'That request did not go through.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -101,6 +126,7 @@ export default function MyCommissionStatementPage() {
       </div>
 
       {failed && <div className="rounded-lg bg-danger-surface px-4 py-2 text-sm text-danger">{failed}</div>}
+      {asked && <div className="rounded-lg bg-green-50 px-4 py-2 text-sm text-green-700">{asked}</div>}
 
       {wallet && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -241,31 +267,6 @@ export default function MyCommissionStatementPage() {
               ),
             },
             {
-              /*
-               * Vesting and approval are different questions and a realtor has
-               * to be able to tell them apart. A line can be fully vested and
-               * still not askable because nobody has signed it off, and
-               * "Vested ₦100,000" with no Request button and no explanation is
-               * the support call this column prevents.
-               */
-              key: 'approved_at',
-              label: 'Approved',
-              render: (row) => {
-                if (row.approved_at) {
-                  return <span className="text-xs text-emerald-700">{new Date(row.approved_at).toLocaleDateString()}</span>;
-                }
-                /*
-                 * "Awaiting approval" is only true of a line an approval could
-                 * still move. One that has been paid, forfeited or reversed is
-                 * finished, and saying it is waiting on somebody reads as a
-                 * commission stuck in a queue when the money has already gone.
-                 */
-                return AWAITING_APPROVAL.has(String(row.status || '').toUpperCase())
-                  ? <span className="text-xs text-amber-700">Awaiting approval</span>
-                  : <span className="text-xs text-slate-400">—</span>;
-              },
-            },
-            {
               key: 'attribution_date',
               label: 'Sold',
               render: (row) => (row.attribution_date ? new Date(row.attribution_date).toLocaleDateString() : '—'),
@@ -273,6 +274,18 @@ export default function MyCommissionStatementPage() {
           ]}
           data={statement?.entitlements ?? []}
           loading={loading}
+          /*
+           * Vested, unpaid, not already asked for and not already in a payout
+           * run — the server works that out and says so per line, so the
+           * button and the endpoint cannot disagree about what is askable.
+           */
+          renderActions={(row) => (row.can_request_payout ? (
+            <Button type="button" size="sm" disabled={busy} onClick={() => setAsking(row)}>
+              Request payment
+            </Button>
+          ) : row.payout_requested_at ? (
+            <span className="text-xs text-slate-500">Requested</span>
+          ) : null)}
           exportName="my-commission"
           emptyMessage={statement?.legacy?.length
             ? 'Nothing here yet — your commission so far is on the flat rate, below.'
@@ -284,8 +297,8 @@ export default function MyCommissionStatementPage() {
         <div>
           <h2 className="mb-2 text-sm font-semibold text-slate-800">Flat-rate commissions</h2>
           <p className="mb-2 text-xs text-slate-500">
-            Earned at your company&apos;s flat rate rather than under a commission plan. Ask for
-            payment once an administrator has approved it.
+            Earned at your company&apos;s flat rate rather than under a commission plan. Ask to be
+            paid whenever you are ready.
           </p>
           <Table
             columns={[
@@ -302,17 +315,48 @@ export default function MyCommissionStatementPage() {
             loading={false}
             exportName="my-flat-rate-commissions"
             emptyMessage="Nothing here."
-            // Approved, not created. A commission sits in `created` until
-            // somebody at the company signs it off; offering the button there
-            // put a realtor in front of a request the API now refuses.
-            renderActions={(row) => (row.status === 'approved' ? (
+            /*
+             * Earned is enough. A commission used to sit in `created` waiting
+             * for somebody at the company to agree it was owed, and the button
+             * appeared only afterwards; there is no such wait now, and the two
+             * states that can still be asked for are the two that offer it.
+             */
+            renderActions={(row) => (['created', 'approved'].includes(row.status) ? (
               <Button type="button" size="sm" onClick={() => setRequesting(row)}>Request payment</Button>
-            ) : row.status === 'created' ? (
-              <span className="text-xs text-amber-700">Awaiting approval</span>
+            ) : row.status === 'payment_requested' ? (
+              <span className="text-xs text-slate-500">Requested</span>
             ) : null)}
           />
         </div>
       )}
+
+      {/*
+        Asked for in full, and confirmed first — the same shape as the
+        flat-rate request below it, because they are the same act to the person
+        doing it whichever system the commission came from.
+      */}
+      <Modal open={asking !== null} onClose={() => !busy && setAsking(null)} title="Request payment" size="sm">
+        {asking && (
+          <div className="space-y-4 text-sm">
+            <p>
+              Ask to be paid <strong>{money(asking.released_minor - asking.paid_minor)}</strong> for
+              {' '}&ldquo;{asking.label || asking.deal_ref}&rdquo;?
+            </p>
+            <p className="text-xs text-slate-500">
+              It joins the next payout run. Nobody has to approve the commission itself — what is
+              approved is the payment.
+            </p>
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+              <Button type="button" variant="secondary" onClick={() => setAsking(null)} disabled={busy}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={() => requestOne(asking)} disabled={busy}>
+                {busy ? 'Requesting…' : 'Request payment'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       <Modal open={requesting !== null} onClose={() => !busy && setRequesting(null)} title="Request payment" size="sm">
         {requesting && (

@@ -72,11 +72,11 @@ export const commissionRecipes = [
     steps: [
       { text: 'Open **My Commissions**.' },
       {
-        text: 'A commission appears as soon as a sale is attributed to you, but its amount is only shown once it has been approved.',
-        note: 'Until then the figure can still change — a cap or a correction can move it — so showing a provisional number would be worse than showing none.',
+        text: 'A commission appears as soon as a sale is attributed to you. Its amount is shown once it has been released — which follows the buyer paying.',
+        note: 'While it is still accruing the figure can change — a cap or a correction can move it — so showing a provisional number would be worse than showing none. Nobody has to approve it: released commission is yours to ask for.',
       },
       { text: 'Tick the ones that are ready and choose **Request payment**.' },
-      { text: 'An administrator sees the request on the Commission Payouts screen.' },
+      { text: 'An administrator sees the request on the Commission Payouts screen, and pays it in the next run.' },
     ],
   },
 ];
