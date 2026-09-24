@@ -38,11 +38,28 @@ export function Ranking({ icon: Icon, title, rows, fmt, emptyNote, limit = DASHB
    */
   const max = shown.length ? Math.max(...shown.map((r) => r.received)) : 0;
 
+  /*
+   * ── Why the width is pinned rather than left to the content ───────────────
+   *
+   * A grid item's min-width is `auto`, which means "at least as wide as my
+   * content refuses to get smaller than". A long property name, a naira figure
+   * and a sales count in one row add up to more than a 360px phone, so the card
+   * grew past the single mobile column, the column grew past the page, and the
+   * whole dashboard picked up a horizontal scrollbar — which reads to anyone
+   * looking at it as white space down the right-hand side of every section
+   * BELOW this one, because those sections end where the viewport does and this
+   * one does not.
+   *
+   * `min-w-0` opts out of that floor so the card can be as narrow as its
+   * column, and `overflow-hidden` gives the truncation inside something to
+   * truncate against. Both are needed: without the first the card never
+   * shrinks, without the second the text still spills out of a card that has.
+   */
   return (
-    <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-      <div className="mb-3 flex items-center gap-2">
-        <Icon size={15} className="text-slate-400" />
-        <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+    <div className="min-w-0 max-w-full overflow-hidden rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+      <div className="mb-3 flex min-w-0 items-center gap-2">
+        <Icon size={15} className="shrink-0 text-slate-400" />
+        <h3 className="truncate text-sm font-semibold text-slate-700">{title}</h3>
       </div>
 
       {!shown.length ? (
@@ -51,7 +68,7 @@ export function Ranking({ icon: Icon, title, rows, fmt, emptyNote, limit = DASHB
         <ol className="space-y-3">
           {shown.map((row, index) => (
             <li key={row.id} className="space-y-1">
-              <div className="flex items-baseline justify-between gap-3">
+              <div className="flex min-w-0 items-baseline justify-between gap-3">
                 <span className="flex min-w-0 items-baseline gap-2">
                   <span className="w-4 shrink-0 text-xs tabular-nums text-slate-400">{index + 1}</span>
                   <span className="truncate text-sm text-slate-700" title={row.name}>{row.name}</span>
@@ -60,7 +77,7 @@ export function Ranking({ icon: Icon, title, rows, fmt, emptyNote, limit = DASHB
                   {fmt(row.received)}
                 </span>
               </div>
-              <div className="flex items-center gap-2 pl-6">
+              <div className="flex min-w-0 items-center gap-2 pl-6">
                 <Bar value={row.received} max={max} />
                 <span className="shrink-0 text-[11px] tabular-nums text-slate-400">
                   {row.invoices} {row.invoices === 1 ? 'sale' : 'sales'}
@@ -82,8 +99,12 @@ export default function TopPerformersPanel({ data, fmt, period }) {
   } = data || {};
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-baseline justify-between">
+    <div className="w-full min-w-0 space-y-2">
+      {/*
+        Wraps on a narrow phone instead of the period caption being pushed off
+        the edge — it is a sentence, not a column, and it has somewhere to go.
+      */}
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
         <h2 className="text-sm font-semibold text-slate-700">Top performers</h2>
         <span className="text-[11px] text-slate-400">By payments received · {period}</span>
       </div>
@@ -94,7 +115,7 @@ export default function TopPerformersPanel({ data, fmt, period }) {
         empty leaderboard reads as "no sales", which is a different and alarming
         claim.
       */}
-      <div className={`grid gap-3 ${branches ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3'}`}>
+      <div className={`grid w-full min-w-0 grid-cols-1 gap-3 ${branches ? 'md:grid-cols-2 xl:grid-cols-4' : 'md:grid-cols-3'}`}>
         <Ranking
           icon={Building2} title="Properties" rows={properties} fmt={fmt}
           emptyNote="No payments received yet."
