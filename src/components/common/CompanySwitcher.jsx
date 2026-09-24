@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Building2, Check, ChevronDown, Plus } from 'lucide-react';
+import { Building2, Check, ChevronDown } from 'lucide-react';
 
 import Modal from './Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import Select from '../ui/Select';
 import useAuthStore from '../../store/authStore';
 
 /**
@@ -37,21 +36,9 @@ import useAuthStore from '../../store/authStore';
 export default function CompanySwitcher({ className = '' }) {
   const companies = useAuthStore((state) => state.companies) || [];
   const switchCompany = useAuthStore((state) => state.switchCompany);
-  const joinCompany = useAuthStore((state) => state.joinCompany);
-  /*
-   * Off during the cutover soak, which keeps every address on one company so
-   * the schema change stays reversible. The entry comes out rather than
-   * staying as a control that refuses — a button that always fails is worse
-   * than one that is not there.
-   */
-  const canJoin = useAuthStore((state) => state.multiCompanySignups) !== false;
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [joining, setJoining] = useState(false);
-  const [joinForm, setJoinForm] = useState({ code: '', role: '', password: '' });
-  const [joinError, setJoinError] = useState('');
-  const [joined, setJoined] = useState(null);
   /**
    * The company a switch stopped on because it wants its own password.
    *
@@ -80,38 +67,21 @@ export default function CompanySwitcher({ className = '' }) {
     return () => document.removeEventListener('mousedown', close);
   }, [open]);
 
-  if (!companies.length) return null;
+  /**
+   * Nothing at all unless there is something to switch BETWEEN.
+   *
+   * It rendered at one company for a while, so that the Join entry inside it
+   * could be reached. That put a pill which cannot shrink into every realtor's
+   * and client's top bar: at 430px the bar then needed 453px, and mobile
+   * Chrome answers that by scaling the whole page down to fit — the app
+   * rendering smaller on a bigger phone, from one control in a header.
+   *
+   * Joining lives on the Companies tab of the profile now, which is where a
+   * once-per-company action belongs and costs the header nothing.
+   */
+  if (companies.length < 2) return null;
 
   const current = companies.find((entry) => entry.current);
-
-  const openJoin = () => {
-    setOpen(false);
-    setJoinError('');
-    setJoined(null);
-    setJoinForm({ code: '', role: current?.type || 'client', password: '' });
-    setJoining(true);
-  };
-
-  const submitJoin = async (event) => {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setJoinError('');
-    try {
-      const result = await joinCompany({
-        companyCode: joinForm.code.trim().toUpperCase(),
-        role: joinForm.role,
-        password: joinForm.password || undefined,
-      });
-      // The store already holds the refreshed list, so the new company is in
-      // the menu behind this modal before it is closed.
-      setJoined(result ? { ...result.company, switch_needs_password: result.switch_needs_password } : null);
-    } catch (err) {
-      setJoinError(err?.response?.data?.message || err?.userMessage || 'Could not join that company.');
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const choose = async (entry, password) => {
     if (busy || entry.current) return;
@@ -143,6 +113,23 @@ export default function CompanySwitcher({ className = '' }) {
   };
 
   return (
+    /*
+     * Allowed to SHRINK, and that is the whole point.
+     *
+     * A pill that cannot give way is a pill the top bar has to find room for,
+     * and when it cannot the document ends up wider than the screen — which
+     * mobile browsers answer by scaling the entire page down. The app renders
+     * smaller on a bigger phone, from one control in a header.
+     *
+     * On a phone it is the icon and the chevron, full stop — no name, no
+     * truncation. Letting it compete for leftover width was worse than either
+     * extreme: at 393 the bar came out as a logo reading "R", a company reading
+     * "|" and a button reading "Creat…", which overflows nothing and says
+     * nothing. A building icon beside a chevron is a legible affordance, and
+     * the menu it opens names every company with the current one ticked.
+     *
+     * The name returns at sm, where there is room for it to mean something.
+     */
     <div ref={wrapper} className={`relative shrink-0 ${className}`}>
       <button
         type="button"
@@ -156,10 +143,10 @@ export default function CompanySwitcher({ className = '' }) {
          * rather than filled, because two filled pills side by side read as
          * two primary actions and this one is navigation.
          */
-        className="inline-flex h-[32px] min-w-0 items-center gap-1.5 rounded-full border border-slate-300 bg-white px-2.5 text-[11px] font-medium leading-none text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60 sm:h-[36px] sm:gap-2 sm:px-3 sm:text-xs lg:h-[40px] lg:px-4 lg:text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+        className="inline-flex h-[32px] shrink-0 items-center gap-1.5 rounded-full border border-slate-300 bg-white px-2.5 text-[11px] font-medium leading-none text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60 sm:h-[36px] sm:gap-2 sm:px-3 sm:text-xs lg:h-[40px] lg:px-4 lg:text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
       >
         <Building2 className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5 lg:h-4 lg:w-4" aria-hidden="true" />
-        <span className="truncate max-w-[32vw] sm:max-w-[160px]">
+        <span className="hidden truncate sm:inline sm:max-w-[160px]">
           {busy ? 'Switching…' : (current?.company_name || 'Company')}
         </span>
         <ChevronDown className="h-3 w-3 shrink-0 opacity-60 sm:h-3.5 sm:w-3.5" aria-hidden="true" />
@@ -204,23 +191,6 @@ export default function CompanySwitcher({ className = '' }) {
               </li>
             );
           })}
-          {canJoin && (
-          <li>
-            {/*
-              Under a rule, because it is not one of the things above: those
-              are places to go, this makes a new one.
-            */}
-            <button
-              type="button"
-              onClick={openJoin}
-              disabled={busy}
-              className="mt-1 flex w-full items-center gap-2 border-t border-slate-100 px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-            >
-              <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              <span>Join another company</span>
-            </button>
-          </li>
-          )}
         </ul>
       )}
 
@@ -269,99 +239,6 @@ export default function CompanySwitcher({ className = '' }) {
         </form>
       </Modal>
 
-      <Modal
-        open={joining}
-        onClose={() => !busy && setJoining(false)}
-        title={joined ? `You are now with ${joined.name}` : 'Join another company'}
-        size="sm"
-      >
-        {joined ? (
-          <div className="space-y-4 text-sm text-slate-600">
-            <p>
-              Your account with <strong>{joined.name}</strong> is open.
-              {joined.switch_needs_password
-                ? ' It has the password you chose for it, which is separate from the one you signed in with.'
-                : ' It uses the password you already sign in with — there is no second one to remember.'}
-            </p>
-            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-              It is in the company menu now. Switching there reloads the app into that
-              company; everything you have open here belongs to this one.
-              {joined.switch_needs_password
-                ? ' You gave it a password of its own, so switching there will ask for it.'
-                : ''}
-            </p>
-            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-              <Button type="button" variant="secondary" onClick={() => setJoining(false)}>
-                Stay here
-              </Button>
-              <Button
-                type="button"
-                onClick={() => { setJoining(false); choose({ company_id: joined.id }); }}
-              >
-                Switch to {joined.name}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={submitJoin} className="space-y-4">
-            <p className="text-sm text-slate-600">
-              Enter the code the company gave you. Your account there uses the password you
-              already have, so there is nothing else to set up.
-            </p>
-            {/*
-              Labelled through the component rather than beside it: Input
-              renders its own <label> wrapper, so a second one around it nests
-              two labels, which is invalid — the browser drops one, and the
-              field came out with no visible name at all.
-            */}
-            <Input
-              label="Company code"
-              value={joinForm.code}
-              onChange={(e) => setJoinForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
-              placeholder="e.g. AB12C"
-              autoFocus
-              required
-            />
-            {/*
-              The role is asked for rather than assumed: somebody who sells for
-              one agency may simply be buying from another, and the two accounts
-              are separate things.
-            */}
-            <Select
-              label="Join as"
-              value={joinForm.role}
-              onChange={(e) => setJoinForm((f) => ({ ...f, role: e.target.value }))}
-              options={[
-                { value: 'client', label: 'Client — buying property' },
-                { value: 'realtor', label: 'Realtor — selling for them' },
-              ]}
-            />
-            {/*
-              Optional, and says so. Most people adding a company are not
-              trying to acquire a second password to remember, so leaving it
-              blank reuses the one they are signed in with — which also means
-              the new company can be switched into without being asked again.
-            */}
-            <Input
-              label="Password for this company"
-              type="password"
-              value={joinForm.password}
-              onChange={(e) => setJoinForm((f) => ({ ...f, password: e.target.value }))}
-              placeholder="Leave blank to use your current password"
-              autoComplete="new-password"
-            />
-            {joinError && <p className="text-sm text-rose-600">{joinError}</p>}
-            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
-              <Button type="button" variant="secondary" onClick={() => setJoining(false)} disabled={busy}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={busy || !joinForm.code.trim()}>
-                {busy ? 'Joining…' : 'Join company'}
-              </Button>
-            </div>
-          </form>
-        )}
-      </Modal>
     </div>
   );
 }

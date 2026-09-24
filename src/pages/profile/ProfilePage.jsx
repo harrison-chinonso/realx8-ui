@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { User, Lock, ShieldCheck, Award } from 'lucide-react';
+import { User, Lock, ShieldCheck, Award, Building2 } from 'lucide-react';
 import { getUser, updateUser } from '../../api/userApi';
 import useAuthStore from '../../store/authStore';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import VerificationPanel from '../../components/profile/VerificationPanel';
 import LevelPanel from '../../components/profile/LevelPanel';
+import CompaniesPanel from '../../components/profile/CompaniesPanel';
 import FieldMark from '../../components/ui/FieldMark';
 
 function PersonalDetailsTab() {
@@ -138,6 +139,15 @@ export default function ProfilePage() {
       { key: 'details', label: 'Personal Details', Icon: User, render: () => <PersonalDetailsTab /> },
       { key: 'security', label: 'Security', Icon: Lock, render: () => <SecurityTab /> },
     ];
+    /*
+     * Realtors and clients are the only ones who can hold accounts at more than
+     * one company, so they are the only ones this tab means anything to.
+     */
+    if (effectiveType === 'realtor' || effectiveType === 'client') {
+      base.push({
+        key: 'companies', label: 'Companies', Icon: Building2, render: () => <CompaniesPanel />,
+      });
+    }
     if (effectiveType === 'realtor') {
       base.push(
         { key: 'verification', label: 'Verification', Icon: ShieldCheck, render: () => <VerificationPanel /> },
