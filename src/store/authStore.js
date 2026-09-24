@@ -4,6 +4,7 @@ import { switchRoleApi, enableProfileApi, logout as logoutApi } from '../api/aut
 import { setSessionKey, clearSessionKey } from '../api/payloadCrypto';
 import { resetRefreshBudget } from '../api/refreshBudget';
 import { markFreshLogin } from '../lib/launcherGreeting';
+import { clearBrowserState } from '../lib/clearBrowserState';
 
 const useAuthStore = create(
   persist(
@@ -53,7 +54,17 @@ const useAuthStore = create(
          * yet, which is what distinguishes it from the other five callers
          * without any of them having to say so.
          */
-        if (!get().user && u) markFreshLogin();
+        if (!get().user && u) {
+          /*
+           * Order matters. The wipe goes FIRST, so that everything written
+           * after it — the greeting flag just below, and this store's own
+           * persisted copy of the new session a moment later — belongs to the
+           * session starting now rather than being cleared along with the one
+           * that ended.
+           */
+          clearBrowserState();
+          markFreshLogin();
+        }
 
         set({
           user: u,
