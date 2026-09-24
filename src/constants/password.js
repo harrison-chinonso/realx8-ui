@@ -6,6 +6,6 @@
  * refused it, so a seven-character password produced a modal that simply did
  * not close — the commonest way "I cannot create an employee" was reached.
  */
-export const MIN_PASSWORD_LENGTH = 12;
+export const MIN_PASSWORD_LENGTH = 8;
 
 export const PASSWORD_HINT = `At least ${MIN_PASSWORD_LENGTH} characters.`;
