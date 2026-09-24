@@ -38,6 +38,13 @@ export default function CompanySwitcher({ className = '' }) {
   const companies = useAuthStore((state) => state.companies) || [];
   const switchCompany = useAuthStore((state) => state.switchCompany);
   const joinCompany = useAuthStore((state) => state.joinCompany);
+  /*
+   * Off during the cutover soak, which keeps every address on one company so
+   * the schema change stays reversible. The entry comes out rather than
+   * staying as a control that refuses — a button that always fails is worse
+   * than one that is not there.
+   */
+  const canJoin = useAuthStore((state) => state.multiCompanySignups) !== false;
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -197,6 +204,7 @@ export default function CompanySwitcher({ className = '' }) {
               </li>
             );
           })}
+          {canJoin && (
           <li>
             {/*
               Under a rule, because it is not one of the things above: those
@@ -212,6 +220,7 @@ export default function CompanySwitcher({ className = '' }) {
               <span>Join another company</span>
             </button>
           </li>
+          )}
         </ul>
       )}
 

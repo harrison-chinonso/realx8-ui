@@ -33,6 +33,16 @@ const useAuthStore = create(
        */
       companies: [],
 
+      /**
+       * Whether a second company may be opened at all.
+       *
+       * Off during the cutover soak, which deliberately keeps every address on
+       * one company so the schema change stays reversible. The switcher leaves
+       * its Join entry out rather than offering a control that is going to
+       * refuse. Defaults true, because the suppression is the unusual state.
+       */
+      multiCompanySignups: true,
+
       setSession: (payloadOrAccessToken, refreshToken, user) => {
         const payload = typeof payloadOrAccessToken === 'object' && payloadOrAccessToken !== null
           ? payloadOrAccessToken
@@ -91,6 +101,9 @@ const useAuthStore = create(
           roles: Array.isArray(payload.roles) ? payload.roles : get().roles,
           activeRole: payload.activeRole !== undefined ? payload.activeRole : get().activeRole,
           companies: Array.isArray(payload.companies) ? payload.companies : get().companies,
+          multiCompanySignups: payload.multi_company_signups !== undefined
+            ? Boolean(payload.multi_company_signups)
+            : get().multiCompanySignups,
         });
       },
 
@@ -129,6 +142,7 @@ const useAuthStore = create(
         roles: [],
         activeRole: null,
         companies: [],
+        multiCompanySignups: true,
         });
       },
 
