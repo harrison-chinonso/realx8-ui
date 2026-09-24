@@ -7,6 +7,8 @@ import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
 import { googleAuthUrl, codesFromLocation } from '../../utils/googleAuthUrl';
 import FieldMark from '../../components/ui/FieldMark';
+import { PASSWORD_HINT } from '../../constants/password';
+import Select from '../../components/ui/Select';
 
 // A full-page redirect, not an XHR, so it has to be a URL the BROWSER can
 // follow. Derived from the API base rather than hardcoded: pinned to
@@ -180,7 +182,9 @@ export default function LoginPage() {
   const [showForgotModal, setShowForgotModal] = useState(false);
   // forgotStep: 'request' | 'otp' | 'reset' | 'done'
   const [forgotStep, setForgotStep] = useState('request');
-  const [forgotForm, setForgotForm] = useState({ email: '', otp: '', password: '', confirmPassword: '', reset_token: '' });
+  const [forgotForm, setForgotForm] = useState({ email: '', otp: '', password: '', confirmPassword: '', reset_token: '', company_id: 'all' });
+  /** Only ever more than one for somebody who deals with several companies. */
+  const [resetCompanies, setResetCompanies] = useState([]);
   const [forgotMessage, setForgotMessage] = useState({ type: '', text: '' });
   const [forgotLoading, setForgotLoading] = useState(false);
   const [mobileState, setMobileState] = useState('splash'); // 'splash' | 'form'
@@ -347,7 +351,14 @@ export default function LoginPage() {
     setForgotMessage({ type: '', text: '' });
     try {
       const res = await verifyResetOtp(forgotForm.email, forgotForm.otp);
-      setForgotForm((c) => ({ ...c, reset_token: res.reset_token }));
+      /*
+       * The companies this address holds accounts with, disclosed only now
+       * that the code has been proved. A password belongs to ONE company
+       * account, so the step below has to ask which — otherwise resetting a
+       * forgotten password for one company would silently change the others.
+       */
+      setResetCompanies(Array.isArray(res.companies) ? res.companies : []);
+      setForgotForm((c) => ({ ...c, reset_token: res.reset_token, company_id: 'all' }));
       setForgotStep('reset');
       setForgotMessage({ type: 'success', text: 'OTP verified. Set your new password below.' });
     } catch (err) {
@@ -367,7 +378,11 @@ export default function LoginPage() {
     setForgotLoading(true);
     setForgotMessage({ type: '', text: '' });
     try {
-      const res = await resetPassword({ reset_token: forgotForm.reset_token, password: forgotForm.password });
+      const res = await resetPassword({
+        reset_token: forgotForm.reset_token,
+        password: forgotForm.password,
+        company_id: forgotForm.company_id || 'all',
+      });
       setForgotStep('done');
       setForgotMessage({ type: 'success', text: res.message || 'Password reset successful. You can now sign in.' });
       setTimeout(closeForgotModal, 2000);
@@ -874,13 +889,35 @@ export default function LoginPage() {
         {/* Step 3: New password */}
         {(forgotStep === 'reset' || forgotStep === 'done') && (
           <form onSubmit={submitPasswordReset} className="space-y-4">
+            {/*
+              Which company this password is for.
+              A password belongs to one company account now, so resetting
+              without saying which would change them all — and somebody who has
+              forgotten the password for one company has not asked to have the
+              others changed. Shown only when there is a genuine choice; "All of
+              them" stays available for whoever has lost track of the lot.
+            */}
+            {resetCompanies.length > 1 && (
+              <Select
+                label="Which company is this password for?"
+                value={forgotForm.company_id}
+                onChange={(e) => setForgotForm((c) => ({ ...c, company_id: e.target.value }))}
+                options={[
+                  { value: 'all', label: 'All of them' },
+                  ...resetCompanies.map((entry) => ({
+                    value: String(entry.company_id),
+                    label: entry.company_name,
+                  })),
+                ]}
+              />
+            )}
             <Field
               light
               label="New password"
               type="password"
               value={forgotForm.password}
               onChange={(e) => setForgotForm((c) => ({ ...c, password: e.target.value }))}
-              placeholder="Min. 6 characters"
+              placeholder={PASSWORD_HINT}
               required
               autoComplete="new-password"
             />

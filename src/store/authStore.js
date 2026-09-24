@@ -151,8 +151,8 @@ const useAuthStore = create(
        * it here as well would fire the same request twice on every switch — see
        * the comment there about why that watch exists.
        */
-      switchCompany: async (companyId) => {
-        const res = await switchCompanyApi(companyId);
+      switchCompany: async (companyId, password) => {
+        const res = await switchCompanyApi(companyId, password);
         get().setSession(res);
         return res;
       },
@@ -164,9 +164,9 @@ const useAuthStore = create(
        * not move into one. Only the switcher's list changes, so the new
        * company appears there and the move is a separate, explicit act.
        */
-      joinCompany: async ({ companyCode, role, realtorCode }) => {
+      joinCompany: async ({ companyCode, role, realtorCode, password }) => {
         const res = await joinCompanyApi({
-          company_code: companyCode, role, realtor_code: realtorCode,
+          company_code: companyCode, role, realtor_code: realtorCode, password,
         });
         const companies = res?.data?.companies;
         if (Array.isArray(companies)) set({ companies });

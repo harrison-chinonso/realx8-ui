@@ -42,9 +42,20 @@ export default function CompanySwitcher({ className = '' }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [joining, setJoining] = useState(false);
-  const [joinForm, setJoinForm] = useState({ code: '', role: '' });
+  const [joinForm, setJoinForm] = useState({ code: '', role: '', password: '' });
   const [joinError, setJoinError] = useState('');
   const [joined, setJoined] = useState(null);
+  /**
+   * The company a switch stopped on because it wants its own password.
+   *
+   * Company accounts carry separate passwords now, and a session may only move
+   * into one it has actually been shown. Asked for here rather than by sending
+   * somebody to the sign-in screen, which is the thing this control exists to
+   * avoid.
+   */
+  const [challenge, setChallenge] = useState(null);
+  const [challengePassword, setChallengePassword] = useState('');
+  const [challengeError, setChallengeError] = useState('');
   const wrapper = useRef(null);
 
   /*
@@ -70,7 +81,7 @@ export default function CompanySwitcher({ className = '' }) {
     setOpen(false);
     setJoinError('');
     setJoined(null);
-    setJoinForm({ code: '', role: current?.type || 'client' });
+    setJoinForm({ code: '', role: current?.type || 'client', password: '' });
     setJoining(true);
   };
 
@@ -83,10 +94,11 @@ export default function CompanySwitcher({ className = '' }) {
       const result = await joinCompany({
         companyCode: joinForm.code.trim().toUpperCase(),
         role: joinForm.role,
+        password: joinForm.password || undefined,
       });
       // The store already holds the refreshed list, so the new company is in
       // the menu behind this modal before it is closed.
-      setJoined(result?.company || null);
+      setJoined(result ? { ...result.company, switch_needs_password: result.switch_needs_password } : null);
     } catch (err) {
       setJoinError(err?.response?.data?.message || err?.userMessage || 'Could not join that company.');
     } finally {
@@ -94,17 +106,32 @@ export default function CompanySwitcher({ className = '' }) {
     }
   };
 
-  const choose = async (entry) => {
+  const choose = async (entry, password) => {
     if (busy || entry.current) return;
     setBusy(true);
     setError('');
+    setChallengeError('');
     try {
-      await switchCompany(entry.company_id);
+      await switchCompany(entry.company_id, password);
       window.location.reload();
     } catch (err) {
-      setError(err?.response?.data?.message || err?.userMessage || 'Could not switch company.');
+      const reason = err?.response?.data?.reason;
+      const message = err?.response?.data?.message || err?.userMessage || 'Could not switch company.';
+      /*
+       * Not a failure — a question. The company is reachable, it simply wants
+       * the password that belongs to it, so the menu closes and a prompt opens
+       * rather than an error appearing under a button.
+       */
+      if (reason === 'password_required' || reason === 'password_incorrect') {
+        setOpen(false);
+        setChallenge(entry);
+        setChallengePassword('');
+        setChallengeError(reason === 'password_incorrect' ? message : '');
+      } else {
+        setError(message);
+        setOpen(false);
+      }
       setBusy(false);
-      setOpen(false);
     }
   };
 
@@ -198,6 +225,42 @@ export default function CompanySwitcher({ className = '' }) {
       )}
 
       <Modal
+        open={Boolean(challenge)}
+        onClose={() => !busy && setChallenge(null)}
+        title={`Sign in to ${challenge?.company_name || 'that company'}`}
+        size="sm"
+      >
+        <form
+          onSubmit={(event) => { event.preventDefault(); choose(challenge, challengePassword); }}
+          className="space-y-4"
+        >
+          <p className="text-sm text-slate-600">
+            Your account with <strong>{challenge?.company_name}</strong> uses a different
+            password from the one you signed in with. Enter it to move there — you will not
+            be asked again for the rest of this session.
+          </p>
+          <Input
+            label="Password"
+            type="password"
+            value={challengePassword}
+            onChange={(e) => setChallengePassword(e.target.value)}
+            autoComplete="current-password"
+            autoFocus
+            required
+          />
+          {challengeError && <p className="text-sm text-rose-600">{challengeError}</p>}
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+            <Button type="button" variant="secondary" onClick={() => setChallenge(null)} disabled={busy}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={busy || !challengePassword}>
+              {busy ? 'Switching…' : 'Switch company'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
         open={joining}
         onClose={() => !busy && setJoining(false)}
         title={joined ? `You are now with ${joined.name}` : 'Join another company'}
@@ -206,12 +269,17 @@ export default function CompanySwitcher({ className = '' }) {
         {joined ? (
           <div className="space-y-4 text-sm text-slate-600">
             <p>
-              Your account with <strong>{joined.name}</strong> is open. It uses the password you
-              already sign in with — there is no second one to remember.
+              Your account with <strong>{joined.name}</strong> is open.
+              {joined.switch_needs_password
+                ? ' It has the password you chose for it, which is separate from the one you signed in with.'
+                : ' It uses the password you already sign in with — there is no second one to remember.'}
             </p>
             <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
               It is in the company menu now. Switching there reloads the app into that
               company; everything you have open here belongs to this one.
+              {joined.switch_needs_password
+                ? ' You gave it a password of its own, so switching there will ask for it.'
+                : ''}
             </p>
             <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
               <Button type="button" variant="secondary" onClick={() => setJoining(false)}>
@@ -258,6 +326,20 @@ export default function CompanySwitcher({ className = '' }) {
                 { value: 'client', label: 'Client — buying property' },
                 { value: 'realtor', label: 'Realtor — selling for them' },
               ]}
+            />
+            {/*
+              Optional, and says so. Most people adding a company are not
+              trying to acquire a second password to remember, so leaving it
+              blank reuses the one they are signed in with — which also means
+              the new company can be switched into without being asked again.
+            */}
+            <Input
+              label="Password for this company"
+              type="password"
+              value={joinForm.password}
+              onChange={(e) => setJoinForm((f) => ({ ...f, password: e.target.value }))}
+              placeholder="Leave blank to use your current password"
+              autoComplete="new-password"
             />
             {joinError && <p className="text-sm text-rose-600">{joinError}</p>}
             <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">

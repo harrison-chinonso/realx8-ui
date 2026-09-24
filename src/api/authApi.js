@@ -24,6 +24,11 @@ export const get2FAPolicy = async () => (await client.get('/auth/admin/2fa-polic
 export const set2FAPolicy = async (required, company_id) => (await client.post('/auth/admin/2fa-policy', { required, company_id })).data;
 export const forgotPassword = async (email) => (await client.post('/auth/forgot-password', { email })).data;
 export const verifyResetOtp = async (email, otp) => (await client.post('/auth/verify-reset-otp', { email, otp })).data;
+/**
+ * `payload` carries `company_id` when the address has accounts with more than
+ * one company — a password belongs to one company account now, so a reset that
+ * did not say which would quietly change them all.
+ */
 export const resetPassword = async (payload) => (await client.post('/auth/reset-password', payload)).data;
 export const me = async () => (await client.get('/auth/me')).data;
 export const logout = async (refreshToken) => (await client.post('/auth/logout', { refreshToken })).data;
@@ -40,8 +45,8 @@ export const listMyCompanies = async () => (await client.get('/auth/companies'))
  * its own profile and its own branding — which is why the store replaces the
  * session with it rather than patching a company id into the old one.
  */
-export const switchCompanyApi = async (company_id) =>
-  (await client.post('/auth/switch-company', { company_id })).data;
+export const switchCompanyApi = async (company_id, password) =>
+  (await client.post('/auth/switch-company', { company_id, password })).data;
 
 /**
  * Open an account with another company, using its code, from inside the app.
@@ -50,5 +55,5 @@ export const switchCompanyApi = async (company_id) =>
  * a company and moving into one are separate, because the move has guards the
  * addition does not need; see the server's joinCompany.
  */
-export const joinCompanyApi = async ({ company_code, role, realtor_code }) =>
-  (await client.post('/auth/companies/join', { company_code, role, realtor_code })).data;
+export const joinCompanyApi = async ({ company_code, role, realtor_code, password }) =>
+  (await client.post('/auth/companies/join', { company_code, role, realtor_code, password })).data;
