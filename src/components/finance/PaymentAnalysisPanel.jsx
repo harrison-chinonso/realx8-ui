@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getPaymentAnalysis } from '../../api/financeApi';
-import { useCurrency, useAppearance } from '../../context/useAppearance';
+import { useCurrency } from '../../context/useAppearance';
 import { openReceipt } from '../../utils/receiptDocument';
 import Badge from '../common/Badge';
 import SummaryTile from '../dashboard/SummaryTile';
@@ -45,7 +45,6 @@ export default function PaymentAnalysisPanel({
   const showInvoices = show === 'both' || show === 'invoices';
   const showPayments = show === 'both' || show === 'payments';
   const fmt = useCurrency();
-  const appearance = useAppearance();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -221,7 +220,6 @@ export default function PaymentAnalysisPanel({
                         type="button"
                         onClick={() => openReceipt(
                           { id: row.receipt_id, company_receipt_url: row.company_receipt_url },
-                          { appearance, fmt },
                         )}
                         className="text-sm font-medium hover:underline"
                         style={{ color: 'var(--primary)' }}

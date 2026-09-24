@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Download, Eye, Lock } from 'lucide-react';
 import { getMyProperties } from '../../api/financeApi';
-import { useCurrency, useAppearance } from '../../context/useAppearance';
+import { useCurrency } from '../../context/useAppearance';
 import { openReceipt } from '../../utils/receiptDocument';
 import { resolveMedia } from '../../utils/mediaUrl';
 import { downloadUrl } from '../../utils/downloadUrl';
@@ -103,7 +103,6 @@ function DocumentRow({ doc }) {
 
 export default function MyPropertiesPage() {
   const fmt = useCurrency();
-  const appearance = useAppearance();
   const [rows, setRows] = useState(null);
   const [totals, setTotals] = useState(null);
   const [error, setError] = useState('');
@@ -233,7 +232,7 @@ export default function MyPropertiesPage() {
                               {proof.status === 'verified' && (
                                 <button
                                   type="button"
-                                  onClick={() => openReceipt(proof, { appearance, fmt })}
+                                  onClick={() => openReceipt(proof)}
                                   className="text-xs font-semibold hover:underline"
                                   style={{ color: 'var(--primary)' }}
                                 >

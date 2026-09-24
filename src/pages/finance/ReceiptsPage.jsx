@@ -10,7 +10,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import MoneyInput from '../../components/ui/MoneyInput';
-import { useCurrency, useAppearance } from '../../context/useAppearance';
+import { useCurrency } from '../../context/useAppearance';
 import { openReceipt } from '../../utils/receiptDocument';
 import Select from '../../components/ui/Select';
 import { CONFIRMABLE_METHOD_FALLBACK, METHOD_LABELS } from '../../utils/paymentMethods';
@@ -45,7 +45,6 @@ export default function ReceiptsPage() {
    * of the app is themed with, so a generated receipt looks like it came from
    * the company rather than from the software.
    */
-  const appearance = useAppearance();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -264,8 +263,6 @@ export default function ReceiptsPage() {
    * property, the unit, the quantity and the balance left.
    */
   const printReceipt = (receipt) => openReceipt(receipt, {
-    appearance,
-    fmt,
     onError: (message) => setFeedback('error', message),
   });
 

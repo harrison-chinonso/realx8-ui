@@ -1,7 +1,6 @@
 import Badge from '../common/Badge';
 import { DASHBOARD_ROWS, capRows } from './dashboardRows';
 import { openReceipt } from '../../utils/receiptDocument';
-import { useAppearance } from '../../context/useAppearance';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -14,7 +13,6 @@ export default function TransactionHistory({
   title = 'Recent Transactions', rows = [], fmt, emptyText, limit = DASHBOARD_ROWS,
 }) {
   const shown = capRows(rows, limit);
-  const appearance = useAppearance();
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
@@ -71,7 +69,7 @@ export default function TransactionHistory({
                   {row.status === 'verified' ? (
                     <button
                       type="button"
-                      onClick={() => openReceipt(row, { appearance, fmt })}
+                      onClick={() => openReceipt(row)}
                       className="font-medium hover:underline"
                       style={{ color: 'var(--primary)' }}
                     >

@@ -147,13 +147,15 @@ export const calculateCommission = (payload) => client.post('/commissions/calcul
 
 // Receipts
 export const listReceipts = (params) => client.get('/receipts', { params }).then(r => r.data);
-/*
- * What a receipt needs to be a receipt: the property, the unit, the quantity
- * and the balance left afterwards. None of those live on the receipt row, and
- * the balance is a live figure rather than something the payment recorded — so
- * it is fetched for the one receipt being printed, not for the whole list.
+/**
+ * The rendered receipt, drawn by the server.
+ *
+ * The same document the approval email carries — see utils/receiptDocument for
+ * why it is fetched rather than assembled here. The print-data endpoint it
+ * replaced is still served, for anything reading the receipt's FACTS rather
+ * than its document; nothing in this app does any more.
  */
-export const getReceiptPrintData = (id) => client.get(`/receipts/${id}/print-data`).then(r => r.data);
+export const getReceiptDocument = (id) => client.get(`/receipts/${id}/document`).then(r => r.data);
 
 /*
  * Reminder SCHEDULES — the rules for when buyers get chased, as distinct from
