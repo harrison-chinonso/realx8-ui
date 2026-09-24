@@ -128,8 +128,17 @@ function DarkSelect({ label, value, onChange, options }) {
         <Select
           value={value}
           onChange={onChange}
-          className="w-full h-full px-3.5 bg-transparent text-sm text-white focus:outline-none appearance-none cursor-pointer"
-          style={{ WebkitAppearance: 'none' }}
+          className="w-full h-full px-3.5 bg-transparent text-sm focus:outline-none appearance-none cursor-pointer"
+          /*
+           * This page is near-black, and Select draws the chosen label in
+           * whatever colour the control carries. Named here rather than as a
+           * `text-white` class because the control sets its own colour inline,
+           * and an inline style is not something a class can win against.
+           *
+           * The border goes with it: the field's border is the wrapper's, and
+           * the control's own would be a second one in the light theme's grey.
+           */
+          style={{ WebkitAppearance: 'none', color: '#fff', borderColor: 'transparent' }}
         >
           {options.map(opt => (
             <option key={opt.value} value={opt.value} className="bg-[#07080c] text-white">

@@ -100,6 +100,15 @@ export default function Select({
   /* true / false to force a search box; omitted, it appears on long lists. */
   searchable,
   id,
+  /*
+   * Taken by name rather than left in `...props`.
+   *
+   * Spread, a caller's `style` REPLACED this component's own — including the
+   * border colour, which is how the one dark call site ended up with a control
+   * whose border came from nowhere. Merged, a caller overrides the properties
+   * it names and inherits the rest.
+   */
+  style,
   ...props
 }) {
   const items = useMemo(() => normaliseOptions(options, children), [options, children]);
@@ -419,14 +428,30 @@ export default function Select({
           'disabled:cursor-not-allowed disabled:bg-surface-sunken',
           className,
         )}
-        style={{ borderColor: error ? 'var(--danger)' : 'var(--line-strong)' }}
+        style={{
+          borderColor: error ? 'var(--danger)' : 'var(--line-strong)',
+          // The colour the chosen label inherits. Here rather than on the span
+          // so a caller can change both with one override.
+          color: 'var(--content)',
+          ...style,
+        }}
         {...props}
       >
         {/* An empty-valued option is still a real choice here ("All tiers", "Not set"),
             so it reads as content. The muted placeholder is only for no match at all. */}
+        {/*
+          The chosen label INHERITS the control's colour rather than naming one.
+          Hard-coding --content here meant the selection was drawn in the
+          light-theme text colour wherever the control sits, so on a dark
+          surface it was near-black on near-black: the list opened and read
+          fine, a choice was made and stored, and the trigger then showed
+          nothing. It looked exactly like a select that refuses to hold a value.
+          The placeholder still names its own colour — it is deliberately
+          quieter than the text around it, on any background.
+        */}
         <span
           className="truncate text-left"
-          style={{ color: selected ? 'var(--content)' : 'var(--content-subtle)' }}
+          style={selected ? undefined : { color: 'var(--content-subtle)' }}
         >
           {selected ? selected.label : placeholder}
         </span>
