@@ -179,7 +179,7 @@ function ClassicHeader({ onMenuOpen }) {
           )}
         </NavLink>
         <CompanySwitcher />
-        <ProfileToggle />
+        <ProfileToggle className="hidden sm:block" />
         {/* Every role reaches Profile from here — the sidebar no longer carries
             an Account section. */}
         <NavLink to="/profile" className="hidden text-right text-sm sm:block hover:opacity-80">

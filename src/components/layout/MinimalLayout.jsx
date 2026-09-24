@@ -174,7 +174,7 @@ function MinimalHeader({ onMenuOpen }) {
 
         <CompanySwitcher />
 
-        <ProfileToggle />
+        <ProfileToggle className="hidden sm:block" />
         <div className="relative">
           <Button onClick={() => setUserOpen((v) => !v)} variant="ghost" size="sm" className="px-2 py-1">
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">

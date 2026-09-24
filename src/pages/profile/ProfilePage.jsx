@@ -8,6 +8,7 @@ import Input from '../../components/ui/Input';
 import VerificationPanel from '../../components/profile/VerificationPanel';
 import LevelPanel from '../../components/profile/LevelPanel';
 import CompaniesPanel from '../../components/profile/CompaniesPanel';
+import ProfileToggle from '../../components/common/ProfileToggle';
 import FieldMark from '../../components/ui/FieldMark';
 
 function PersonalDetailsTab() {
@@ -166,6 +167,17 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">My Profile</h1>
+
+      {/*
+        The realtor/client switch, on phones only.
+        The top bar carries it from `sm` up, and cannot below that — two pills
+        plus three icon buttons do not fit a 360px header, and a bar wider than
+        the screen makes mobile browsers scale the whole page down. Shown here
+        instead, so there is exactly one of it at any screen size.
+      */}
+      <div className="sm:hidden">
+        <ProfileToggle />
+      </div>
 
       <div className="flex flex-wrap gap-1 border-b border-slate-200">
         {tabs.map((tab) => {

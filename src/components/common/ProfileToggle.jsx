@@ -29,8 +29,16 @@ const DESCRIPTION = {
  * characters when the bar is full rather than forcing the bar wider than the
  * screen. That mattered once a second pill joined it — a header that cannot
  * fit makes the document wider than the viewport, and mobile browsers answer
- * that by scaling the whole page down, so the app rendered smaller on a bigger
- * phone. The full text stays in `title` and `aria-label` throughout.
+ * that by scaling the whole page down. The full text stays in `title` and
+ * `aria-label` throughout.
+ *
+ * ── Where it lives on a phone ───────────────────────────────────────────────
+ *
+ * Not in the bar. Two pills plus three icon buttons do not fit a 360px header,
+ * and truncating both until neither says anything is not a fix. Below `sm` the
+ * layouts hide this one and the profile page shows it instead — exactly one
+ * place at any screen size, and the page has room to say what switching does
+ * before somebody does it.
  */
 export default function ProfileToggle({ className = '' }) {
   const roles = useAuthStore((s) => s.roles) || [];

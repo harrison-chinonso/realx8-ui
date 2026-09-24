@@ -123,7 +123,7 @@ export default function LauncherLayout({ children }) {
 
         {/* A realtor or client acting as themselves rather than as staff. */}
         <CompanySwitcher />
-        <ProfileToggle />
+        <ProfileToggle className="hidden sm:block" />
 
         <NavLink
           to="/notifications"

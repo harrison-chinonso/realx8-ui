@@ -331,7 +331,7 @@ function TopNav({ onMobileMenuOpen }) {
         {/* User dropdown — Profile & Settings always accessible here */}
         <div className="flex items-center gap-2">
           <CompanySwitcher />
-          <ProfileToggle />
+          <ProfileToggle className="hidden sm:block" />
           <div className="relative">
             <Button onClick={() => toggle('user')} variant="ghost" size="sm" className="px-2 py-1.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white shrink-0">

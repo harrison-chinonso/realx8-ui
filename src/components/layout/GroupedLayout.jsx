@@ -175,7 +175,7 @@ function TopBar({ onMenuOpen }) {
 
       <div className="ml-auto flex items-center gap-2">
         <CompanySwitcher />
-        <ProfileToggle />
+        <ProfileToggle className="hidden sm:block" />
         <NavLink to="/notifications" className="relative rounded-full p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden">
           <Bell className="h-5 w-5" />
           {count > 0 && (

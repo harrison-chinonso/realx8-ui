@@ -159,7 +159,7 @@ function BoldContentHeader({ onMenuOpen }) {
       <span className="text-sm font-medium text-slate-800">{title}</span>
       <div className="ml-auto flex items-center gap-2">
         <CompanySwitcher />
-        <ProfileToggle />
+        <ProfileToggle className="hidden sm:block" />
       </div>
     </div>
   );
