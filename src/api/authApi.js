@@ -42,3 +42,13 @@ export const listMyCompanies = async () => (await client.get('/auth/companies'))
  */
 export const switchCompanyApi = async (company_id) =>
   (await client.post('/auth/switch-company', { company_id })).data;
+
+/**
+ * Open an account with another company, using its code, from inside the app.
+ *
+ * Returns the company and the refreshed switcher list — NOT a session. Adding
+ * a company and moving into one are separate, because the move has guards the
+ * addition does not need; see the server's joinCompany.
+ */
+export const joinCompanyApi = async ({ company_code, role, realtor_code }) =>
+  (await client.post('/auth/companies/join', { company_code, role, realtor_code })).data;

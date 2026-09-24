@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
-  switchRoleApi, enableProfileApi, switchCompanyApi, logout as logoutApi,
+  switchRoleApi, enableProfileApi, switchCompanyApi, joinCompanyApi,
+  logout as logoutApi,
 } from '../api/authApi';
 import { setSessionKey, clearSessionKey } from '../api/payloadCrypto';
 import { resetRefreshBudget } from '../api/refreshBudget';
@@ -154,6 +155,22 @@ const useAuthStore = create(
         const res = await switchCompanyApi(companyId);
         get().setSession(res);
         return res;
+      },
+
+      /**
+       * Open an account with another company, by its code.
+       *
+       * The session is deliberately untouched — this adds a company, it does
+       * not move into one. Only the switcher's list changes, so the new
+       * company appears there and the move is a separate, explicit act.
+       */
+      joinCompany: async ({ companyCode, role, realtorCode }) => {
+        const res = await joinCompanyApi({
+          company_code: companyCode, role, realtor_code: realtorCode,
+        });
+        const companies = res?.data?.companies;
+        if (Array.isArray(companies)) set({ companies });
+        return res?.data;
       },
 
       /** Adds the counterpart realtor/client profile and switches into it. */

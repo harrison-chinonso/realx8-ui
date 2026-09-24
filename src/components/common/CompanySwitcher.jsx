@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Building2, Check, ChevronDown } from 'lucide-react';
+import { Building2, Check, ChevronDown, Plus } from 'lucide-react';
 
+import Modal from './Modal';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
+import Select from '../ui/Select';
 import useAuthStore from '../../store/authStore';
 
 /**
@@ -8,11 +12,15 @@ import useAuthStore from '../../store/authStore';
  *
  * ── When it appears ─────────────────────────────────────────────────────────
  *
- * Only for somebody who actually has more than one. The server decides that —
- * it sends an empty list for anyone who cannot hold a second account, which is
- * every kind of staff, and for anyone who simply has not joined a second
- * company yet. A control offering one choice is a control that does nothing,
- * and the sidebar has no room for furniture.
+ * Only for somebody who CAN hold more than one. The server decides that: an
+ * empty list means staff, who belong to a single company, and it is the signal
+ * to draw nothing at all.
+ *
+ * One entry still draws the control, which looks like a menu with a single
+ * choice and is not. Joining a second company is done from inside the first,
+ * so the person with one company is exactly who needs to reach this — hiding
+ * it from them would leave the only route to a second company being to already
+ * have one.
  *
  * ── Why it reloads ──────────────────────────────────────────────────────────
  *
@@ -29,9 +37,14 @@ import useAuthStore from '../../store/authStore';
 export default function CompanySwitcher({ className = '' }) {
   const companies = useAuthStore((state) => state.companies) || [];
   const switchCompany = useAuthStore((state) => state.switchCompany);
+  const joinCompany = useAuthStore((state) => state.joinCompany);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [joining, setJoining] = useState(false);
+  const [joinForm, setJoinForm] = useState({ code: '', role: '' });
+  const [joinError, setJoinError] = useState('');
+  const [joined, setJoined] = useState(null);
   const wrapper = useRef(null);
 
   /*
@@ -49,9 +62,37 @@ export default function CompanySwitcher({ className = '' }) {
     return () => document.removeEventListener('mousedown', close);
   }, [open]);
 
-  if (companies.length < 2) return null;
+  if (!companies.length) return null;
 
   const current = companies.find((entry) => entry.current);
+
+  const openJoin = () => {
+    setOpen(false);
+    setJoinError('');
+    setJoined(null);
+    setJoinForm({ code: '', role: current?.type || 'client' });
+    setJoining(true);
+  };
+
+  const submitJoin = async (event) => {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setJoinError('');
+    try {
+      const result = await joinCompany({
+        companyCode: joinForm.code.trim().toUpperCase(),
+        role: joinForm.role,
+      });
+      // The store already holds the refreshed list, so the new company is in
+      // the menu behind this modal before it is closed.
+      setJoined(result?.company || null);
+    } catch (err) {
+      setJoinError(err?.response?.data?.message || err?.userMessage || 'Could not join that company.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const choose = async (entry) => {
     if (busy || entry.current) return;
@@ -129,6 +170,21 @@ export default function CompanySwitcher({ className = '' }) {
               </li>
             );
           })}
+          <li>
+            {/*
+              Under a rule, because it is not one of the things above: those
+              are places to go, this makes a new one.
+            */}
+            <button
+              type="button"
+              onClick={openJoin}
+              disabled={busy}
+              className="mt-1 flex w-full items-center gap-2 border-t border-slate-100 px-3 py-2 text-left text-sm text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              <Plus className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>Join another company</span>
+            </button>
+          </li>
         </ul>
       )}
 
@@ -140,6 +196,81 @@ export default function CompanySwitcher({ className = '' }) {
           {error}
         </div>
       )}
+
+      <Modal
+        open={joining}
+        onClose={() => !busy && setJoining(false)}
+        title={joined ? `You are now with ${joined.name}` : 'Join another company'}
+        size="sm"
+      >
+        {joined ? (
+          <div className="space-y-4 text-sm text-slate-600">
+            <p>
+              Your account with <strong>{joined.name}</strong> is open. It uses the password you
+              already sign in with — there is no second one to remember.
+            </p>
+            <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+              It is in the company menu now. Switching there reloads the app into that
+              company; everything you have open here belongs to this one.
+            </p>
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+              <Button type="button" variant="secondary" onClick={() => setJoining(false)}>
+                Stay here
+              </Button>
+              <Button
+                type="button"
+                onClick={() => { setJoining(false); choose({ company_id: joined.id }); }}
+              >
+                Switch to {joined.name}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={submitJoin} className="space-y-4">
+            <p className="text-sm text-slate-600">
+              Enter the code the company gave you. Your account there uses the password you
+              already have, so there is nothing else to set up.
+            </p>
+            {/*
+              Labelled through the component rather than beside it: Input
+              renders its own <label> wrapper, so a second one around it nests
+              two labels, which is invalid — the browser drops one, and the
+              field came out with no visible name at all.
+            */}
+            <Input
+              label="Company code"
+              value={joinForm.code}
+              onChange={(e) => setJoinForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
+              placeholder="e.g. AB12C"
+              autoFocus
+              required
+            />
+            {/*
+              The role is asked for rather than assumed: somebody who sells for
+              one agency may simply be buying from another, and the two accounts
+              are separate things.
+            */}
+            <Select
+              label="Join as"
+              value={joinForm.role}
+              onChange={(e) => setJoinForm((f) => ({ ...f, role: e.target.value }))}
+              options={[
+                { value: 'client', label: 'Client — buying property' },
+                { value: 'realtor', label: 'Realtor — selling for them' },
+              ]}
+            />
+            {joinError && <p className="text-sm text-rose-600">{joinError}</p>}
+            <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+              <Button type="button" variant="secondary" onClick={() => setJoining(false)} disabled={busy}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={busy || !joinForm.code.trim()}>
+                {busy ? 'Joining…' : 'Join company'}
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }
