@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { listClients, createUser, updateUser, deleteUser, listRealtors } from '../../api/userApi';
-import { listRoles } from '../../api/rolesApi';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
 import DetailsModal from '../../components/common/DetailsModal';
@@ -14,15 +13,22 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { useCurrency } from '../../context/useAppearance';
 import FieldMark from '../../components/ui/FieldMark';
+import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '../../constants/password';
+import CompanyField from '../../components/common/CompanyField';
+
+const EMPTY_CREATE = { name: '', email: '', password: '', phone: '', realtor_id: '', company_id: '' };
 
 export default function ClientsPage() {
   const fmt = useCurrency();
   const [clients, setClients] = useState([]);
-  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'client' });
+  const [form, setForm] = useState(EMPTY_CREATE);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
   const [editingUser, setEditingUser] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState('');
   const [detailRow, setDetailRow] = useState(null);
   const [summaryFor, setSummaryFor] = useState(null);
   const [paymentsFor, setPaymentsFor] = useState(null);
@@ -31,18 +37,24 @@ export default function ClientsPage() {
   const [assigning, setAssigning] = useState(null);   // the client being assigned
   const [savingAssign, setSavingAssign] = useState(false);
 
-  const roleOptions = useMemo(
-    () => roles.filter((role) => role.name === 'client').map((role) => ({ value: role.name, label: role.display_name || role.name })),
-    [roles]
-  );
+  /*
+   * Only realtors from the company being created into.
+   *
+   * A platform admin sees every company's realtors in `realtors`, and the
+   * server refuses a cross-company attribution — so without this the list
+   * offers choices that can only come back as an error. For everybody else the
+   * list is already their own company and the filter is a no-op.
+   */
+  const referralOptions = useMemo(() => (
+    form.company_id
+      ? realtors.filter((r) => String(r.company_id) === String(form.company_id))
+      : realtors
+  ), [realtors, form.company_id]);
 
   const load = () => {
     setLoading(true);
-    Promise.all([listClients(), listRoles()])
-      .then(([clientsResponse, rolesResponse]) => {
-        setClients(clientsResponse.data || []);
-        setRoles(rolesResponse.data || []);
-      })
+    listClients()
+      .then((clientsResponse) => setClients(clientsResponse.data || []))
       .finally(() => setLoading(false));
   };
 
@@ -55,15 +67,41 @@ export default function ClientsPage() {
       .catch(() => setRealtors([]));
   }, []);
 
+  /*
+   * The role is not asked for, because the button says what it makes.
+   *
+   * This form offered a "Role" dropdown whose only option was Client — a
+   * decision with one answer, on a screen headed Add Client. What it is
+   * replaced by is the field that genuinely varies: who introduced them.
+   */
   const handleCreate = async (e) => {
     e.preventDefault();
-    await createUser({ ...form, type: 'client', role: form.role || 'client' });
-    setShowCreate(false);
-    setForm({ name: '', email: '', password: '', phone: '', role: 'client' });
-    load();
+    setCreating(true);
+    setCreateError('');
+    try {
+      await createUser({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        phone: form.phone,
+        type: 'client',
+        role: 'client',
+        ...(form.company_id ? { company_id: Number(form.company_id) } : {}),
+        // Optional. Empty means nobody is credited with the introduction.
+        realtor_id: form.realtor_id ? Number(form.realtor_id) : null,
+      });
+      setShowCreate(false);
+      setForm(EMPTY_CREATE);
+      load();
+    } catch (err) {
+      setCreateError(err?.userMessage || 'Could not add the client.');
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleEdit = (user) => {
+    setEditError('');
     setEditingUser(user);
     setEditForm({
       name: user.name || '',
@@ -75,9 +113,19 @@ export default function ClientsPage() {
 
   const handleUpdate = async () => {
     if (!editingUser) return;
-    await updateUser(editingUser.id, editForm);
-    setEditingUser(null);
-    load();
+    setSavingEdit(true);
+    setEditError('');
+    try {
+      await updateUser(editingUser.id, editForm);
+      setEditingUser(null);
+      load();
+    } catch (err) {
+      // Without this the dialog simply refused to close, saying nothing — the
+      // same silence that made a rejected create look like a broken button.
+      setEditError(err?.userMessage || 'Could not save the changes.');
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const realtorName = (u) => {
@@ -124,7 +172,7 @@ export default function ClientsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Clients</h1>
-        <Button onClick={() => setShowCreate(true)}>+ Add Client</Button>
+        <Button onClick={() => { setCreateError(''); setShowCreate(true); }}>+ Add Client</Button>
       </div>
 
       <ReferralCodeCard audience="clients" />
@@ -191,16 +239,44 @@ export default function ClientsPage() {
         fields={detailFields}
       />
 
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Add Client">
+      <Modal open={showCreate} onClose={() => !creating && setShowCreate(false)} title="Add Client">
         <form onSubmit={handleCreate} className="space-y-3">
+          <CompanyField value={form.company_id} onChange={(e) => setForm({ ...form, company_id: e.target.value })} disabled={creating} />
           <Input label="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-          <Input label="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+          <div>
+            <Input
+              label="Password"
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              minLength={MIN_PASSWORD_LENGTH}
+              required
+            />
+            <p className="mt-1 text-xs text-content-subtle">{PASSWORD_HINT}</p>
+          </div>
           <Input label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-          <Select label="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} options={roleOptions} />
+          <div>
+            <Select
+              label="Assigned realtor / referral"
+              value={form.realtor_id}
+              onChange={(e) => setForm({ ...form, realtor_id: e.target.value })}
+              placeholder="Nobody — leave unassigned"
+            >
+              <option value="">Nobody — leave unassigned</option>
+              {referralOptions.map((r) => (
+                <option key={r.id} value={r.id}>{r.name}{r.realtor_code ? ` — ${r.realtor_code}` : ''}</option>
+              ))}
+            </Select>
+            <p className="mt-1 text-xs text-content-subtle">
+              Optional. The realtor credited with introducing this client — they are
+              notified of purchases and payments, and can schedule inspections.
+            </p>
+          </div>
+          {createError && <p className="text-sm text-danger">{createError}</p>}
           <div className="flex gap-2 pt-2">
-            <Button type="submit">Add Client</Button>
-            <Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button type="submit" disabled={creating}>{creating ? 'Adding…' : 'Add Client'}</Button>
+            <Button type="button" variant="secondary" onClick={() => setShowCreate(false)} disabled={creating}>Cancel</Button>
           </div>
         </form>
       </Modal>
@@ -216,9 +292,10 @@ export default function ClientsPage() {
               <input type="checkbox" checked={editForm.is_active} onChange={(e) => setEditForm({ ...editForm, is_active: e.target.checked })} className="h-4 w-4" />
               Active
             </label>
+            {editError && <p className="text-sm text-danger">{editError}</p>}
             <div className="flex justify-end gap-2">
-              <Button type="button" onClick={() => setEditingUser(null)} variant="secondary">Cancel</Button>
-              <Button type="button" onClick={handleUpdate} >Save</Button>
+              <Button type="button" onClick={() => setEditingUser(null)} variant="secondary" disabled={savingEdit}>Cancel</Button>
+              <Button type="button" onClick={handleUpdate} disabled={savingEdit}>{savingEdit ? 'Saving…' : 'Save'}</Button>
             </div>
           </div>
         </div>

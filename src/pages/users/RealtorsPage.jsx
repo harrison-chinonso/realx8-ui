@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { listRealtors, createUser, updateUser, deleteUser } from '../../api/userApi';
-import { listRoles } from '../../api/rolesApi';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
 import DetailsModal from '../../components/common/DetailsModal';
@@ -15,46 +14,88 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { useCurrency } from '../../context/useAppearance';
 import FieldMark from '../../components/ui/FieldMark';
+import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '../../constants/password';
+import CompanyField from '../../components/common/CompanyField';
+
+const EMPTY_CREATE = { name: '', email: '', password: '', phone: '', category: 'basic', realtor_id: '', company_id: '' };
 
 export default function RealtorsPage() {
   const fmt = useCurrency();
   const [realtors, setRealtors] = useState([]);
-  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'realtor', category: 'basic' });
+  const [form, setForm] = useState(EMPTY_CREATE);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
   const [editingUser, setEditingUser] = useState(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState('');
   const [detailRow, setDetailRow] = useState(null);
   const [summaryFor, setSummaryFor] = useState(null);
   const [referralsFor, setReferralsFor] = useState(null);
   const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', is_active: true, category: 'basic' });
 
-  const roleOptions = useMemo(
-    () => roles.filter((role) => role.name === 'realtor').map((role) => ({ value: role.name, label: role.display_name || role.name })),
-    [roles]
-  );
+  /*
+   * Only realtors from the company being created into.
+   *
+   * A platform admin sees every company's realtors in `realtors`, and the
+   * server refuses a cross-company attribution — so without this the list
+   * offers choices that can only come back as an error. For everybody else the
+   * list is already their own company and the filter is a no-op.
+   */
+  const referralOptions = useMemo(() => (
+    form.company_id
+      ? realtors.filter((r) => String(r.company_id) === String(form.company_id))
+      : realtors
+  ), [realtors, form.company_id]);
 
   const load = () => {
     setLoading(true);
-    Promise.all([listRealtors(), listRoles()])
-      .then(([realtorsResponse, rolesResponse]) => {
-        setRealtors(realtorsResponse.data || []);
-        setRoles(rolesResponse.data || []);
-      })
+    listRealtors()
+      .then((realtorsResponse) => setRealtors(realtorsResponse.data || []))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);
 
+  /*
+   * No role is asked for. The screen is Add Realtor; the dropdown it replaces
+   * offered Realtor and nothing else.
+   *
+   * What takes its place is the referring realtor — who recruited this one —
+   * which is the same `realtor_id` a realtor picks up when they sign up through
+   * a colleague's link, and the same field the Clients screen now sets.
+   */
   const handleCreate = async (e) => {
     e.preventDefault();
-    await createUser({ ...form, type: 'realtor', role: form.role || 'realtor' });
-    setShowCreate(false);
-    setForm({ name: '', email: '', password: '', phone: '', role: 'realtor' });
-    load();
+    setCreating(true);
+    setCreateError('');
+    try {
+      await createUser({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        phone: form.phone,
+        category: form.category,
+        type: 'realtor',
+        role: 'realtor',
+        ...(form.company_id ? { company_id: Number(form.company_id) } : {}),
+        realtor_id: form.realtor_id ? Number(form.realtor_id) : null,
+      });
+      setShowCreate(false);
+      // Reset through the constant — the old inline reset dropped `category`,
+      // leaving the tier control with no value on the next open.
+      setForm(EMPTY_CREATE);
+      load();
+    } catch (err) {
+      setCreateError(err?.userMessage || 'Could not add the realtor.');
+    } finally {
+      setCreating(false);
+    }
   };
 
   const handleEdit = (user) => {
+    setEditError('');
     setEditingUser(user);
     setEditForm({
       name: user.name || '',
@@ -67,9 +108,19 @@ export default function RealtorsPage() {
 
   const handleUpdate = async () => {
     if (!editingUser) return;
-    await updateUser(editingUser.id, editForm);
-    setEditingUser(null);
-    load();
+    setSavingEdit(true);
+    setEditError('');
+    try {
+      await updateUser(editingUser.id, editForm);
+      setEditingUser(null);
+      load();
+    } catch (err) {
+      // Without this the dialog simply refused to close, saying nothing — the
+      // same silence that made a rejected create look like a broken button.
+      setEditError(err?.userMessage || 'Could not save the changes.');
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const columns = [
@@ -103,7 +154,7 @@ export default function RealtorsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Realtors</h1>
-        <Button onClick={() => setShowCreate(true)}>+ Add Realtor</Button>
+        <Button onClick={() => { setCreateError(''); setShowCreate(true); }}>+ Add Realtor</Button>
       </div>
 
       <ReferralCodeCard audience="realtors" />
@@ -144,11 +195,22 @@ export default function RealtorsPage() {
         fields={detailFields}
       />
 
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Add Realtor">
+      <Modal open={showCreate} onClose={() => !creating && setShowCreate(false)} title="Add Realtor">
         <form onSubmit={handleCreate} className="space-y-3">
+          <CompanyField value={form.company_id} onChange={(e) => setForm({ ...form, company_id: e.target.value })} disabled={creating} />
           <Input label="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-          <Input label="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+          <div>
+            <Input
+              label="Password"
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              minLength={MIN_PASSWORD_LENGTH}
+              required
+            />
+            <p className="mt-1 text-xs text-content-subtle">{PASSWORD_HINT}</p>
+          </div>
           <Input label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <div className="space-y-1">
             <label className="block text-sm font-medium text-slate-700">Tier / Category<FieldMark /></label>
@@ -158,10 +220,26 @@ export default function RealtorsPage() {
               <option value="premium">Premium</option>
             </Select>
           </div>
-          <Select label="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} options={roleOptions} />
+          <div>
+            <Select
+              label="Referring realtor"
+              value={form.realtor_id}
+              onChange={(e) => setForm({ ...form, realtor_id: e.target.value })}
+              placeholder="Nobody — direct sign-up"
+            >
+              <option value="">Nobody — direct sign-up</option>
+              {referralOptions.map((r) => (
+                <option key={r.id} value={r.id}>{r.name}{r.realtor_code ? ` — ${r.realtor_code}` : ''}</option>
+              ))}
+            </Select>
+            <p className="mt-1 text-xs text-content-subtle">
+              Optional. The realtor who recruited this one, credited with the introduction.
+            </p>
+          </div>
+          {createError && <p className="text-sm text-danger">{createError}</p>}
           <div className="flex gap-2 pt-2">
-            <Button type="submit">Add Realtor</Button>
-            <Button type="button" variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button type="submit" disabled={creating}>{creating ? 'Adding…' : 'Add Realtor'}</Button>
+            <Button type="button" variant="secondary" onClick={() => setShowCreate(false)} disabled={creating}>Cancel</Button>
           </div>
         </form>
       </Modal>
@@ -182,9 +260,10 @@ export default function RealtorsPage() {
               <input type="checkbox" checked={editForm.is_active} onChange={(e) => setEditForm({ ...editForm, is_active: e.target.checked })} className="h-4 w-4" />
               Active
             </label>
+            {editError && <p className="text-sm text-danger">{editError}</p>}
             <div className="flex justify-end gap-2">
-              <Button type="button" onClick={() => setEditingUser(null)} variant="secondary">Cancel</Button>
-              <Button type="button" onClick={handleUpdate} >Save</Button>
+              <Button type="button" onClick={() => setEditingUser(null)} variant="secondary" disabled={savingEdit}>Cancel</Button>
+              <Button type="button" onClick={handleUpdate} disabled={savingEdit}>{savingEdit ? 'Saving…' : 'Save'}</Button>
             </div>
           </div>
         </div>

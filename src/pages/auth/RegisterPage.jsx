@@ -10,6 +10,7 @@ import Select from '../../components/ui/Select';
 import { apiUrl } from '../../api/apiBase';
 import { googleAuthUrl } from '../../utils/googleAuthUrl';
 import FieldMark from '../../components/ui/FieldMark';
+import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '../../constants/password';
 
 /**
  * A full-page redirect, not an XHR, so it has to be a URL the BROWSER can
@@ -212,7 +213,12 @@ export default function RegisterPage() {
       await refreshAppearance();
       navigate(redirectTo || '/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Unable to register');
+      /*
+       * userMessage, not data.message: a short password comes back as a 422
+       * whose top-level message is the word "Validation failed" and whose
+       * useful sentence is in errors[0]. extractError knows to prefer it.
+       */
+      setError(err.userMessage || 'Unable to register');
     } finally {
       setLoading(false);
     }
@@ -294,8 +300,10 @@ export default function RegisterPage() {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder="••••••••"
+              minLength={MIN_PASSWORD_LENGTH}
               required
             />
+            <p className="mt-1 text-xs text-white/50">{PASSWORD_HINT}</p>
           </div>
         </div>
 

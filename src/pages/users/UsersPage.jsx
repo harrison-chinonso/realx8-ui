@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import client from '../../api/client';
 import { listUsers, createUser, updateUser, deleteUser, assignRole } from '../../api/userApi';
 import { listRoles, updateUserRoles } from '../../api/rolesApi';
 import Table from '../../components/common/Table';
@@ -11,19 +10,25 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import useAuthStore from '../../store/authStore';
+import CompanyField from '../../components/common/CompanyField';
+import useCompanyChoice from '../../hooks/useCompanyChoice';
+import { userTypeForRole } from '../../constants/userTypes';
+import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '../../constants/password';
 
 const INPUT_CLASS = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 
-const emptyCreate = { name: '', email: '', password: '', phone: '', role: 'employee' };
+const emptyCreate = { name: '', email: '', password: '', phone: '', role: 'employee', company_id: '' };
 const emptyEdit = { name: '', email: '', phone: '', role: '', is_active: true };
 
 export default function UsersPage() {
   const authUser = useAuthStore((s) => s.user);
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
+  // One fetch for both the company FILTER above the table and the company
+  // field inside the create form.
+  const { companies } = useCompanyChoice();
 
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
-  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -36,6 +41,9 @@ export default function UsersPage() {
   const [selectedAdditionalRoleId, setSelectedAdditionalRoleId] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  // Separate from `error`, which renders in the page banner BEHIND the modal —
+  // a failed create used to report itself somewhere the reader could not see.
+  const [createError, setCreateError] = useState('');
   const [roleActionMessage, setRoleActionMessage] = useState('');
 
   const roleOptions = useMemo(
@@ -76,27 +84,28 @@ export default function UsersPage() {
     }
   };
 
-  useEffect(() => {
-    if (!isSuperiorAdmin) return;
-    client.get('/companies').then((r) => {
-      const list = Array.isArray(r.data?.data) ? r.data.data : Array.isArray(r.data) ? r.data : [];
-      setCompanies(list);
-    }).catch(() => {});
-  }, [isSuperiorAdmin]);
-
   useEffect(() => { load(); }, [search, roleFilter, companyFilter]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setError('');
+    setCreateError('');
     try {
-      await createUser({ ...form, type: form.role });
+      /*
+       * `type` is the account vocabulary the server enforces; the ROLE is
+       * configuration. Sending the role name as the type broke the moment a
+       * company added a role of its own. See src/constants/userTypes.js.
+       */
+      await createUser({
+        ...form,
+        type: userTypeForRole(form.role),
+        ...(form.company_id ? { company_id: Number(form.company_id) } : {}),
+      });
       setShowCreate(false);
       setForm(emptyCreate);
       await load();
     } catch (err) {
-      setError(err?.response?.data?.message || 'Failed to create user.');
+      setCreateError(err?.userMessage || 'Failed to create user.');
     } finally {
       setSaving(false);
     }
@@ -138,11 +147,19 @@ export default function UsersPage() {
     setSaving(true);
     setError('');
     try {
-      await updateUser(editingUser.id, { ...editForm, type: editForm.role });
+      /*
+       * Same role-is-not-a-type rule as create. The fallback here is the
+       * account's EXISTING type rather than 'employee': moving somebody onto a
+       * custom role should not quietly reclassify a client as staff.
+       */
+      await updateUser(editingUser.id, {
+        ...editForm,
+        type: userTypeForRole(editForm.role, editingUser.type),
+      });
       setEditingUser(null);
       await load();
     } catch (err) {
-      setError(err?.response?.data?.message || 'Failed to update user.');
+      setError(err?.userMessage || 'Failed to update user.');
     } finally {
       setSaving(false);
     }
@@ -246,7 +263,7 @@ export default function UsersPage() {
             <p className="text-sm text-slate-500">{authUser.company_name}</p>
           )}
         </div>
-        <Button onClick={() => setShowCreate(true)}>+ New User</Button>
+        <Button onClick={() => { setCreateError(''); setShowCreate(true); }}>+ New User</Button>
       </div>
 
       {error && (
@@ -318,11 +335,22 @@ export default function UsersPage() {
         fields={detailFields}
       />
 
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Create User">
+      <Modal open={showCreate} onClose={() => !saving && setShowCreate(false)} title="Create User">
         <form onSubmit={handleCreate} className="space-y-3">
+          <CompanyField value={form.company_id} onChange={(e) => setForm((f) => ({ ...f, company_id: e.target.value }))} disabled={saving} />
           <Input label="Full Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
           <Input label="Email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required />
-          <Input label="Password" type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} required />
+          <div>
+            <Input
+              label="Password"
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+              minLength={MIN_PASSWORD_LENGTH}
+              required
+            />
+            <p className="mt-1 text-xs text-content-subtle">{PASSWORD_HINT}</p>
+          </div>
           <Input label="Phone" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
           <Select
             label="Role"
@@ -331,6 +359,7 @@ export default function UsersPage() {
             options={roleOptions}
             className={INPUT_CLASS}
           />
+          {createError && <p className="text-sm text-danger">{createError}</p>}
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create User'}</Button>
             <Button type="button" variant="secondary" onClick={() => setShowCreate(false)} disabled={saving}>Cancel</Button>
