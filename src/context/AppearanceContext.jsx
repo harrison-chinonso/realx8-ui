@@ -19,8 +19,8 @@ const DEFAULTS = {
   font_ui: 'Inter',
   font_family: 'Inter',
   dark_mode: 'off',
-  currency: 'USD',
-  template: 'classic',
+  currency: 'NGN',
+  template: 'launcher',
 };
 
 function hexToRgb(hex) {
@@ -133,6 +133,25 @@ export function AppearanceProvider({ children }) {
    */
   const loadSeq = useRef(0);
 
+  /**
+   * The newest sequence whose FULL appearance load has already been applied.
+   *
+   * The sequence above settles races BETWEEN passes; this settles the race
+   * WITHIN one. A pass fires two requests that share a sequence — the public
+   * name/logo call and the authenticated appearance call — and whichever
+   * returns last wins. When the authenticated one returns first, the public
+   * reply lands on top of it moments later and puts the PLATFORM's name, logo
+   * and primary colour back over the company's. That is what a company user
+   * sees as their branding reverting to the defaults a beat after the page
+   * loads, on every reload.
+   *
+   * The full load is the more specific answer — it already carries the platform
+   * values for anything the company has not set, because the server merges the
+   * two tiers before replying. So once it has been applied for a pass, the fast
+   * call from that same pass has nothing left to contribute.
+   */
+  const fullApplied = useRef(0);
+
   const load = (data, { seq, force = false } = {}) => {
     // A response from a superseded request describes a state we have moved on
     // from. Dropping it is the whole point.
@@ -142,6 +161,7 @@ export function AppearanceProvider({ children }) {
     setAppearance(merged);
     applyTheme(merged);
     if (merged.app_name) document.title = merged.app_name;
+    if (seq !== undefined) fullApplied.current = seq;
   };
 
   /**
@@ -168,6 +188,8 @@ export function AppearanceProvider({ children }) {
       .then(({ name, logo, primary_color }) => {
         if (seq !== loadSeq.current) { setNameLoaded(true); return; }
         if (brandLocked.current) { setNameLoaded(true); return; }
+        // The full load for this pass beat us to it — it knows more than we do.
+        if (fullApplied.current >= seq) { setNameLoaded(true); return; }
         setAppearance((prev) => ({ ...prev, app_name: name || prev.app_name, app_logo: logo || prev.app_logo }));
         if (name) document.title = name;
         if (primary_color) {
@@ -234,7 +256,7 @@ export function AppearanceProvider({ children }) {
    * ISO code for currencies that have none (e.g. KES).
    */
   const formatCurrency = useCallback((amount) => {
-    const code = appearance.currency || 'USD';
+    const code = appearance.currency || 'NGN';
     const value = Number(amount);
     const safe = Number.isFinite(value) ? value : 0;
     try {
@@ -253,7 +275,7 @@ export function AppearanceProvider({ children }) {
 
   /** Just the sign (₦, $, £) for input adornments and spreadsheet formats. */
   const currencySymbol = useMemo(() => {
-    const code = appearance.currency || 'USD';
+    const code = appearance.currency || 'NGN';
     try {
       return new Intl.NumberFormat('en-US', { style: 'currency', currency: code, currencyDisplay: 'narrowSymbol' })
         .formatToParts(0)

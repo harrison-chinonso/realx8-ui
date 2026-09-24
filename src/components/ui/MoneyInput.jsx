@@ -40,7 +40,7 @@ export default function MoneyInput({
   const { required } = props;
   // The sign, not the ISO code — matches how amounts are displayed.
   const { currencySymbol, currency } = useAppearance();
-  const code = currencySymbol || currency || 'USD';
+  const code = currencySymbol || currency || 'NGN';
 
   return (
     <label className="block space-y-1">

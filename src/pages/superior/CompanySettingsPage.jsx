@@ -409,8 +409,8 @@ function AppearanceTab({ companyId, company, onToast }) {
     font_body: 'Inter',
     font_ui: 'Inter',
     dark_mode: 'off',
-    currency: 'USD',
-    template: 'classic',
+    currency: 'NGN',
+    template: 'launcher',
   });
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
@@ -435,8 +435,8 @@ function AppearanceTab({ companyId, company, onToast }) {
           font_body: d.font_body || 'Inter',
           font_ui: d.font_ui || 'Inter',
           dark_mode: d.dark_mode || 'off',
-          currency: d.currency || 'USD',
-          template: d.template || 'classic',
+          currency: d.currency || 'NGN',
+          template: d.template || 'launcher',
         });
         setLogoPreview(d.app_logo || null);
       })

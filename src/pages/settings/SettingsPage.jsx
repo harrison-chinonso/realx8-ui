@@ -511,8 +511,8 @@ function AppearanceTab() {
     font_body: font_body || 'Inter',
     font_ui: font_ui || 'Inter',
     dark_mode: dark_mode || 'off',
-    currency: currency || 'USD',
-    template: template || 'classic',
+    currency: currency || 'NGN',
+    template: template || 'launcher',
   });
   const [logoPreview, setLogoPreview] = useState(app_logo || null);
   const [logoFile, setLogoFile] = useState(null);
@@ -540,8 +540,8 @@ function AppearanceTab() {
       font_body: font_body || 'Inter',
       font_ui: font_ui || 'Inter',
       dark_mode: dark_mode || 'off',
-      currency: currency || 'USD',
-      template: template || 'classic',
+      currency: currency || 'NGN',
+      template: template || 'launcher',
     });
     setLogoPreview(app_logo || null);
   }, [companyId, app_name, app_logo, primary_color, secondary_color, dark_primary_color, dark_secondary_color, font_heading, font_body, font_ui, dark_mode, currency, template]);
@@ -565,8 +565,8 @@ function AppearanceTab() {
           font_body: data.font_body || 'Inter',
           font_ui: data.font_ui || 'Inter',
           dark_mode: data.dark_mode || 'off',
-          currency: data.currency || 'USD',
-          template: data.template || 'classic',
+          currency: data.currency || 'NGN',
+          template: data.template || 'launcher',
         });
         setLogoPreview(data.app_logo || null);
         setLogoFile(null);

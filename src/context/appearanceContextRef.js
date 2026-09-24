@@ -14,7 +14,7 @@ export const AppearanceContext = createContext({
   font_ui: 'Inter',
   font_family: 'Inter',
   dark_mode: 'off',
-  currency: 'USD',
-  template: 'classic',
+  currency: 'NGN',
+  template: 'launcher',
   nameLoaded: false,
 });
