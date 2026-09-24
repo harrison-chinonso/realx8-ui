@@ -12,6 +12,7 @@ import useNavBadgeStore from '../../store/navBadgeStore';
 import { useAppearance } from '../../context/useAppearance';
 import Button from '../ui/Button';
 import ProfileToggle from '../common/ProfileToggle';
+import CompanySwitcher from '../common/CompanySwitcher';
 import NavBadge from './NavBadge';
 
 function MinimalSidebar({ expanded, onToggle, mobileOpen, onClose }) {
@@ -170,6 +171,8 @@ function MinimalHeader({ onMenuOpen }) {
             </span>
           )}
         </NavLink>
+
+        <CompanySwitcher />
 
         <ProfileToggle />
         <div className="relative">

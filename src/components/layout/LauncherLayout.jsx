@@ -6,6 +6,7 @@ import useAuthStore from '../../store/authStore';
 import useNavBadgeStore from '../../store/navBadgeStore';
 import { useAppearance, useOnPrimary } from '../../context/useAppearance';
 import ProfileToggle from '../common/ProfileToggle';
+import CompanySwitcher from '../common/CompanySwitcher';
 import ModuleLauncher from './ModuleLauncher';
 import { consumeFreshLogin } from '../../lib/launcherGreeting';
 
@@ -121,6 +122,7 @@ export default function LauncherLayout({ children }) {
         <div className="flex-1" />
 
         {/* A realtor or client acting as themselves rather than as staff. */}
+        <CompanySwitcher />
         <ProfileToggle />
 
         <NavLink

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { forgotPassword, forcedSetup2FA, forcedVerify2FA, login, resetPassword, verify2FA, verifyResetOtp } from '../../api/authApi';
+import { forgotPassword, forcedSetup2FA, forcedVerify2FA, login, loginToCompany, resetPassword, verify2FA, verifyResetOtp } from '../../api/authApi';
 import Modal from '../../components/common/Modal';
 import PropertyCarousel from '../../components/common/PropertyCarousel';
 import useAuthStore from '../../store/authStore';
@@ -167,6 +167,14 @@ export default function LoginPage() {
   // authStep: 'credentials' | '2fa' | '2fa-setup' | '2fa-setup-verify'
   const [authStep, setAuthStep] = useState('credentials');
   const [setupData, setSetupData] = useState(null); // { qrCodeUrl, secret } from forced setup
+  /**
+   * The companies this password opened, and the token that proves it did.
+   *
+   * Only ever set when there is more than one — somebody with a single company
+   * is never shown a choice, because being asked to pick between one thing
+   * reads as a fault.
+   */
+  const [companyChoice, setCompanyChoice] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
@@ -210,33 +218,91 @@ export default function LoginPage() {
     if (googleError) setError(googleError);
   }, [googleError]);
 
+  /**
+   * A Google sign-in that landed on a person with several companies.
+   *
+   * The callback route has no screen of its own, so it hands the choice back
+   * here as URL parameters. From this point the flow is identical to a password
+   * sign-in that produced a choice — same step, same list, same second call —
+   * which is the reason it is routed here rather than answered there.
+   */
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get('company_token');
+    if (!token) return;
+    let companies = [];
+    try { companies = JSON.parse(params.get('companies') || '[]'); } catch { companies = []; }
+    setCompanyChoice({ token, companies });
+    setAuthStep('company');
+  }, [location.search]);
+
+  /**
+   * What the server answered, whichever step asked.
+   *
+   * Shared because a sign-in can now arrive here from two places — the password
+   * form, and the company choice that may follow it — and the two-factor rules
+   * must not differ between them. The policy belongs to the company being
+   * signed in to, so it is only knowable after the choice has been made, which
+   * is exactly why this cannot live in the password handler alone.
+   */
+  const applyAuthResponse = async (res) => {
+    if (res.requires_company) {
+      setCompanyChoice({ token: res.company_token, companies: res.companies || [] });
+      setAuthStep('company');
+      return;
+    }
+    if (res.requires_2fa) { setTempToken(res.temp_token); setAuthStep('2fa'); return; }
+    if (res.requires_2fa_setup) {
+      setTempToken(res.temp_token);
+      setAuthStep('2fa-setup');
+      setLoading(true);
+      try {
+        const data = await forcedSetup2FA(res.temp_token);
+        setSetupData(data);
+      } catch {
+        setError('Unable to start 2FA setup. Please try again.');
+        setAuthStep('credentials');
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+    setSession(res);
+    await refreshAppearance();
+    navigate(redirectTo || '/');
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      const res = await login({ identifier: form.identifier, password: form.password });
-      if (res.requires_2fa) { setTempToken(res.temp_token); setAuthStep('2fa'); return; }
-      if (res.requires_2fa_setup) {
-        setTempToken(res.temp_token);
-        setAuthStep('2fa-setup');
-        setLoading(true);
-        try {
-          const data = await forcedSetup2FA(res.temp_token);
-          setSetupData(data);
-        } catch {
-          setError('Unable to start 2FA setup. Please try again.');
-          setAuthStep('credentials');
-        } finally {
-          setLoading(false);
-        }
-        return;
-      }
-      setSession(res);
-      await refreshAppearance();
-      navigate(redirectTo || '/');
+      await applyAuthResponse(await login({ identifier: form.identifier, password: form.password }));
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** Finish a sign-in against the company that was picked. */
+  const chooseCompany = async (companyId) => {
+    setLoading(true);
+    setError('');
+    try {
+      await applyAuthResponse(await loginToCompany(companyChoice.token, companyId));
+    } catch (err) {
+      /*
+       * The token behind the choice is short-lived. When it has run out there
+       * is nothing to retry here — the password has to be given again — so the
+       * form comes back rather than leaving a list of companies that will
+       * refuse every one of them.
+       */
+      if (err.response?.data?.reason === 'company_choice_expired') {
+        setCompanyChoice(null);
+        setAuthStep('credentials');
+      }
+      setError(err.response?.data?.message || 'Unable to sign in to that company.');
     } finally {
       setLoading(false);
     }
@@ -312,7 +378,7 @@ export default function LoginPage() {
     }
   };
 
-  const resetToCredentials = () => { setAuthStep('credentials'); setTempToken(''); setTotpToken(''); setSetupData(null); setError(''); };
+  const resetToCredentials = () => { setAuthStep('credentials'); setTempToken(''); setTotpToken(''); setSetupData(null); setCompanyChoice(null); setError(''); };
 
   const submitForcedSetupVerify = async (e) => {
     e.preventDefault();
@@ -342,11 +408,16 @@ export default function LoginPage() {
     <div className="flex flex-col justify-center flex-1 px-8 py-10 max-w-sm mx-auto w-full lg:max-w-none lg:mx-0 lg:px-10 lg:py-0">
       <div className="mb-6">
         <p className="text-xl font-semibold text-white">
-          {authStep === '2fa' ? 'Verify sign in' : authStep === '2fa-setup' || authStep === '2fa-setup-verify' ? 'Set up two-factor auth' : 'Welcome back'}
+          {authStep === '2fa' ? 'Verify sign in'
+            : authStep === 'company' ? 'Choose a company'
+            : authStep === '2fa-setup' || authStep === '2fa-setup-verify' ? 'Set up two-factor auth'
+            : 'Welcome back'}
         </p>
         <p className="text-sm text-white/40 mt-1">
           {authStep === '2fa'
             ? 'Enter the 6-digit code from your authenticator app.'
+            : authStep === 'company'
+            ? 'You have an account with more than one company. Pick the one to work in — you can switch at any time afterwards.'
             : authStep === '2fa-setup'
             ? 'Your organization requires 2FA. Scan the QR code with your authenticator app.'
             : authStep === '2fa-setup-verify'
@@ -465,6 +536,45 @@ export default function LoginPage() {
       )}
 
       {/* 2FA form */}
+      {/* Which company, for somebody who belongs to several */}
+      {authStep === 'company' && (
+        <div className="space-y-3">
+          {(companyChoice?.companies || []).map((entry) => {
+            /*
+             * A company that cannot be entered is shown and disabled rather
+             * than hidden. Somebody looking for the agency they signed up with
+             * needs to see that it is there and why it will not open — an
+             * absent entry reads as "we lost your account".
+             */
+            const blocked = !entry.is_active
+              ? 'Your account here is not active'
+              : entry.company_status === 'suspended' ? 'This company is suspended' : null;
+            return (
+              <button
+                key={entry.account_id}
+                type="button"
+                disabled={loading || Boolean(blocked)}
+                onClick={() => chooseCompany(entry.company_id)}
+                className="w-full rounded-lg border border-white/10 px-4 py-3 text-left transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <span className="block text-sm font-semibold text-white">{entry.company_name}</span>
+                <span className="mt-0.5 block text-xs text-white/40">
+                  {blocked || `Signed in as ${entry.type}`}
+                </span>
+              </button>
+            );
+          })}
+          {error && <p className="text-sm text-rose-400">{error}</p>}
+          <button
+            type="button"
+            onClick={resetToCredentials}
+            className="w-full h-11 rounded-lg text-sm font-medium text-white/50 border border-white/10 hover:bg-white/5 transition"
+          >
+            Back
+          </button>
+        </div>
+      )}
+
       {authStep === '2fa' && (
         <form onSubmit={submit2FA} className="space-y-4">
           <Field

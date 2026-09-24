@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { switchRoleApi, enableProfileApi, logout as logoutApi } from '../api/authApi';
+import {
+  switchRoleApi, enableProfileApi, switchCompanyApi, logout as logoutApi,
+} from '../api/authApi';
 import { setSessionKey, clearSessionKey } from '../api/payloadCrypto';
 import { resetRefreshBudget } from '../api/refreshBudget';
 import { markFreshLogin } from '../lib/launcherGreeting';
@@ -17,6 +19,18 @@ const useAuthStore = create(
       isSuperiorAdmin: false,
       roles: [],        // all roles/profiles this user has
       activeRole: null, // { id, name, display_name } — currently active profile
+
+      /**
+       * The companies this person holds an account with.
+       *
+       * Empty for anybody who can only hold one — which is every kind of staff
+       * — and that emptiness is the signal the switcher reads: a list with one
+       * entry in it would be a control that does nothing.
+       *
+       * It arrives with the session rather than being fetched, so the switcher
+       * is right from the first paint instead of appearing a moment later.
+       */
+      companies: [],
 
       setSession: (payloadOrAccessToken, refreshToken, user) => {
         const payload = typeof payloadOrAccessToken === 'object' && payloadOrAccessToken !== null
@@ -75,6 +89,7 @@ const useAuthStore = create(
           isSuperiorAdmin: u?.type === 'superior_admin' || u?.isSuperiorAdmin === true,
           roles: Array.isArray(payload.roles) ? payload.roles : get().roles,
           activeRole: payload.activeRole !== undefined ? payload.activeRole : get().activeRole,
+          companies: Array.isArray(payload.companies) ? payload.companies : get().companies,
         });
       },
 
@@ -112,11 +127,31 @@ const useAuthStore = create(
         isSuperiorAdmin: false,
         roles: [],
         activeRole: null,
+        companies: [],
         });
       },
 
       switchRole: async (roleId) => {
         const res = await switchRoleApi(roleId);
+        get().setSession(res);
+        return res;
+      },
+
+      /**
+       * Move to this person's account at another company.
+       *
+       * It goes through setSession like a sign-in does, because that is what it
+       * is: a different account, with different permissions, a different
+       * profile and possibly different branding. Patching a company id into the
+       * session in place would leave the permissions of the company just left.
+       *
+       * The appearance is NOT refreshed here. AppearanceContext already watches
+       * the token and the company id and re-reads on either changing, so doing
+       * it here as well would fire the same request twice on every switch — see
+       * the comment there about why that watch exists.
+       */
+      switchCompany: async (companyId) => {
+        const res = await switchCompanyApi(companyId);
         get().setSession(res);
         return res;
       },

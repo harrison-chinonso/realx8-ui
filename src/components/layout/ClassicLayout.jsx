@@ -14,6 +14,7 @@ import { readableOn } from '../../utils/colorUtils';
 import { useAppearance } from '../../context/useAppearance';
 import Button from '../ui/Button';
 import ProfileToggle from '../common/ProfileToggle';
+import CompanySwitcher from '../common/CompanySwitcher';
 import NavBadge from './NavBadge';
 
 function ClassicSidebar({ open, onClose }) {
@@ -177,6 +178,7 @@ function ClassicHeader({ onMenuOpen }) {
             </span>
           )}
         </NavLink>
+        <CompanySwitcher />
         <ProfileToggle />
         {/* Every role reaches Profile from here — the sidebar no longer carries
             an Account section. */}

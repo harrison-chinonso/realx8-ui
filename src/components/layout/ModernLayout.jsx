@@ -15,6 +15,7 @@ import useNavBadgeStore from '../../store/navBadgeStore';
 import { useAppearance } from '../../context/useAppearance';
 import Button from '../ui/Button';
 import ProfileToggle from '../common/ProfileToggle';
+import CompanySwitcher from '../common/CompanySwitcher';
 import NavBadge from './NavBadge';
 
 // Only these sections get their own nav-bar dropdown; everything else → More
@@ -329,6 +330,7 @@ function TopNav({ onMobileMenuOpen }) {
 
         {/* User dropdown — Profile & Settings always accessible here */}
         <div className="flex items-center gap-2">
+          <CompanySwitcher />
           <ProfileToggle />
           <div className="relative">
             <Button onClick={() => toggle('user')} variant="ghost" size="sm" className="px-2 py-1.5">

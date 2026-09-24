@@ -15,6 +15,7 @@ import useAuthStore from '../../store/authStore';
 import useNavBadgeStore from '../../store/navBadgeStore';
 import { useAppearance } from '../../context/useAppearance';
 import ProfileToggle from '../common/ProfileToggle';
+import CompanySwitcher from '../common/CompanySwitcher';
 import NavBadge from './NavBadge';
 
 // ── Sidebar content (shared between desktop + mobile drawer) ─
@@ -173,6 +174,7 @@ function TopBar({ onMenuOpen }) {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <CompanySwitcher />
         <ProfileToggle />
         <NavLink to="/notifications" className="relative rounded-full p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden">
           <Bell className="h-5 w-5" />

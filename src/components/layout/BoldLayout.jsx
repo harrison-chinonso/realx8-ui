@@ -11,6 +11,7 @@ import CollapsibleSection from './CollapsibleSection';
 import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
 import ProfileToggle from '../common/ProfileToggle';
+import CompanySwitcher from '../common/CompanySwitcher';
 import NavBadge from './NavBadge';
 
 function usePageTitle() {
@@ -157,6 +158,7 @@ function BoldContentHeader({ onMenuOpen }) {
       </button>
       <span className="text-sm font-medium text-slate-800">{title}</span>
       <div className="ml-auto flex items-center gap-2">
+        <CompanySwitcher />
         <ProfileToggle />
       </div>
     </div>

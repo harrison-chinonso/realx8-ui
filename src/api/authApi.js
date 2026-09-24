@@ -2,6 +2,16 @@ import client from './client';
 
 export const login = async (payload) => (await client.post('/auth/login', payload)).data;
 export const register = async (payload) => (await client.post('/auth/register', payload)).data;
+
+/**
+ * The second half of a sign-in for somebody who belongs to more than one
+ * company.
+ *
+ * The company token is what proves the password was already given — the id
+ * beside it only names which of the accounts that password opened is wanted.
+ */
+export const loginToCompany = async (company_token, company_id) =>
+  (await client.post('/auth/login/company', { company_token, company_id })).data;
 export const verify2FA = async (temp_token, totp_token) => (await client.post('/auth/2fa/verify', { temp_token, totp_token })).data;
 export const setup2FA = async () => (await client.post('/auth/2fa/setup')).data;
 export const verifySetup2FA = async (token) => (await client.post('/auth/2fa/verify-setup', { token })).data;
@@ -19,3 +29,16 @@ export const me = async () => (await client.get('/auth/me')).data;
 export const logout = async (refreshToken) => (await client.post('/auth/logout', { refreshToken })).data;
 export const switchRoleApi = async (roleId) => (await client.post('/auth/switch-role', { roleId })).data;
 export const enableProfileApi = async (profile) => (await client.post('/auth/profiles/enable', { profile })).data;
+
+/** The companies this person holds an account with. */
+export const listMyCompanies = async () => (await client.get('/auth/companies')).data;
+
+/**
+ * Move into the account this person holds at another company.
+ *
+ * Returns a WHOLE new session — a different account, with its own permissions,
+ * its own profile and its own branding — which is why the store replaces the
+ * session with it rather than patching a company id into the old one.
+ */
+export const switchCompanyApi = async (company_id) =>
+  (await client.post('/auth/switch-company', { company_id })).data;

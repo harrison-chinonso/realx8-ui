@@ -32,6 +32,26 @@ export default function GoogleCallbackPage() {
       return;
     }
 
+    /**
+     * Google proved the address, and the address turned out to belong to
+     * somebody with accounts at several companies.
+     *
+     * Handed back to the sign-in page rather than answered here: that page
+     * already draws the company picker for a password sign-in, and a second
+     * copy of it here would be the same screen maintained twice. The token is
+     * what authorises the choice; the list beside it is only what gets drawn.
+     */
+    const companyToken = params.get('company_token');
+    if (companyToken) {
+      const companies = params.get('companies') || '[]';
+      setMessage('Choose a company to continue…');
+      navigate(
+        `/login?company_token=${encodeURIComponent(companyToken)}&companies=${encodeURIComponent(companies)}`,
+        { replace: true },
+      );
+      return;
+    }
+
     if (!token || !refreshToken || !userParam) {
       setMessage('Google sign-in response is incomplete. Redirecting…');
       navigate('/login?error=google_auth_failed', { replace: true });

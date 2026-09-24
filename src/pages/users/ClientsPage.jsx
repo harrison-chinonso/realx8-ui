@@ -26,6 +26,13 @@ export default function ClientsPage() {
   const [form, setForm] = useState(EMPTY_CREATE);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+  /*
+   * Said out loud when the server added this person to an account they
+   * already had. The password typed on this form was not applied — they
+   * sign in with the one they already use — and an administrator who is not
+   * told that will pass on a password that does not work.
+   */
+  const [createNotice, setCreateNotice] = useState('');
   const [editingUser, setEditingUser] = useState(null);
   const [savingEdit, setSavingEdit] = useState(false);
   const [editError, setEditError] = useState('');
@@ -78,8 +85,9 @@ export default function ClientsPage() {
     e.preventDefault();
     setCreating(true);
     setCreateError('');
+    setCreateNotice('');
     try {
-      await createUser({
+      const created = await createUser({
         name: form.name,
         email: form.email,
         password: form.password,
@@ -90,9 +98,12 @@ export default function ClientsPage() {
         // Optional. Empty means nobody is credited with the introduction.
         realtor_id: form.realtor_id ? Number(form.realtor_id) : null,
       });
-      setShowCreate(false);
       setForm(EMPTY_CREATE);
       load();
+      // The modal stays open when there is something to read; closing it would
+      // take the only copy of that sentence with it.
+      if (created?.notice) setCreateNotice(created.notice);
+      else setShowCreate(false);
     } catch (err) {
       setCreateError(err?.userMessage || 'Could not add the client.');
     } finally {
@@ -274,6 +285,11 @@ export default function ClientsPage() {
             </p>
           </div>
           {createError && <p className="text-sm text-danger">{createError}</p>}
+          {createNotice && (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-200">
+              {createNotice}
+            </p>
+          )}
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={creating}>{creating ? 'Adding…' : 'Add Client'}</Button>
             <Button type="button" variant="secondary" onClick={() => setShowCreate(false)} disabled={creating}>Cancel</Button>
