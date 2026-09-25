@@ -33,15 +33,16 @@ export default function ReferralCodeCard({ audience = 'clients' }) {
   const code = company?.referral_code;
   if (isSuperiorAdmin || !code) return null;
 
-  // A sealed token brands the sign-up page for this company. The plain
-  // company_code (and now company_name) is always attached too, not only when
-  // no token exists — see ReferralLinkPanel for why: attribution must not
-  // depend on that token resolving before a visitor refreshes.
-  const params = new URLSearchParams();
-  if (shareToken) params.set('ref', shareToken);
-  params.set('company_code', code);
-  if (company?.name) params.set('company_name', company.name);
-  const signupUrl = `${window.location.origin}/register?${params.toString()}`;
+  // A sealed token/short code brands the sign-up page for this company and
+  // is all the link carries — it already resolves to this company's code
+  // (and name) server-side, so spelling those out again in the URL would
+  // only make the "short" code as long as if it had never been minted.
+  // Falls back to the plain company_code only when no token/code exists at
+  // all yet (kept for links already in circulation and while unauthenticated
+  // company setups are being finished), which RegisterPage still reads.
+  const signupUrl = shareToken
+    ? `${window.location.origin}/register?ref=${encodeURIComponent(shareToken)}`
+    : `${window.location.origin}/register?company_code=${encodeURIComponent(code)}`;
 
   const copy = async (value, which) => {
     try {

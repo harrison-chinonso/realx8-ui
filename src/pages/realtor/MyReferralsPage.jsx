@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { plural } from '../../utils/plural';
 import { Link } from 'react-router-dom';
 import { listMyReferrals } from '../../api/userApi';
-import useAuthStore from '../../store/authStore';
 import Badge from '../../components/common/Badge';
 import ProfileBadges from '../../components/common/ProfileBadges';
 import VerificationBadge from '../../components/common/VerificationBadge';
@@ -53,7 +52,6 @@ export default function MyReferralsPage() {
   // way to select anyone.
   const [view, setView] = useState('list');
   const [meta, setMeta] = useState({ total: 0, truncated: false });
-  const realtorName = useAuthStore((state) => state.user?.name);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState('all');
@@ -120,7 +118,6 @@ export default function MyReferralsPage() {
       <ReferralLinkPanel
         realtorCode={meta.realtor_code}
         companyCode={meta.company_code}
-        realtorName={realtorName}
         companyName={meta.company_name}
       />
 
