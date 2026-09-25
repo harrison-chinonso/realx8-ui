@@ -53,6 +53,16 @@ export default function ReferralCodeCard({ audience = 'clients' }) {
     }
   };
 
+  /**
+   * Pitched at either side of who might click it — a lead as much as a
+   * would-be realtor, since this is the company's one shared link for both
+   * audiences (the sign-up form's Role field decides which they become).
+   */
+  const brandName = company?.name || 'us';
+  const share = encodeURIComponent(
+    `Looking for reliable real estate deals? Join ${brandName} as a client or partner with us as a realtor using link -> ${signupUrl}`,
+  );
+
   const label = audience === 'realtors'
     ? 'Share this code with realtors so they can join your company when they sign up.'
     : 'Share this code with clients so they are linked to your company when they sign up.';
@@ -87,6 +97,20 @@ export default function ReferralCodeCard({ audience = 'clients' }) {
           >
             {copied === 'link' ? 'Link copied ✓' : 'Copy sign-up link'}
           </button>
+          <a
+            href={`https://wa.me/?text=${share}`}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            WhatsApp
+          </a>
+          <a
+            href={`mailto:?subject=${encodeURIComponent(`Join ${brandName}`)}&body=${share}`}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Email
+          </a>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Button from '../ui/Button';
 import useShareToken from '../../hooks/useShareToken';
 import useMyVerification from '../../hooks/useMyVerification';
+import { useAppearance } from '../../context/useAppearance';
 import VerificationRequiredNotice from './VerificationRequiredNotice';
 
 /**
@@ -11,9 +12,10 @@ import VerificationRequiredNotice from './VerificationRequiredNotice';
  * Both codes are required: registration needs the company code to place the
  * account, and the realtor code to attribute it.
  */
-export default function ReferralLinkPanel({ realtorCode, companyCode, realtorName }) {
+export default function ReferralLinkPanel({ realtorCode, companyCode, realtorName, companyName }) {
   const [copied, setCopied] = useState(null);
   const { token, code } = useShareToken();
+  const { app_name: appName } = useAppearance();
   const verification = useMyVerification();
 
   /*
@@ -78,7 +80,17 @@ export default function ReferralLinkPanel({ realtorCode, companyCode, realtorNam
     }
   };
 
-  const share = encodeURIComponent(`Join me on the platform: ${link}`);
+  /**
+   * Named to the realtor's own company, and pitched at either side of who
+   * might click it — a lead as much as a would-be realtor, since the same
+   * link doubles as both once opened (see the Role field on the sign-up
+   * form). Falls back to the platform's own name if this realtor's company
+   * has none on file yet.
+   */
+  const brandName = companyName || appName || 'us';
+  const share = encodeURIComponent(
+    `Whether you're looking for your next property investment or ready to grow as a realtor, ${brandName} delivers dependable results. Sign up through my link to get started -> ${link}`,
+  );
 
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
@@ -122,7 +134,7 @@ export default function ReferralLinkPanel({ realtorCode, companyCode, realtorNam
         <a href={`https://wa.me/?text=${share}`} target="_blank" rel="noreferrer">
           <Button type="button" variant="secondary" size="sm">WhatsApp</Button>
         </a>
-        <a href={`mailto:?subject=${encodeURIComponent('Join me')}&body=${share}`}>
+        <a href={`mailto:?subject=${encodeURIComponent(`Join ${brandName}`)}&body=${share}`}>
           <Button type="button" variant="secondary" size="sm">Email</Button>
         </a>
       </div>

@@ -117,7 +117,12 @@ export default function MyReferralsPage() {
 
       {error && <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>}
 
-      <ReferralLinkPanel realtorCode={meta.realtor_code} companyCode={meta.company_code} realtorName={realtorName} />
+      <ReferralLinkPanel
+        realtorCode={meta.realtor_code}
+        companyCode={meta.company_code}
+        realtorName={realtorName}
+        companyName={meta.company_name}
+      />
 
       {/*
         The funnel, which is not the network above it.
