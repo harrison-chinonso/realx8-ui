@@ -696,6 +696,21 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
             icon={entry.icon}
             name={entry.label}
             to={isDrawer ? undefined : entry.to}
+            /*
+             * The same count carried down from the module tile, one level at a
+             * time, instead of stopping at the first fold.
+             *
+             * renderModuleTiles put the badge on Finance because Payment
+             * Approvals is three folds deep; this is the SECOND and THIRD of
+             * those folds — the "Income" group tile, and then the "Payment
+             * Approvals" tile itself once inside Income. Leaving it off here
+             * meant the count vanished the moment you opened the very drawer it
+             * was telling you to open, which read as the badge having been
+             * wrong. NavBadge already sums recursively, so a group tile (entry
+             * has children) and a leaf tile (entry does not) both work from the
+             * same prop.
+             */
+            badge={<NavBadge item={entry} className="rx-badge" />}
             onOpen={() => openTile(tile)}
             aria-label={isDrawer ? `${entry.label} — ${entry.children.length} screens` : undefined}
           />
