@@ -63,11 +63,15 @@ export function useSharedBrand(codeFromPath = null) {
   // Plain-parameter links keep working for attribution, without branding.
   const fallbackCompany = (searchParams.get('company_code') || searchParams.get('code') || searchParams.get('c') || '').toUpperCase();
   const fallbackRealtor = (searchParams.get('realtor_code') || searchParams.get('r') || '').toUpperCase();
+  const fallbackCompanyName = searchParams.get('company_name') || null;
+  const fallbackRealtorName = searchParams.get('realtor_name') || null;
 
   return {
     ...state,
+    company: state.company || fallbackCompanyName || null,
     companyCode: state.companyCode || fallbackCompany || null,
     realtorCode: state.realtorCode || fallbackRealtor || null,
+    realtorName: state.realtorName || fallbackRealtorName || null,
     hasSealedLink: !!ref,
   };
 }

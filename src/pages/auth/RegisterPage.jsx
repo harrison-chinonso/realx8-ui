@@ -4,6 +4,11 @@ import { register } from '../../api/authApi';
 import { listRoles } from '../../api/rolesApi';
 import useAuthStore from '../../store/authStore';
 import useSharedBrand from '../../hooks/useSharedBrand';
+import {
+  resolveReferralAttribution,
+  saveReferralAttribution,
+  clearReferralAttribution,
+} from '../../utils/referralAttribution';
 import PropertyCarousel from '../../components/common/PropertyCarousel';
 import { useAppearance } from '../../context/useAppearance';
 import Select from '../../components/ui/Select';
@@ -92,7 +97,7 @@ function EyeIcon({ open }) {
 }
 
 /* ── Dark-theme field ── */
-function Field({ label, type = 'text', value, onChange, placeholder, required }) {
+function Field({ label, type = 'text', value, onChange, placeholder, required, readOnly }) {
   const [showPwd, setShowPwd] = useState(false);
   const isPassword = type === 'password';
   const inputType = isPassword ? (showPwd ? 'text' : 'password') : type;
@@ -100,14 +105,23 @@ function Field({ label, type = 'text', value, onChange, placeholder, required })
   return (
     <div className="space-y-1.5">
       <label className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{label}<FieldMark required={Boolean(required)} /></label>
-      <div className="flex items-center h-11 w-full rounded-lg border border-white/10 bg-white/5 pr-3 overflow-hidden transition-all focus-within:border-white/30">
+      <div className={`flex items-center h-11 w-full rounded-lg border border-white/10 pr-3 overflow-hidden transition-all focus-within:border-white/30 ${readOnly ? 'bg-white/[0.03]' : 'bg-white/5'}`}>
         <input
           type={inputType}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
           required={required}
-          className="flex-1 h-full px-3.5 bg-transparent text-sm text-white placeholder:text-white/20 focus:outline-none"
+          readOnly={readOnly}
+          /*
+           * Merely styling this as "locked" was not enough on its own: this
+           * component used to receive a `readOnly` prop for the company-code
+           * field but never forwarded it to the input, so it stayed editable
+           * regardless — a visitor could type over a code the link had
+           * already established. Forwarding it here is what actually
+           * enforces the lock this page now depends on.
+           */
+          className={`flex-1 h-full px-3.5 bg-transparent text-sm text-white placeholder:text-white/20 focus:outline-none ${readOnly ? 'cursor-not-allowed text-white/60' : ''}`}
         />
         {isPassword && (
           <button type="button" tabIndex={-1} onClick={() => setShowPwd(v => !v)} className="text-white/30 hover:text-white/60 transition-colors">
@@ -168,6 +182,25 @@ export default function RegisterPage() {
     loading: resolvingSealedLink,
     hasSealedLink,
   } = useSharedBrand();
+  /**
+   * The plain codes/names a referral link now always carries (see
+   * ReferralLinkPanel / ReferralCodeCard), merged with whatever a previous
+   * page load already stored — so a refresh that, for whatever reason,
+   * arrives with no query string at all still has what an earlier load on
+   * this browser established. Computed once, synchronously, on first render:
+   * it has to be ready before the form's initial state is built, not after.
+   */
+  const [attribution] = useState(() => resolveReferralAttribution());
+  const referralCompanyCode = attribution.company_code || null;
+  const referralRealtorCode = attribution.realtor_code || null;
+  const referralRealtorName = attribution.realtor_name || referringRealtorName || null;
+  const referralCompanyName = attribution.company_name || sharedCompanyName || null;
+  // Locked whenever ANY attribution source — this load's URL, a resolved
+  // sealed token, or a prior load's storage — says who this visitor belongs
+  // to. A visitor should never be able to type over a code that was already
+  // established for them; that would silently discard the referral.
+  const isCompanyCodeLocked = !!(presetCompanyCode || referralCompanyCode);
+  const isRealtorLinked = !!(referringRealtorCode || referralRealtorCode);
   const setSession = useAuthStore((state) => state.setSession);
   // Someone can reach this form while still signed in — a referral link is an
   // explicit request to create a new account, so the route allows it. Say what
@@ -181,7 +214,8 @@ export default function RegisterPage() {
     role: 'client',
     company_code: (() => {
       const q = new URLSearchParams(window.location.search);
-      return (q.get('company_code') || q.get('code') || '').toUpperCase();
+      const fromUrl = (q.get('company_code') || q.get('code') || '').toUpperCase();
+      return fromUrl || (referralCompanyCode || '').toUpperCase();
     })(),
   });
   const [error, setError] = useState('');
@@ -191,14 +225,15 @@ export default function RegisterPage() {
    * is a fine front door for someone who typed the URL themselves, but a
    * referral link is an explicit request to sign up — showing that visitor a
    * screen they must tap through reads exactly like the link failed and
-   * dropped them on the landing page. So an invite param in the URL skips
-   * straight to the form; INVITE_PARAMS matches App.jsx's own list of what
-   * counts as an invitation.
+   * dropped them on the landing page. So an invite param in the URL, OR
+   * attribution already resolved from storage (a refresh with no query string
+   * left), skips straight to the form; INVITE_PARAMS matches App.jsx's own
+   * list of what counts as an invitation.
    */
   const [mobileState, setMobileState] = useState(() => {
     const q = new URLSearchParams(window.location.search);
     const invited = ['ref', 'company_code', 'code', 'realtor_code'].some((key) => q.get(key));
-    return invited ? 'form' : 'splash';
+    return (invited || referralCompanyCode || referralRealtorCode) ? 'form' : 'splash';
   }); // 'splash' | 'form'
 
   useEffect(() => {
@@ -206,13 +241,21 @@ export default function RegisterPage() {
   }, []);
 
   // A sealed link resolves over the network, so the code arrives after the
-  // form's initial state was built from the URL. Sync it when it lands.
+  // form's initial state was built from the URL. Sync it when it lands, and
+  // save it — server-confirmed data is worth persisting too, in case a later
+  // refresh has no ref token to re-resolve.
   useEffect(() => {
     if (!presetCompanyCode) return;
     setForm((prev) => (prev.company_code === presetCompanyCode
       ? prev
       : { ...prev, company_code: presetCompanyCode }));
-  }, [presetCompanyCode]);
+    saveReferralAttribution({
+      company_code: presetCompanyCode,
+      company_name: sharedCompanyName || undefined,
+      realtor_code: referringRealtorCode || undefined,
+      realtor_name: referringRealtorName || undefined,
+    });
+  }, [presetCompanyCode, sharedCompanyName, referringRealtorCode, referringRealtorName]);
 
   const roleOptions = useMemo(
     () => roles
@@ -225,28 +268,34 @@ export default function RegisterPage() {
   const submit = async (event) => {
     event.preventDefault();
     /**
-     * A sealed `?ref=` link carries NO plain-code fallback (see
-     * ReferralLinkPanel) — the realtor code lives only in the network
-     * response `useSharedBrand` is still waiting on. Submitting before it
-     * lands would create the account with no attribution at all, and there
-     * would be nothing left afterwards to attach it to: the referral is lost
-     * silently, and nobody finds out until the realtor asks where their
-     * downline went.
+     * Older links (or a sealed `?ref=` that a caller opened without any
+     * plain-param fallback yet in circulation) still depend on the network
+     * response `useSharedBrand` is fetching. Only block on that when there is
+     * truly nothing else to go on — if the plain codes already resolved
+     * `referralRealtorCode`/`referralCompanyCode` (from the URL or from a
+     * prior page load's storage), submitting need not wait on the sealed
+     * token at all: it exists solely to confirm branding at this point, and
+     * attribution is already secured.
      */
-    if (hasSealedLink && resolvingSealedLink) {
+    if (hasSealedLink && resolvingSealedLink && !referralRealtorCode && !referralCompanyCode) {
       setError('Still preparing your invite — please try again in a moment.');
       return;
     }
     setLoading(true);
     setError('');
     try {
+      const realtorCode = referringRealtorCode || referralRealtorCode;
       const response = await register({
         ...form,
         type: form.role,
         role: form.role,
-        ...(referringRealtorCode ? { realtor_code: referringRealtorCode } : {}),
+        ...(realtorCode ? { realtor_code: realtorCode } : {}),
       });
       setSession(response);
+      // The referral has done its job — an account now exists carrying it
+      // server-side. Clearing storage stops it from being replayed onto a
+      // second, unrelated sign-up later on the same browser.
+      clearReferralAttribution();
       await refreshAppearance();
       navigate(redirectTo || '/');
     } catch (err) {
@@ -319,17 +368,27 @@ export default function RegisterPage() {
               onChange={(e) => setForm({ ...form, company_code: e.target.value.toUpperCase() })}
               placeholder="e.g. AB12C"
               required
-              readOnly={!!presetCompanyCode}
+              readOnly={isCompanyCodeLocked}
             />
-            {presetCompanyCode && (
+            {isCompanyCodeLocked && (
               <p className="mt-1 text-xs text-slate-500">
-                Your account will be linked to {sharedCompanyName || 'the company that shared this link'}
-                {referringRealtorName
-                  ? `, and to ${referringRealtorName}, who invited you`
-                  : referringRealtorCode ? ', and to the realtor who sent you the link' : ''}.
+                Your account will be linked to {referralCompanyName || 'the company that shared this link'}.
               </p>
             )}
           </div>
+          {isRealtorLinked && (
+            <div className="sm:col-span-2">
+              <Field
+                label="Referred by"
+                value={referralRealtorName || referringRealtorCode || referralRealtorCode || ''}
+                readOnly
+                onChange={() => {}}
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                You were invited by this realtor and will be added to their downline.
+              </p>
+            </div>
+          )}
           <div className="sm:col-span-2">
             <Field
               label="Password"
@@ -348,11 +407,15 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          disabled={loading || (hasSealedLink && resolvingSealedLink)}
+          disabled={loading || (hasSealedLink && resolvingSealedLink && !referralRealtorCode && !referralCompanyCode)}
           className="w-full h-11 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
           style={{ backgroundColor: `var(--primary)` }}
         >
-          {loading ? 'Creating account…' : (hasSealedLink && resolvingSealedLink ? 'Preparing your invite…' : 'Create Account')}
+          {loading
+            ? 'Creating account…'
+            : (hasSealedLink && resolvingSealedLink && !referralRealtorCode && !referralCompanyCode
+              ? 'Preparing your invite…'
+              : 'Create Account')}
         </button>
 
         <div className="flex items-center gap-3 text-xs text-white/25">
@@ -369,8 +432,8 @@ export default function RegisterPage() {
         */}
         <a
           href={googleAuthUrl({
-            companyCode: form.company_code || presetCompanyCode,
-            realtorCode: referringRealtorCode,
+            companyCode: form.company_code || presetCompanyCode || referralCompanyCode,
+            realtorCode: referringRealtorCode || referralRealtorCode,
             redirect: redirectTo,
           })}
           className="flex w-full items-center justify-center gap-2 h-11 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-white/70 hover:bg-white/10 transition"

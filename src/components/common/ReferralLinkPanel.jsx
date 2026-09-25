@@ -11,9 +11,9 @@ import VerificationRequiredNotice from './VerificationRequiredNotice';
  * Both codes are required: registration needs the company code to place the
  * account, and the realtor code to attribute it.
  */
-export default function ReferralLinkPanel({ realtorCode, companyCode }) {
+export default function ReferralLinkPanel({ realtorCode, companyCode, realtorName }) {
   const [copied, setCopied] = useState(null);
-  const { token, code, ready } = useShareToken();
+  const { token, code } = useShareToken();
   const verification = useMyVerification();
 
   /*
@@ -43,27 +43,29 @@ export default function ReferralLinkPanel({ realtorCode, companyCode }) {
   }
 
   /**
-   * The link carries a short code, and the server looks the rest up.
+   * The link carries a short code, and the server looks the rest up — PLUS
+   * the plain company/realtor codes and this realtor's name, always, not
+   * only as a fallback of last resort.
    *
-   * It used to carry a sealed token holding the company, this realtor's code
-   * and a snapshot of the branding — correct, tamper-proof, and around two
-   * hundred characters, which is long enough that people hesitated to paste it
-   * into WhatsApp. The short code resolves to exactly the same thing.
-   *
-   * The order of the fallbacks is the order of preference: short code, then the
-   * sealed token for a server that has not been updated, then the plain codes.
-   * The last of those is the tamperable form the seal was introduced to
-   * replace, so it is genuinely a last resort rather than an equal option.
+   * It used to carry ONLY the short code (or the sealed token, or the plain
+   * codes when neither had been minted yet), on the reasoning that the short
+   * code resolves to everything else over the network. It does — but that
+   * resolution is a request the sign-up page makes after the visitor lands,
+   * and a request can be slow, fail, or simply not finish before an
+   * impatient visitor hit refresh. Whether the realtor got credited then
+   * depended on the fate of that one network call rather than on anything
+   * printed on the link itself, which read as the attribution randomly
+   * "coming and going" between refreshes. Sending the plain fields too means
+   * the sign-up page never has to wait on anything to know who sent this —
+   * the short code remains, purely for branding (logo/colours) where it
+   * resolves in time, and as a tamper-resistant record of the click.
    */
   const params = new URLSearchParams();
-  if (code) {
-    params.set('ref', code);
-  } else if (token) {
-    params.set('ref', token);
-  } else {
-    if (companyCode) params.set('company_code', companyCode);
-    params.set('realtor_code', realtorCode);
-  }
+  if (code) params.set('ref', code);
+  else if (token) params.set('ref', token);
+  if (companyCode) params.set('company_code', companyCode);
+  params.set('realtor_code', realtorCode);
+  if (realtorName) params.set('realtor_name', realtorName);
   const link = `${window.location.origin}/register?${params.toString()}`;
 
   const copy = async (value, which) => {
@@ -111,10 +113,11 @@ export default function ReferralLinkPanel({ realtorCode, companyCode }) {
           onFocus={(event) => event.target.select()}
           className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs"
         />
-        {/* Held until the sealed token is minted, so an impatient click cannot
-            copy the unbranded fallback link. */}
-        <Button type="button" size="sm" disabled={!ready} onClick={() => copy(link, 'link')}>
-          {copied === 'link' ? 'Copied ✓' : ready ? 'Copy Link' : 'Preparing…'}
+        {/* No longer gated on the sealed token being ready: the plain codes
+            above make the link fully functional for attribution the instant
+            it is rendered, so there is nothing left worth waiting for. */}
+        <Button type="button" size="sm" onClick={() => copy(link, 'link')}>
+          {copied === 'link' ? 'Copied ✓' : 'Copy Link'}
         </Button>
         <a href={`https://wa.me/?text=${share}`} target="_blank" rel="noreferrer">
           <Button type="button" variant="secondary" size="sm">WhatsApp</Button>
