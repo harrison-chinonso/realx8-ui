@@ -165,6 +165,8 @@ export default function RegisterPage() {
     companyCode: presetCompanyCode,
     realtorCode: referringRealtorCode,
     realtorName: referringRealtorName,
+    loading: resolvingSealedLink,
+    hasSealedLink,
   } = useSharedBrand();
   const setSession = useAuthStore((state) => state.setSession);
   // Someone can reach this form while still signed in — a referral link is an
@@ -184,7 +186,20 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [mobileState, setMobileState] = useState('splash'); // 'splash' | 'form'
+  /**
+   * The mobile splash ("Create Account" / "Sign In" buttons over the carousel)
+   * is a fine front door for someone who typed the URL themselves, but a
+   * referral link is an explicit request to sign up — showing that visitor a
+   * screen they must tap through reads exactly like the link failed and
+   * dropped them on the landing page. So an invite param in the URL skips
+   * straight to the form; INVITE_PARAMS matches App.jsx's own list of what
+   * counts as an invitation.
+   */
+  const [mobileState, setMobileState] = useState(() => {
+    const q = new URLSearchParams(window.location.search);
+    const invited = ['ref', 'company_code', 'code', 'realtor_code'].some((key) => q.get(key));
+    return invited ? 'form' : 'splash';
+  }); // 'splash' | 'form'
 
   useEffect(() => {
     listRoles().then((response) => setRoles(response.data || [])).catch(() => setRoles([]));
@@ -209,6 +224,19 @@ export default function RegisterPage() {
 
   const submit = async (event) => {
     event.preventDefault();
+    /**
+     * A sealed `?ref=` link carries NO plain-code fallback (see
+     * ReferralLinkPanel) — the realtor code lives only in the network
+     * response `useSharedBrand` is still waiting on. Submitting before it
+     * lands would create the account with no attribution at all, and there
+     * would be nothing left afterwards to attach it to: the referral is lost
+     * silently, and nobody finds out until the realtor asks where their
+     * downline went.
+     */
+    if (hasSealedLink && resolvingSealedLink) {
+      setError('Still preparing your invite — please try again in a moment.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -320,11 +348,11 @@ export default function RegisterPage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || (hasSealedLink && resolvingSealedLink)}
           className="w-full h-11 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
           style={{ backgroundColor: `var(--primary)` }}
         >
-          {loading ? 'Creating account…' : 'Create Account'}
+          {loading ? 'Creating account…' : (hasSealedLink && resolvingSealedLink ? 'Preparing your invite…' : 'Create Account')}
         </button>
 
         <div className="flex items-center gap-3 text-xs text-white/25">
