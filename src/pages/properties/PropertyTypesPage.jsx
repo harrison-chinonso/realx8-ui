@@ -10,6 +10,7 @@ import Modal from '../../components/common/Modal';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import FieldMark from '../../components/ui/FieldMark';
+import { extractError } from '../../utils/extractError';
 
 const EMPTY_FORM = { name: '', description: '' };
 
@@ -33,9 +34,9 @@ export default function PropertyTypesPage() {
     try {
       const response = await listPropertyTypes({ limit: 1000 });
       setPropertyTypes(getItems(response));
-    } catch {
+    } catch (error) {
       setPropertyTypes([]);
-      setMessage({ type: 'error', text: 'Failed to load property types.' });
+      setMessage({ type: 'error', text: extractError(error, 'Failed to load property types.') });
     } finally {
       setLoading(false);
     }
@@ -86,8 +87,18 @@ export default function PropertyTypesPage() {
       closeModal(true);
       await loadPropertyTypes();
       setMessage({ type: 'success', text: `Property type ${editingType ? 'updated' : 'created'} successfully.` });
-    } catch {
-      setMessage({ type: 'error', text: `Failed to ${editingType ? 'update' : 'create'} property type.` });
+    } catch (error) {
+      /*
+       * The server's own sentence, not a generic one. A save can fail for a
+       * reason only the server knows — a name this company already uses, a
+       * permission the account does not hold — and discarding that message left
+       * "Failed to create property type." as the only clue, which reads as the
+       * feature being broken rather than as something to act on.
+       */
+      setMessage({
+        type: 'error',
+        text: extractError(error, `Failed to ${editingType ? 'update' : 'create'} property type.`),
+      });
     } finally {
       setSaving(false);
     }
@@ -101,8 +112,8 @@ export default function PropertyTypesPage() {
       await deletePropertyType(propertyType.id);
       await loadPropertyTypes();
       setMessage({ type: 'success', text: 'Property type deleted successfully.' });
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to delete property type.' });
+    } catch (error) {
+      setMessage({ type: 'error', text: extractError(error, 'Failed to delete property type.') });
     }
   };
 
