@@ -65,7 +65,32 @@ export default function InspectionsPage() {
   const [review, setReview] = useState(null);   // { inspection, decision }
   const currentUser = useAuthStore((state) => state.user);
   const effectiveType = useAuthStore((state) => state.effectiveType());
-  const isRealtorUser = effectiveType === 'realtor';
+  const roles = useAuthStore((state) => state.roles) || [];
+  /*
+   * Three flows, not two, and which one you get is decided here.
+   *
+   *   realtor        → books as themselves. No realtor field at all.
+   *   staff          → books on a realtor's behalf, so they name one.
+   *   staff who also
+   *   hold a realtor → either of the above, their choice per booking.
+   *
+   * That third case is the one that was missing. Somebody who administers the
+   * company AND works as a realtor got the staff form only, so booking their
+   * own viewing meant hunting for their own name in a dropdown of every realtor
+   * in the company — and the form refused to submit until they found it.
+   * bookingAsSelf lets them say "this one is mine" and skip the list, without
+   * taking away their ability to book for anyone else.
+   *
+   * Acting as a client wins over all of it: a client may not schedule at all,
+   * and the server refuses it with a message saying so.
+   */
+  const isClientUser = effectiveType === 'client';
+  const isRealtorUser = !isClientUser && effectiveType === 'realtor';
+  const holdsRealtorRole = !isClientUser && roles.some((r) => r.name === 'realtor');
+  const canBookAsSelf = !isRealtorUser && holdsRealtorRole;
+  const [bookingAsSelf, setBookingAsSelf] = useState(false);
+  // A realtor is always booking for themselves; staff only when they say so.
+  const selfBooking = isRealtorUser || (canBookAsSelf && bookingAsSelf);
   const canReview = ['admin', 'super_admin', 'superior_admin'].includes(effectiveType);
 
   const loadData = async () => {
@@ -189,15 +214,27 @@ export default function InspectionsPage() {
     setFormError('');
     if (!scheduleForm.lead_id) return setFormError('Please select a lead.');
     if (!scheduleForm.property_id) return setFormError('Please select a property.');
-    if (!isRealtorUser && !scheduleForm.realtor_id) return setFormError('Please select a realtor.');
+    if (!selfBooking && !scheduleForm.realtor_id) return setFormError('Please select a realtor.');
     setSaving(true);
     try {
       await createInspection({
         property_id: Number(scheduleForm.property_id),
         property_name: scheduleForm.property_name,
         lead_id: Number(scheduleForm.lead_id),
-        // Ignored server-side for realtors, who are always pinned to themselves.
-        realtor_name: isRealtorUser ? (currentUser?.name || '') : scheduleForm.realtor_name,
+        /*
+         * Left out entirely when booking for yourself, rather than sent empty.
+         * A realtor's own booking is pinned to the caller server-side and the
+         * name comes off the token; sending '' used to fail the route's
+         * notEmpty() check, so the booking was rejected as "Validation failed"
+         * over a field the realtor was never shown.
+         *
+         * Staff booking as themselves DO send their own name — the server only
+         * auto-fills for accounts whose type is realtor, and an admin's is not.
+         */
+        ...(isRealtorUser ? {} : {
+          realtor_name: bookingAsSelf ? (currentUser?.name || '') : scheduleForm.realtor_name,
+          ...(bookingAsSelf && currentUser?.id ? { realtor_id: currentUser.id } : {}),
+        }),
         scheduled_at: `${scheduleForm.scheduled_date}T${scheduleForm.scheduled_time}:00`,
         attendees: Math.max(Number(scheduleForm.attendees) || 1, 1),
         notes: scheduleForm.notes || null,
@@ -378,10 +415,33 @@ export default function InspectionsPage() {
           {/* Realtor — a realtor books as themselves and cannot list other realtors */}
           <div className="space-y-1">
             <label className="block text-sm font-medium text-slate-700">Realtor<FieldMark required /></label>
-            {isRealtorUser ? (
+
+            {/* Staff who are also realtors choose which they are doing here,
+                instead of looking for their own name in the list below. */}
+            {canBookAsSelf && (
+              <label className="flex items-center gap-2 pb-1 text-sm text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={bookingAsSelf}
+                  onChange={(e) => {
+                    setBookingAsSelf(e.target.checked);
+                    // Clear the picked realtor, so the two can never disagree.
+                    if (e.target.checked) {
+                      setScheduleForm((f) => ({ ...f, realtor_id: '', realtor_name: '' }));
+                    }
+                  }}
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                This inspection is mine
+              </label>
+            )}
+
+            {selfBooking ? (
               <>
                 <input value={currentUser?.name || 'You'} readOnly className={`${SELECT_CLASS} bg-slate-50`} />
-                <p className="text-xs text-slate-500">Inspections you schedule are sent to an administrator for approval.</p>
+                {isRealtorUser && (
+                  <p className="text-xs text-slate-500">Inspections you schedule are sent to an administrator for approval.</p>
+                )}
               </>
             ) : (
               <>

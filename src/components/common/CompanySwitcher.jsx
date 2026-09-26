@@ -5,6 +5,7 @@ import Modal from './Modal';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import useAuthStore from '../../store/authStore';
+import { autoFocusProps } from '../../utils/softKeyboard';
 
 /**
  * Move between the companies one person holds accounts with.
@@ -224,7 +225,7 @@ export default function CompanySwitcher({ className = '' }) {
             value={challengePassword}
             onChange={(e) => setChallengePassword(e.target.value)}
             autoComplete="current-password"
-            autoFocus
+            {...autoFocusProps()}
             required
           />
           {challengeError && <p className="text-sm text-rose-600">{challengeError}</p>}

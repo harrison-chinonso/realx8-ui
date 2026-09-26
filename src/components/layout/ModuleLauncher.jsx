@@ -7,6 +7,7 @@ import { LAUNCHER_CSS } from './launcherStyles';
 import { DESCRIPTIONS, orderTiles } from './launcherGroups';
 import { rememberVisit, recentVisits } from './recentScreens';
 import NavBadge from './NavBadge';
+import { focusUnlessTouch, dismissKeyboard } from '../../utils/softKeyboard';
 
 /**
  * The module launcher — every area of the product, in one grid.
@@ -162,7 +163,9 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
     if (!open) return;
     setQuery('');
     setShowOverflow(false);
-    searchRef.current?.focus();
+    // Desktop only — see softKeyboard. On a phone the launcher opens without
+    // the keyboard covering the tiles it just showed.
+    focusUnlessTouch(searchRef.current);
 
     /*
      * Back to the sub-menu you came through, not to the top.
@@ -303,6 +306,9 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
 
   const close = useCallback(() => {
     onClose();
+    // Leaving the launcher takes the keyboard with it, rather than leaving it
+    // over the page underneath.
+    dismissKeyboard();
     returnFocusTo?.current?.focus();
   }, [onClose, returnFocusTo]);
 

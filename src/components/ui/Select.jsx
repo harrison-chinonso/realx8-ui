@@ -4,6 +4,7 @@ import {
 import { createPortal } from 'react-dom';
 import { cn } from '../../lib/cn';
 import FieldMark from './FieldMark';
+import { focusUnlessTouch, dismissKeyboard } from '../../utils/softKeyboard';
 
 /**
  * Select — a listbox that renders its own options.
@@ -183,7 +184,9 @@ export default function Select({
     if (!open) { setSearch(''); return; }
     if (canSearch) {
       // After the portal has painted, or there is nothing to focus yet.
-      const id = requestAnimationFrame(() => searchRef.current?.focus());
+      // Not on a phone: focusing the search box IS opening the keyboard, and
+      // opening a dropdown is not a request to type. Tapping the box still is.
+      const id = requestAnimationFrame(() => focusUnlessTouch(searchRef.current));
       return () => cancelAnimationFrame(id);
     }
     return undefined;
@@ -237,6 +240,10 @@ export default function Select({
     if (!isControlled) setUncontrolled(option.value);
     onChange?.({ target: { value: option.value, name }, currentTarget: { value: option.value, name } });
     setOpen(false);
+    // The search box is gone but a phone keeps the keyboard up for whatever is
+    // still focused, which would cover the value just chosen. Blur first, then
+    // hand focus back to the trigger.
+    dismissKeyboard();
     triggerRef.current?.focus();
   };
 

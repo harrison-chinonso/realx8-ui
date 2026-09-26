@@ -1,73 +1,7 @@
 import { useRef, useState } from 'react';
 import { uploadPropertyMedia } from '../../api/propertyApi';
 import { guessType, resolveMedia } from '../../utils/mediaUrl';
-import { safeHref } from '../../utils/safeHref';
-
-// ── Lightbox ──────────────────────────────────────────────────────────────────
-
-function Lightbox({ item, onClose }) {
-  if (!item) return null;
-  const media = resolveMedia(item.url, item.type);
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-      onClick={onClose}
-    >
-      <button
-        onClick={onClose}
-        className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
-        aria-label="Close"
-      >
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-      <div
-        className="max-h-[90vh] max-w-5xl w-full"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {media.kind === 'embed' ? (
-          <div className="relative w-full overflow-hidden rounded-xl bg-black" style={{ aspectRatio: '16 / 9' }}>
-            <iframe
-              src={media.src}
-              title={item.name || 'Video'}
-              className="absolute inset-0 h-full w-full"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-              allowFullScreen
-            />
-          </div>
-        ) : media.kind === 'video' ? (
-          <video
-            src={media.src}
-            controls
-            autoPlay
-            playsInline
-            className="w-full max-h-[85vh] rounded-xl bg-black"
-          />
-        ) : (
-          <img
-            src={media.src}
-            alt={item.name}
-            className="w-full max-h-[85vh] rounded-xl object-contain"
-          />
-        )}
-        <div className="mt-2 flex items-center justify-center gap-3">
-          {item.name && <p className="truncate text-sm text-white/60">{item.name}</p>}
-          <a
-            href={safeHref(item.url) ?? undefined}
-            target="_blank"
-            rel="noreferrer"
-            className="shrink-0 text-sm text-white/60 underline hover:text-white"
-            onClick={(e) => e.stopPropagation()}
-          >
-            Open original ↗
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
+import MediaLightbox from './MediaLightbox';
 
 // ── MediaThumbnail ─────────────────────────────────────────────────────────────
 
@@ -210,9 +144,14 @@ export default function PropertyMediaPanel({ images = [], onChange, onSave, savi
 
   return (
     <>
-      {lightboxIndex !== null && (
-        <Lightbox item={items[lightboxIndex]} onClose={() => setLightboxIndex(null)} />
-      )}
+      {/* The whole set goes in, not just the item that was tapped, so next
+          and previous work without coming back out to the grid. */}
+      <MediaLightbox
+        items={items}
+        index={lightboxIndex}
+        onIndex={setLightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+      />
 
       <div className="space-y-4">
         {/* Grid of existing media */}

@@ -9,6 +9,7 @@ import useDraggable from '../../hooks/useDraggable';
 import { getEngine } from '../../assistant/index.js';
 import { respond } from '../../assistant/converse.js';
 import AssistantMessage from './AssistantMessage';
+import { focusUnlessTouch } from '../../utils/softKeyboard';
 
 /**
  * The in-app assistant.
@@ -140,7 +141,9 @@ export default function AssistantWidget() {
   }, [messages, open, sending]);
 
   useEffect(() => {
-    if (open) inputRef.current?.focus();
+    // Opening the assistant should not open the keyboard on a phone; it hides
+    // the conversation the widget was opened to read.
+    if (open) focusUnlessTouch(inputRef.current);
   }, [open]);
 
   // Never leave a stream running behind a closed widget.

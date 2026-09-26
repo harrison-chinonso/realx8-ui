@@ -15,10 +15,12 @@ const DESCRIPTION = {
 /**
  * The single profile control in the app: one filled pill in the header.
  *
- * Holding both profiles it offers the counterpart ("Switch to Client"); holding
- * only one it offers to create the other ("Create Realtor Profile"). It renders
- * nothing for anyone outside the realtor/client pair — an admin has no second
- * profile to switch into and must not be invited to create one.
+ * Holding both profiles it offers the counterpart ("Switch to Client"). Holding
+ * only one it offers to create the other — except in the realtor direction,
+ * which is never offered: a client is not invited to sign up as an agent from
+ * the page header. It renders nothing for anyone outside the realtor/client
+ * pair — an admin has no second profile to switch into and must not be invited
+ * to create one.
  *
  * The label is never hidden responsively. An icon-only pill reads as a mystery
  * button, and this action is destructive enough to a user's context (it reloads
@@ -64,6 +66,23 @@ export default function ProfileToggle({ className = '' }) {
   if (!other) return null;
 
   const otherRole = held.find((r) => r.name === other);
+
+  /*
+   * A client is never invited to become a realtor.
+   *
+   * Switching between two profiles the account already holds stays available in
+   * both directions — that is just moving between things this person already
+   * is. What is gone is the CREATE offer in the realtor direction: a client who
+   * held only a client profile was shown "Create Realtor Profile" in the header
+   * of every page, which reads as the company asking them to sign up as an
+   * agent. Becoming a realtor is an onboarding decision with verification and a
+   * commission ladder behind it, not a header button.
+   *
+   * The other direction is untouched: a realtor may still create a client
+   * profile for themselves, which is how they buy.
+   */
+  if (!otherRole && other === 'realtor') return null;
+
   const label = otherRole ? `Switch to ${TITLE[other]}` : `Create ${TITLE[other]} Profile`;
   const Icon = otherRole ? Repeat : UserPlus;
 

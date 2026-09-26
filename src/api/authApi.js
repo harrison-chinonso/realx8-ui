@@ -57,3 +57,21 @@ export const switchCompanyApi = async (company_id, password) =>
  */
 export const joinCompanyApi = async ({ company_code, role, realtor_code, password }) =>
   (await client.post('/auth/companies/join', { company_code, role, realtor_code, password })).data;
+
+/**
+ * What would happen if this account were deleted, asked before anything is
+ * typed: which company is being left, how it must be confirmed, and anything
+ * outstanding that stands in the way.
+ */
+export const accountDeletionCheckApi = async () =>
+  (await client.get('/auth/account/deletion-check')).data;
+
+/**
+ * Delete the account held with the CURRENT session's company. Other companies
+ * the same email holds accounts with are untouched.
+ *
+ * Takes a password, or `confirmation: 'DELETE'` for a Google account that never
+ * chose one. The server decides which it will accept.
+ */
+export const deleteAccountApi = async ({ password, confirmation } = {}) =>
+  (await client.post('/auth/account/delete', { password, confirmation })).data;

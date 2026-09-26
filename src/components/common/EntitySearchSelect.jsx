@@ -15,6 +15,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, ChevronDown, X } from 'lucide-react';
 import FieldMark from '../ui/FieldMark';
+import { autoFocusProps } from '../../utils/softKeyboard';
 
 export default function EntitySearchSelect({
   label,
@@ -104,7 +105,7 @@ export default function EntitySearchSelect({
           <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
             <Search size={13} className="shrink-0 text-slate-400" />
             <input
-              autoFocus
+              {...autoFocusProps()}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}

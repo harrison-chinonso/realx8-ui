@@ -8,6 +8,7 @@ import Button from '../../components/ui/Button';
 import PropertyMap, { toCoords } from '../../components/common/PropertyMap';
 import { parseImages } from '../../utils/parseImages';
 import { resolveMedia } from '../../utils/mediaUrl';
+import MediaLightbox from '../../components/common/MediaLightbox';
 import { enumLabel } from '../../utils/enumLabel';
 
 const imageUrl = (image) => (typeof image === 'string' ? image : image?.url);
@@ -60,6 +61,10 @@ export default function PublicPropertyPage() {
   const [buying, setBuying] = useState(false);
   const [purchase, setPurchase] = useState(null);
   const [purchaseError, setPurchaseError] = useState('');
+  // Which media item the viewer is showing; null means closed. Declared up here
+  // with the other hooks because the loading/expired/missing branches below
+  // return early.
+  const [viewerIndex, setViewerIndex] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -229,46 +234,57 @@ export default function PublicPropertyPage() {
         {images.length > 0 && (
           <section className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <h2 className="mb-3 text-lg font-semibold text-slate-900">Media</h2>
+            {/*
+              Every tile opens the viewer at its own position rather than
+              rendering in place or linking out: videos used to play inside a
+              160px grid cell, and a photograph opened a new browser tab with
+              no way back and nothing to move on to.
+            */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {images.map((image, index) => {
                 const url = imageUrl(image);
                 if (!url) return null;
                 const media = resolveMedia(url, typeof image === 'string' ? undefined : image?.type);
-
-                if (media.kind === 'embed') {
-                  return (
-                    <iframe
-                      key={`${url}-${index}`}
-                      src={media.src}
-                      title={image?.name || `${property.name} video ${index + 1}`}
-                      className="h-40 w-full rounded-lg bg-black"
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                      allowFullScreen
-                    />
-                  );
-                }
-
-                if (media.kind === 'video') {
-                  return (
-                    <video
-                      key={`${url}-${index}`}
-                      src={media.src}
-                      controls
-                      playsInline
-                      preload="metadata"
-                      className="h-40 w-full rounded-lg bg-black object-cover"
-                    />
-                  );
-                }
+                const isVideo = media.kind !== 'image';
+                const preview = isVideo ? media.poster : media.src;
 
                 return (
-                  <a key={`${url}-${index}`} href={media.src} target="_blank" rel="noreferrer">
-                    <img src={media.src} alt={`${property.name} ${index + 1}`} className="h-40 w-full rounded-lg object-cover" loading="lazy" />
-                  </a>
+                  <button
+                    type="button"
+                    key={`${url}-${index}`}
+                    onClick={() => setViewerIndex(index)}
+                    aria-label={`View ${image?.name || `media ${index + 1}`}`}
+                    className="group relative h-40 w-full overflow-hidden rounded-lg bg-slate-900 ring-1 ring-slate-200"
+                  >
+                    {preview ? (
+                      <img
+                        src={preview}
+                        alt={`${property.name} ${index + 1}`}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                      />
+                    ) : (
+                      <span className="block h-full w-full bg-slate-800" />
+                    )}
+                    {isVideo && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/30">
+                        <span className="rounded-full bg-black/60 p-3 ring-1 ring-white/30">
+                          <svg className="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        </span>
+                      </span>
+                    )}
+                  </button>
                 );
               })}
             </div>
+            <MediaLightbox
+              items={images}
+              index={viewerIndex}
+              onIndex={setViewerIndex}
+              onClose={() => setViewerIndex(null)}
+            />
           </section>
         )}
 

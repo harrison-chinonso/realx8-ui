@@ -5,6 +5,7 @@ import Button from '../ui/Button';
 import Modal from '../common/Modal';
 import FieldMark from '../ui/FieldMark';
 import { safeHref } from '../../utils/safeHref';
+import { autoFocusProps } from '../../utils/softKeyboard';
 
 /**
  * The approve / refuse / settle buttons on a credit or debit note.
@@ -109,7 +110,7 @@ export default function NoteApprovalActions({ kind, note, onChanged }) {
             <span className="text-sm font-medium text-slate-700">Why are you refusing it?<FieldMark /></span>
             <textarea
               rows={4}
-              autoFocus
+              {...autoFocusProps()}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"

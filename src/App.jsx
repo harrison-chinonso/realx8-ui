@@ -1,5 +1,6 @@
-import { Navigate, Outlet, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useState } from 'react';
+import { Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { dismissKeyboard } from './utils/softKeyboard';
 import AppLayout from './components/layout/AppLayout';
 import useAuthStore from './store/authStore';
 import { AppearanceProvider } from './context/AppearanceContext';
@@ -219,9 +220,24 @@ function SettingsRouter() {
   return <SettingsPage />;
 }
 
+/**
+ * The keyboard does not travel between pages.
+ *
+ * A field left focused when navigation happens keeps the on-screen keyboard up
+ * over the page that follows, which is half of why it seemed to appear on its
+ * own — it had not appeared, it had never left. The other half was screens
+ * focusing their own search box on mount; see utils/softKeyboard.
+ */
+function DismissKeyboardOnNavigate() {
+  const { pathname } = useLocation();
+  useEffect(() => { dismissKeyboard(); }, [pathname]);
+  return null;
+}
+
 export default function App() {
   return (
     <AppearanceProvider>
+      <DismissKeyboardOnNavigate />
       <Routes>
         <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
         <Route path="/register" element={<PublicOnly allowInvited><RegisterPage /></PublicOnly>} />

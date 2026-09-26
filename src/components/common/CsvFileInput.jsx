@@ -4,6 +4,7 @@ import FieldMark from '../ui/FieldMark';
 import { readSpreadsheet } from '../../utils/readSpreadsheet';
 import { readPdfTable, PdfPasswordRequired } from '../../utils/readPdfTable';
 import Input from '../ui/Input';
+import { autoFocusProps } from '../../utils/softKeyboard';
 
 /**
  * A CSV or a spreadsheet, chosen as a file.
@@ -299,7 +300,7 @@ export default function CsvFileInput({
               label="Password"
               type="password"
               required
-              autoFocus
+              {...autoFocusProps()}
               autoComplete="off"
               value={password}
               onChange={(event) => setPassword(event.target.value)}

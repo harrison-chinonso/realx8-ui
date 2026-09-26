@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Modal from './Modal';
 import Button from '../ui/Button';
 import FieldMark from '../ui/FieldMark';
+import { autoFocusProps } from '../../utils/softKeyboard';
 
 const formatWhen = (value) => {
   if (!value) return '—';
@@ -93,7 +94,7 @@ export default function InspectionReviewModal({ open, inspection, decision, onCl
             value={notes}
             onChange={(event) => { setNotes(event.target.value); setError(''); }}
             maxLength={500}
-            autoFocus
+            {...autoFocusProps()}
             placeholder={declining
               ? 'e.g. The client already viewed this property last week.'
               : 'e.g. Confirmed with the site team — go ahead.'}

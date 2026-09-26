@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getReplies, listTickets, createTicket, addReply, updateTicketStatus } from '../../api/supportApi';
 import { listClients } from '../../api/userApi';
+import useAuthStore from '../../store/authStore';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
@@ -9,11 +10,28 @@ import Select from '../../components/ui/Select';
 import EntitySearchSelect from '../../components/common/EntitySearchSelect';
 import FieldMark from '../../components/ui/FieldMark';
 
-const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
+// Matches the support_tickets.priority ENUM exactly. 'urgent' was offered here
+// and does not exist in the column, so choosing it failed the write.
+const PRIORITIES = ['low', 'medium', 'high'];
 const STATUSES   = ['open', 'in_progress', 'resolved', 'closed'];
-const EMPTY_FORM = { subject: '', description: '', priority: 'medium', client_id: '' };
+const EMPTY_FORM = { subject: '', description: '', priority: 'medium', user_id: '' };
 
 export default function SupportPage() {
+  /*
+   * A client or realtor raising a ticket IS the person it is about, so they are
+   * never asked to name one. Only staff working the queue may file on somebody
+   * else's behalf.
+   *
+   * This form used to send `client_id`, which is not a column on
+   * support_tickets — the field it needed was `user_id`, and nothing supplied
+   * it. Every ticket raised here came back "Validation failed" with every
+   * visible field filled in.
+   */
+  const currentUser  = useAuthStore((state) => state.user);
+  const effectiveType = useAuthStore((state) => state.effectiveType());
+  const raisingForSelf = ['client', 'realtor'].includes(effectiveType)
+    || ['client', 'realtor'].includes(currentUser?.type);
+
   const [tickets,    setTickets]    = useState([]);
   const [selected,   setSelected]   = useState(null);
   const [replies,    setReplies]    = useState([]);
@@ -47,7 +65,9 @@ export default function SupportPage() {
         subject:     form.subject.trim(),
         description: form.description.trim(),
         priority:    form.priority,
-        ...(form.client_id ? { client_id: Number(form.client_id) } : {}),
+        // Staff only. Left out, the server attributes the ticket to the caller,
+        // which is what a customer raising their own ticket wants.
+        ...(!raisingForSelf && form.user_id ? { user_id: Number(form.user_id) } : {}),
       };
       await createTicket(payload);
       setShowCreate(false);
@@ -162,14 +182,18 @@ export default function SupportPage() {
               {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
             </Select>
           </div>
-          <EntitySearchSelect
-            label="Client (optional)"
-            placeholder="Search client by name…"
-            value={form.client_id}
-            onChange={(id) => setForm((f) => ({ ...f, client_id: id }))}
-            fetchItems={() => listClients({ limit: 1000 })}
-            getLabel={(c) => c.name || c.email || `Client #${c.id}`}
-          />
+          {/* Raising your own ticket: you are the customer, so there is nobody
+              to pick. Staff filing on a customer's behalf still name them. */}
+          {!raisingForSelf && (
+            <EntitySearchSelect
+              label="Raise on behalf of (optional)"
+              placeholder="Search client by name…"
+              value={form.user_id}
+              onChange={(id) => setForm((f) => ({ ...f, user_id: id }))}
+              fetchItems={() => listClients({ limit: 1000 })}
+              getLabel={(c) => c.name || c.email || `Client #${c.id}`}
+            />
+          )}
           <div className="flex gap-2 pt-2">
             <Button type="submit" disabled={submitting}>{submitting ? 'Submitting…' : 'Create Ticket'}</Button>
             <Button type="button" variant="secondary" onClick={() => { setShowCreate(false); setError(''); }}>Cancel</Button>

@@ -8,6 +8,7 @@ import Input from '../../components/ui/Input';
 import VerificationPanel from '../../components/profile/VerificationPanel';
 import LevelPanel from '../../components/profile/LevelPanel';
 import CompaniesPanel from '../../components/profile/CompaniesPanel';
+import DeleteAccountPanel from '../../components/profile/DeleteAccountPanel';
 import ProfileToggle from '../../components/common/ProfileToggle';
 import FieldMark from '../../components/ui/FieldMark';
 
@@ -107,7 +108,8 @@ function SecurityTab() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+    <div className="max-w-lg space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div>
         <h2 className="text-sm font-semibold text-slate-900">Change password</h2>
         <p className="mt-1 text-sm text-slate-500">Choose a password you do not use anywhere else.</p>
@@ -126,7 +128,12 @@ function SecurityTab() {
         <Input type="password" name="confirm" value={form.confirm} onChange={handleChange} autoComplete="new-password" />
       </div>
       <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Change password'}</Button>
-    </form>
+      </form>
+
+      {/* Last thing on the tab, and visibly separated — it is the one action
+          here that cannot be undone. */}
+      <DeleteAccountPanel />
+    </div>
   );
 }
 
