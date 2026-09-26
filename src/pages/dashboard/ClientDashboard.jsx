@@ -7,6 +7,9 @@ import PayInvoiceModal from '../../components/finance/PayInvoiceModal';
 import Button from '../../components/ui/Button';
 import { useCurrency } from '../../context/useAppearance';
 import useAuthStore from '../../store/authStore';
+import usePromotionAdverts from '../../hooks/usePromotionAdverts';
+import PromotionAdvertCarousel from '../../components/promotions/PromotionAdvertCarousel';
+import PromotionAdvertModal from '../../components/promotions/PromotionAdvertModal';
 
 function Skeleton({ className = '' }) {
   return <div className={`animate-pulse rounded-xl bg-slate-100 ${className}`} />;
@@ -21,6 +24,9 @@ const formatDate = (value) => {
 export default function ClientDashboard() {
   const fmt = useCurrency();
   const user = useAuthStore((state) => state.user);
+  // Properties this company is promoting. Empty for everyone with nothing on
+  // offer, so both advert components render nothing at all.
+  const { slides: adverts } = usePromotionAdverts();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   // Two steps, two pieces of state: which invoice, and then paying it. The
@@ -76,6 +82,11 @@ export default function ClientDashboard() {
           </Button>
         )}
       </div>
+
+      {/* Directly under the Pay Now row, above everything else on the page:
+          what the company is promoting, and one tap to buy it. */}
+      <PromotionAdvertCarousel slides={adverts} />
+      <PromotionAdvertModal slides={adverts} />
 
       <div>
         <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Business Summary</p>

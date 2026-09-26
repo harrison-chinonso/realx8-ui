@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getListedProperty } from '../../api/propertyApi';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
@@ -21,6 +21,7 @@ export default function ListedPropertyDetailPage() {
   const fmt = useCurrency();
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [property, setProperty] = useState(null);
   const [state, setState] = useState('loading');
   const [showPurchase, setShowPurchase] = useState(false);
@@ -50,6 +51,27 @@ export default function ListedPropertyDetailPage() {
       .catch(() => { if (!cancelled) setState('missing'); });
     return () => { cancelled = true; };
   }, [id]);
+
+  /*
+   * `?buy=1` opens the purchase modal on arrival.
+   *
+   * It is what makes the dashboard advert's "Buy now" land on this property
+   * ALREADY SELECTED rather than on a page with the button still to find. The
+   * parameter is consumed immediately, so a reload or a shared copy of the URL
+   * is an ordinary property page — an unexpected payment dialog on somebody
+   * else's link would be a nasty surprise.
+   *
+   * Gated on canPurchase for the same reason the button is: a realtor viewing
+   * this must not be handed a buyer's modal.
+   */
+  useEffect(() => {
+    if (state !== 'ready' || !canPurchase) return;
+    if (searchParams.get('buy') !== '1') return;
+    setShowPurchase(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('buy');
+    setSearchParams(next, { replace: true });
+  }, [state, canPurchase, searchParams, setSearchParams]);
 
   if (state === 'loading') return <div className="rounded-xl bg-white p-6 text-slate-500">Loading property...</div>;
   if (state === 'missing') {

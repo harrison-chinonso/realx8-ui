@@ -7,6 +7,7 @@ import {
 import { setSessionKey, clearSessionKey } from '../api/payloadCrypto';
 import { resetRefreshBudget } from '../api/refreshBudget';
 import { markFreshLogin } from '../lib/launcherGreeting';
+import { clearAdvertDismissals } from '../lib/advertDismissal';
 import { clearBrowserState } from '../lib/clearBrowserState';
 
 const useAuthStore = create(
@@ -89,6 +90,9 @@ const useAuthStore = create(
            */
           clearBrowserState();
           markFreshLogin();
+          // A new session means the promotion advert is owed another showing,
+          // whatever the previous occupant of this tab dismissed.
+          clearAdvertDismissals();
         }
 
         set({

@@ -27,3 +27,14 @@ export const promotionAnalytics = (id, params) =>
 /** What a buyer would pay for one unit right now. Not staff-only. */
 export const unitPrice = (unitId, params) =>
   client.get(`/units/${unitId}/price`, { params }).then((r) => r.data?.data);
+
+/**
+ * What this company is promoting to buyers right now, for the dashboard
+ * advert: one entry per promoted property, with the offer attached.
+ *
+ * Distinct from listPromotions, which is the administrator's view of every
+ * campaign in every state. This returns only ACTIVE, in-date campaigns over
+ * approved and available properties, and is readable by clients and realtors.
+ */
+export const listPromotionShowcase = () =>
+  client.get('/promotions/showcase').then((r) => r.data?.data || []);

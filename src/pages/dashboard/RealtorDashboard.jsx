@@ -8,6 +8,9 @@ import SummaryTile from '../../components/dashboard/SummaryTile';
 import TransactionHistory from '../../components/dashboard/TransactionHistory';
 import { useCurrency } from '../../context/useAppearance';
 import useAuthStore from '../../store/authStore';
+import usePromotionAdverts from '../../hooks/usePromotionAdverts';
+import PromotionAdvertCarousel from '../../components/promotions/PromotionAdvertCarousel';
+import PromotionAdvertModal from '../../components/promotions/PromotionAdvertModal';
 
 const STATUS_ORDER = ['pending', 'confirmed', 'completed', 'cancelled'];
 
@@ -18,6 +21,9 @@ function Skeleton({ className = '' }) {
 export default function RealtorDashboard() {
   const fmt = useCurrency();
   const user = useAuthStore((state) => state.user);
+  // The same offers a client sees, with Share link in place of Buy now — a
+  // realtor's move on a promotion is to put it in front of somebody.
+  const { slides: adverts } = usePromotionAdverts();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   // Fetched once here and shared with both the prompt and the Verified badge.
@@ -89,6 +95,10 @@ export default function RealtorDashboard() {
       </div>
 
       <VerificationPrompt record={kyc} loading={kyc === undefined} />
+
+      {/* Top of the page, matching where the client dashboard puts it. */}
+      <PromotionAdvertCarousel slides={adverts} />
+      <PromotionAdvertModal slides={adverts} />
 
       <div>
         <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">Business Summary</p>
