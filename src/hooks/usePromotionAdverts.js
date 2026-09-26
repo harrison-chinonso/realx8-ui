@@ -34,14 +34,44 @@ export default function usePromotionAdverts() {
     setLoading(true);
     try {
       const rows = await listPromotionShowcase();
-      setSlides(
-        (rows || [])
-          .map((row) => ({ ...row, image: firstImageUrl(row.property?.images) }))
-          .filter((row) => row.image && row.property?.id),
+      const withImages = (rows || [])
+        .map((row) => ({ ...row, image: firstImageUrl(row.property?.images) }))
+        .filter((row) => row.image && row.property?.id);
+
+      /*
+       * Say so when offers arrived but every one was discarded. Silence here is
+       * indistinguishable from "no campaigns", and the difference matters: it
+       * means the promotion is configured and live but its property has no
+       * photograph, so the advert can never appear however many campaigns get
+       * created. Console only — it is a note for whoever is debugging, not a
+       * problem the person reading the dashboard can act on.
+       */
+      if (rows?.length && !withImages.length) {
+        console.warn(
+          `[adverts] ${rows.length} promoted propert${rows.length === 1 ? 'y' : 'ies'} returned, `
+          + 'but none had a usable photograph — nothing will be advertised. '
+          + 'Promoted properties need at least one image (not a video) to appear.',
+        );
+      }
+      setSlides(withImages);
+    } catch (error) {
+      /*
+       * The advert stays silent for the person — a failed request and a company
+       * with no campaigns should look identical to them, which is a blank space
+       * rather than an error about something they did not ask for.
+       *
+       * But it must not be silent for a developer. This swallow is what made a
+       * staging deployment with live promotions and no carousel impossible to
+       * diagnose from the browser: no advert, no error, nothing to go on. The
+       * status is the whole diagnosis — 404 means the backend does not have the
+       * endpoint (Core not redeployed), 403 means the account lacks
+       * properties.view, 200 means look at the promotion's own configuration.
+       */
+      const status = error?.response?.status;
+      console.warn(
+        `[adverts] could not load promoted properties${status ? ` (HTTP ${status})` : ''}: `
+        + `${error?.response?.data?.message || error?.message || 'unknown error'}`,
       );
-    } catch {
-      // An advert is never worth an error message. A company with no campaigns
-      // and a request that failed should look the same to the person: no advert.
       setSlides([]);
     } finally {
       setLoading(false);
