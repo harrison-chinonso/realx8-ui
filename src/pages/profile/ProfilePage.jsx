@@ -76,6 +76,19 @@ function PersonalDetailsTab() {
 
 function SecurityTab() {
   const user = useAuthStore((state) => state.user);
+  const effectiveType = useAuthStore((state) => state.effectiveType());
+  /*
+   * Only a realtor or a client may delete their own account.
+   *
+   * Same line the Companies tab draws, for the same reason: those two are the
+   * only types that hold an account PER COMPANY, which is the unit this deletes.
+   * A staff account is the company — an administrator removing themselves is an
+   * administrative act with consequences for everyone else's access, and it
+   * belongs on the Users screen where somebody else performs it, not on a self
+   * -service tab. It would also let the last administrator lock the company out
+   * of its own account, since no guard stops that.
+   */
+  const canDeleteOwnAccount = effectiveType === 'realtor' || effectiveType === 'client';
   const [form, setForm] = useState({ password: '', confirm: '' });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -131,8 +144,8 @@ function SecurityTab() {
       </form>
 
       {/* Last thing on the tab, and visibly separated — it is the one action
-          here that cannot be undone. */}
-      <DeleteAccountPanel />
+          here that cannot be undone. Realtors and clients only. */}
+      {canDeleteOwnAccount && <DeleteAccountPanel />}
     </div>
   );
 }
