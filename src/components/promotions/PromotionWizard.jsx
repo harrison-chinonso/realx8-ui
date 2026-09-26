@@ -107,8 +107,25 @@ export default function PromotionWizard({ existing = null, initialName = '', onS
       .catch(() => setUnits([]));
   }, [scopedPropertyIds.join(',')]);
 
-  /** A basket to test against: whatever is in scope, at the quantity being tried. */
-  const [testQuantity, setTestQuantity] = useState(1);
+  /**
+   * A basket to test against: whatever is in scope, at the quantity being tried.
+   *
+   * ── Why the quantity is held as TEXT ────────────────────────────────────────
+   *
+   * The field could not be edited. It coerced on every keystroke with
+   * `Math.max(Number(value) || 1, 1)`, and clearing the box makes `value` an
+   * empty string — `Number('') || 1` is 1, so the 1 reappeared the instant it
+   * was deleted. There was no way to reach an empty field, which is the state
+   * you have to pass through to type a different number; the best anyone could
+   * do was leave the 1 and end up with 15.
+   *
+   * So the input owns a string and may be empty while it is being typed in, and
+   * the basket derives a usable number from it. Emptiness is a state of the
+   * INPUT, not of the test — a blank box simply previews at 1 rather than
+   * previewing nothing.
+   */
+  const [testQuantityText, setTestQuantityText] = useState('1');
+  const testQuantity = Math.min(Math.max(Number(testQuantityText) || 1, 1), 20);
   const testLines = useMemo(() => {
     const chosen = units.filter((unit) => (draft.scope?.unit_ids || []).includes(unit.id));
     const source = chosen.length ? chosen : units;
@@ -520,8 +537,14 @@ export default function PromotionWizard({ existing = null, initialName = '', onS
         <label className="block space-y-1">
           <span className="text-xs font-medium text-slate-600">Try it with this many of each<FieldMark /></span>
           <input
-            type="number" min="1" max="20" value={testQuantity}
-            onChange={(e) => setTestQuantity(Math.max(Number(e.target.value) || 1, 1))}
+            type="number" min="1" max="20" value={testQuantityText}
+            /* Typing is never corrected mid-keystroke — an empty box stays
+               empty so a different number can be typed into it. */
+            onChange={(e) => setTestQuantityText(e.target.value)}
+            /* Settled on leaving: whatever is in the box becomes the number the
+               preview actually used, so the two never disagree once you look
+               away. An empty or nonsense entry lands back on 1. */
+            onBlur={() => setTestQuantityText(String(testQuantity))}
             className="w-24 rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
           />
         </label>
