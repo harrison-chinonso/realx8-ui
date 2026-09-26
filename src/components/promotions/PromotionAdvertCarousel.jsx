@@ -69,7 +69,11 @@ export default function PromotionAdvertCarousel({ slides = [] }) {
         <X size={15} />
       </button>
 
-      <PromotionSlide key={`${slides[index].promotion_id}-${slides[index].property?.id}`} slide={slides[index]} />
+      <PromotionSlide
+        key={`${slides[index].promotion_id}-${slides[index].property?.id}`}
+        slide={slides[index]}
+        compact
+      />
 
       {count > 1 && (
         <>
@@ -77,7 +81,7 @@ export default function PromotionAdvertCarousel({ slides = [] }) {
             type="button"
             onClick={() => step(-1)}
             aria-label="Previous offer"
-            className="absolute left-2 top-[28%] z-10 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/70"
+            className="absolute left-2 top-[4.5rem] z-10 -translate-y-1/2 rounded-full bg-black/45 p-1.5 text-white transition hover:bg-black/70 sm:top-20"
           >
             ‹
           </button>
@@ -85,11 +89,11 @@ export default function PromotionAdvertCarousel({ slides = [] }) {
             type="button"
             onClick={() => step(1)}
             aria-label="Next offer"
-            className="absolute right-2 top-[28%] z-10 rounded-full bg-black/45 p-2 text-white transition hover:bg-black/70"
+            className="absolute right-2 top-[4.5rem] z-10 -translate-y-1/2 rounded-full bg-black/45 p-1.5 text-white transition hover:bg-black/70 sm:top-20"
           >
             ›
           </button>
-          <div className="flex justify-center gap-1.5 pb-3">
+          <div className="flex justify-center gap-1.5 pb-2.5">
             {slides.map((slide, i) => (
               <button
                 key={`${slide.promotion_id}-${slide.property?.id}`}

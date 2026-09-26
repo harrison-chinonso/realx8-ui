@@ -25,7 +25,7 @@ import { publicUrlFor } from '../common/PublicLinkPanel';
  * Shared by the carousel and the modal so the two can never drift into saying
  * different things about the same campaign.
  */
-export default function PromotionSlide({ slide, onActioned }) {
+export default function PromotionSlide({ slide, onActioned, compact = false }) {
   const navigate = useNavigate();
   const effectiveType = useAuthStore((state) => state.effectiveType());
   const isRealtor = effectiveType === 'realtor';
@@ -88,8 +88,23 @@ export default function PromotionSlide({ slide, onActioned }) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* ── The photograph ── */}
-      <div className="relative aspect-[16/9] w-full shrink-0 overflow-hidden bg-slate-100 sm:aspect-[21/9]">
+      {/*
+        ── The photograph ──
+
+        A fixed height when compact, not an aspect ratio. The carousel spans the
+        whole dashboard, and a ratio scales with that width — 21/9 across a
+        desktop column came out around 470px of photograph before a word of the
+        offer, pushing everything else below the fold. A height says how much
+        room the advert may take regardless of how wide the screen is.
+
+        The modal keeps the ratio: it is capped at max-w-md, so there the
+        picture was never the thing making it tall.
+      */}
+      <div
+        className={`relative w-full shrink-0 overflow-hidden bg-slate-100 ${
+          compact ? 'h-36 sm:h-40 lg:h-44' : 'aspect-[16/9]'
+        }`}
+      >
         <img src={slide.image} alt={property.name || 'Promoted property'} className="h-full w-full object-cover" />
         {slide.benefit_label && (
           <span className="absolute left-3 top-3 rounded-full bg-rose-600 px-3 py-1 text-xs font-bold text-white shadow-lg">
@@ -99,7 +114,7 @@ export default function PromotionSlide({ slide, onActioned }) {
       </div>
 
       {/* ── The offer ── */}
-      <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
+      <div className={`flex min-h-0 flex-1 flex-col ${compact ? 'gap-1.5 p-3' : 'gap-2 p-4'}`}>
         <div className="min-w-0">
           <h3 className="truncate text-base font-semibold text-slate-900">{property.name}</h3>
           {place && (
@@ -114,7 +129,7 @@ export default function PromotionSlide({ slide, onActioned }) {
             <Tag size={13} className="shrink-0" /> {slide.name}
           </p>
           {(slide.customer_message || slide.description) && (
-            <p className="mt-1 text-xs leading-relaxed text-amber-800">
+            <p className={`mt-1 text-xs leading-relaxed text-amber-800 ${compact ? 'line-clamp-2' : ''}`}>
               {slide.customer_message || slide.description}
             </p>
           )}
@@ -125,7 +140,11 @@ export default function PromotionSlide({ slide, onActioned }) {
           )}
         </div>
 
-        {slide.terms && <p className="text-[11px] leading-snug text-slate-400">{slide.terms}</p>}
+        {slide.terms && (
+          <p className={`text-[11px] leading-snug text-slate-400 ${compact ? 'line-clamp-1' : ''}`}>
+            {slide.terms}
+          </p>
+        )}
 
         {error && <p className="text-xs text-rose-600">{error}</p>}
 
