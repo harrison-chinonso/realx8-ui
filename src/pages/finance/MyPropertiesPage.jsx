@@ -7,6 +7,7 @@ import { openReceipt } from '../../utils/receiptDocument';
 import { resolveMedia } from '../../utils/mediaUrl';
 import { downloadUrl } from '../../utils/downloadUrl';
 import { STATE_TONE, STATE_LABEL } from '../../utils/invoiceState';
+import MediaLightbox from '../../components/common/MediaLightbox';
 import SummaryTile from '../../components/dashboard/SummaryTile';
 import Button from '../../components/ui/Button';
 import { safeHref } from '../../utils/safeHref';
@@ -37,35 +38,59 @@ const formatDate = (value) => {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-/** Pictures and videos, side by side, as the property stores them. */
+/**
+ * Pictures and videos, side by side, as the property stores them.
+ *
+ * Opens the in-app viewer rather than a browser tab. These tiles used to be
+ * links, and for a provider video the link pointed at the resolved EMBED
+ * address — a URL that only means anything inside an iframe. Loaded as a page
+ * of its own, YouTube refuses it outright with "Video player configuration
+ * error" (error 153), so the tile's one job was the one thing it could not do.
+ *
+ * The strip shows the first eight; the viewer gets every item, so next and
+ * previous keep going past the eighth.
+ */
 function MediaStrip({ items }) {
+  const [viewerIndex, setViewerIndex] = useState(null);
   if (!items?.length) return null;
   return (
+    <>
     <div className="flex gap-2 overflow-x-auto pb-1">
       {items.slice(0, 8).map((item, index) => {
         const url = typeof item === 'string' ? item : item?.url;
         if (!url) return null;
         const media = resolveMedia(url, typeof item === 'string' ? undefined : item?.type);
-        const key = `${url}-${index}`;
+        const isVideo = media.kind !== 'image';
+        const preview = isVideo ? media.poster : media.src;
 
-        if (media.kind === 'image') {
-          return (
-            <a key={key} href={media.src} target="_blank" rel="noreferrer" className="shrink-0">
-              <img src={media.src} alt="" className="h-20 w-28 rounded-lg object-cover ring-1 ring-slate-200" loading="lazy" />
-            </a>
-          );
-        }
-        // Video or provider embed: a poster where one exists, otherwise a plain
-        // tile. Either way it links out rather than autoplaying in a list.
         return (
-          <a key={key} href={media.kind === 'embed' ? media.src : url} target="_blank" rel="noreferrer"
-             className="relative flex h-20 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-800 ring-1 ring-slate-200">
-            {media.poster && <img src={media.poster} alt="" className="absolute inset-0 h-full w-full object-cover opacity-70" />}
-            <span className="relative text-2xl text-white/90">▶</span>
-          </a>
+          <button
+            type="button"
+            key={`${url}-${index}`}
+            onClick={() => setViewerIndex(index)}
+            aria-label={`View media ${index + 1}`}
+            className="relative flex h-20 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-800 ring-1 ring-slate-200"
+          >
+            {preview && (
+              <img
+                src={preview}
+                alt=""
+                loading="lazy"
+                className={`absolute inset-0 h-full w-full object-cover ${isVideo ? 'opacity-70' : ''}`}
+              />
+            )}
+            {isVideo && <span className="relative text-2xl text-white/90">▶</span>}
+          </button>
         );
       })}
     </div>
+    <MediaLightbox
+      items={items}
+      index={viewerIndex}
+      onIndex={setViewerIndex}
+      onClose={() => setViewerIndex(null)}
+    />
+    </>
   );
 }
 

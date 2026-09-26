@@ -249,8 +249,14 @@ export default function MediaLightbox({ items = [], index, onIndex, onClose }) {
           </div>
         )}
         <div className="text-center">
+          {/*
+            media.page, not media.src and not the stored url. For a provider
+            video src is the iframe address, which YouTube will not serve as a
+            page (error 153) — and the stored url is whatever somebody pasted,
+            which may be that same embed address.
+          */}
           <a
-            href={safeHref(normalised.url) ?? undefined}
+            href={safeHref(media.page || normalised.url) ?? undefined}
             target="_blank"
             rel="noreferrer"
             className="text-xs text-white/40 underline transition-colors hover:text-white/80"
