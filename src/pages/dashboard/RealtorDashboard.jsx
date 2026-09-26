@@ -133,10 +133,22 @@ export default function RealtorDashboard() {
           absent with nothing outstanding: a button that opens an empty list, or
           one that is refused on press, is worse than no button.
         */}
-        {payoutSummary?.can_request && requestable.length > 0 && (
-          <Button type="button" className="self-start" onClick={() => setShowPayout(true)}>
-            Request Payout
-          </Button>
+        {payoutSummary?.can_request && (
+          payoutSummary.request_via === 'statement' ? (
+            /*
+             * The engine holds entitlements in a ledger and requests against a
+             * balance, picking the lines on the statement screen. The dashboard
+             * does not hold those ids, so it sends the realtor there rather
+             * than offering a modal that cannot complete the request.
+             */
+            <Link to="/finance/my-commission" className="self-start">
+              <Button type="button">Request Payout</Button>
+            </Link>
+          ) : requestable.length > 0 && (
+            <Button type="button" className="self-start" onClick={() => setShowPayout(true)}>
+              Request Payout
+            </Button>
+          )
         )}
       </div>
 
