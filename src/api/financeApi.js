@@ -79,6 +79,8 @@ export const approveNote = (kind, id) => client.post(`/${notePath(kind)}/${id}/a
 export const rejectNote = (kind, id, reason) => client.post(`/${notePath(kind)}/${id}/reject`, { reason }).then(r => r.data);
 export const settleNote = (kind, id) => client.post(`/${notePath(kind)}/${id}/settle`).then(r => r.data);
 export const listPendingNotes = () => client.get('/notes/pending-approval').then(r => r.data);
+// Per-queue counts of what is waiting on the caller to approve — the sidebar badges.
+export const getApprovalCounts = () => client.get('/approvals/counts').then(r => r.data?.data ?? {});
 
 /*
  * The same two documents, from the side of the person they are about.

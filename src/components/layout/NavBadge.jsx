@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import useNavBadgeStore, { formatBadgeCount } from '../../store/navBadgeStore';
 import useAuthStore from '../../store/authStore';
 import { NAV, isNavItemVisible } from './navConfig';
@@ -92,6 +93,7 @@ export function NavBadges() {
   const isSuperiorAdmin = useAuthStore((state) => state.isSuperiorAdmin);
   const userType = useAuthStore((state) => state.effectiveType());
   const token = useAuthStore((state) => state.accessToken);
+  const { pathname } = useLocation();
 
   // Whether ANY badged item is visible to this user.
   const enabled = Boolean(token) && NAV
@@ -119,6 +121,15 @@ export function NavBadges() {
       window.removeEventListener('focus', onFocus);
     };
   }, [enabled, refresh]);
+
+  /*
+   * And on every navigation. Approving the last item in a queue and moving on
+   * should take its badge with it, not leave it for up to a minute — and a
+   * page change is the moment somebody looks at the sidebar again.
+   */
+  useEffect(() => {
+    if (enabled) refresh({ enabled });
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;
 }

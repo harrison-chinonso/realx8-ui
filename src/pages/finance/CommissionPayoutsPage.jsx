@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import useNavBadgeStore from '../../store/navBadgeStore';
 import Table from '../../components/common/Table';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/common/Badge';
 import Modal from '../../components/common/Modal';
 import { plural } from '../../utils/plural';
-import { useCurrency } from '../../context/useAppearance';
 import {
   listCommissionPayouts, buildCommissionPayouts,
   approveCommissionPayout, payCommissionPayout, cancelCommissionPayout,
-  listPayoutRequests, raisePayoutDebitNote,
+  listPayoutRequests,
 } from '../../api/commissionApi';
 
 /**
@@ -48,13 +49,15 @@ const money = (minor) => (Number(minor || 0) / 100)
   .toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function CommissionPayoutsPage() {
-  const fmt = useCurrency();
   const [payouts, setPayouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [requests, setRequests] = useState([]);
+  const refreshBadges = useNavBadgeStore((state) => state.refresh);
+  // Flat-rate commissions whose earner asked to be paid — from the badge count.
+  const flatRequested = useNavBadgeStore((state) => state.counts.commissionPayoutsDetail?.flat) || 0;
 
   const [viewing, setViewing] = useState(null);
   const [reference, setReference] = useState('');
@@ -69,8 +72,11 @@ export default function CommissionPayoutsPage() {
       setFailed(error?.response?.data?.message || 'Could not load payout runs.');
     } finally {
       setLoading(false);
+      // Every build, approval, payment and cancellation reloads through here,
+      // so the sidebar badge follows the queue without waiting for its poll.
+      refreshBadges();
     }
-  }, []);
+  }, [refreshBadges]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -110,27 +116,6 @@ export default function CommissionPayoutsPage() {
       await load();
     } catch (error) {
       setFailed(error?.response?.data?.message || 'Could not build the payout run.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  /**
-   * Raise the note that pays this payout.
-   *
-   * Refused on anything not approved, and refused a second time if a note
-   * already exists — a double click must not send a realtor two of them.
-   */
-  const raiseNote = async (payout) => {
-    setBusy(true);
-    setMessage('');
-    setFailed('');
-    try {
-      const note = await raisePayoutDebitNote(payout.id);
-      setMessage(`${note.debit_note_id} raised for ${fmt(note.amount)}. `
-        + 'It is waiting for approval; paying it is what records the money leaving.');
-    } catch (error) {
-      setFailed(error?.response?.data?.message || 'Could not raise the debit note.');
     } finally {
       setBusy(false);
     }
@@ -219,6 +204,21 @@ export default function CommissionPayoutsPage() {
         </div>
       )}
 
+      {/*
+        Flat-rate commission is approved per commission, on its own screen —
+        which the menu no longer links to (see navConfig). Without this, a
+        realtor paid at the flat rate could ask to be paid and nobody would see.
+      */}
+      {flatRequested > 0 && (
+        <div className="rounded-lg bg-warning-surface px-4 py-3 text-sm text-warning">
+          <span className="font-semibold">
+            {plural(flatRequested, 'flat-rate commission is', 'flat-rate commissions are')} waiting for payment approval.
+          </span>{' '}
+          These are paid one by one rather than in a run.{' '}
+          <Link to="/commissions" className="font-medium underline">Review flat-rate commissions</Link>
+        </div>
+      )}
+
       {message && <div className="rounded-lg bg-info-surface px-4 py-2 text-sm text-info">{message}</div>}
       {failed && <div className="rounded-lg bg-danger-surface px-4 py-2 text-sm text-danger">{failed}</div>}
 
@@ -252,19 +252,11 @@ export default function CommissionPayoutsPage() {
               </Button>
             )}
             {/*
-              The order the money actually moves in: raise a debit note for the
-              NET, have somebody approve it, pay THAT — which is what writes the
-              ledger entry — then come back here and record the payment.
-
-              "Record payment" closes the payout's own record; it no longer
-              writes a transaction, because nothing had approved one at that
-              point.
+              Build → approve → record payment. Recording the payment is what
+              writes the cash-book entry (ACC-0.6): the run's own approval is the
+              control, so there is no separate debit note to raise and approve —
+              that endpoint no longer exists.
             */}
-            {row.status === 'APPROVED' && (
-              <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => raiseNote(row)}>
-                Raise debit note
-              </Button>
-            )}
             {row.status === 'APPROVED' && (
               <Button type="button" size="sm" disabled={busy} onClick={() => setViewing(row)}>
                 Record payment

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { listReceipts, listPendingNotes } from '../api/financeApi';
+import { listReceipts, listPendingNotes, getApprovalCounts } from '../api/financeApi';
 import { listNotifications } from '../api/notificationApi';
 
 /**
@@ -23,6 +23,16 @@ import { listNotifications } from '../api/notificationApi';
  * misleading rather than merely absent. `limit: 1` keeps the payload to a
  * single row; it is the COUNT that is wanted.
  */
+
+/**
+ * The approval-count keys, zeroed. Merged in under the server's answer so a
+ * queue that has just emptied — or that this person has lost the right to
+ * approve — drops its badge, rather than keeping the last count it had.
+ */
+const APPROVAL_KEYS_ZEROED = {
+  commissionPayouts: 0, bills: 0, refunds: 0, realtorVerifications: 0,
+  levelRequests: 0, inspections: 0, properties: 0, mediaPosts: 0,
+};
 
 /** Never render a badge for a number nobody would act on. */
 const MAX_DISPLAY = 99;
@@ -65,9 +75,17 @@ const useNavBadgeStore = create((set, get) => ({
        * the endpoint they cannot see — which must not blank the badge they
        * can. allSettled rather than all, for exactly that.
        */
-      const [receipts, notes] = await Promise.allSettled([
+      const [receipts, notes, approvals] = await Promise.allSettled([
         listReceipts({ status: 'pending', limit: 1 }),
         listPendingNotes(),
+        /*
+         * Every other approval queue, in ONE call — payouts, bills, refunds,
+         * verifications, level upgrades, inspections, properties, posts. Each
+         * count is gated server-side on the permission its approve action
+         * needs, so a queue this person cannot act on comes back absent and
+         * draws no badge.
+         */
+        getApprovalCounts(),
       ]);
 
       set((state) => {
@@ -80,6 +98,9 @@ const useNavBadgeStore = create((set, get) => ({
         if (notes.status === 'fulfilled') {
           const rows = notes.value?.data ?? notes.value ?? [];
           counts.pendingNotes = Array.isArray(rows) ? rows.length : 0;
+        }
+        if (approvals.status === 'fulfilled') {
+          Object.assign(counts, APPROVAL_KEYS_ZEROED, approvals.value || {});
         }
 
         return { counts };

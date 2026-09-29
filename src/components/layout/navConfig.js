@@ -93,8 +93,14 @@ export const NAV = [
         label: 'Realtor', icon: UserCog,
         children: [
           { to: '/users/realtors',      label: 'Realtors',             icon: UserCog,     permission: 'users.manage' },
-          { to: '/realtor/levels',      label: 'Realtor Levels',       icon: Trophy,      permission: 'users.manage' },
-          { to: '/users/verifications', label: 'Realtor Verification', icon: ShieldCheck, permission: 'users.manage', hideForSuperior: true },
+          {
+            to: '/realtor/levels', label: 'Realtor Levels', icon: Trophy, permission: 'users.manage',
+            badge: 'levelRequests', badgeLabel: 'level upgrade requests awaiting approval',
+          },
+          {
+            to: '/users/verifications', label: 'Realtor Verification', icon: ShieldCheck, permission: 'users.manage', hideForSuperior: true,
+            badge: 'realtorVerifications', badgeLabel: 'verifications awaiting review',
+          },
           // Staff-facing. Realtors hold this permission too and would otherwise
           // see the leaderboard here AND in their own Realtor Hub — the exact
           // double listing the split was made to avoid.
@@ -121,9 +127,15 @@ export const NAV = [
     section: 'Properties',
     primary: true,
     items: [
-      { to: '/properties',             label: 'Property Listing',     icon: Building2,     permission: 'properties.view', hideForTypes: ['realtor', 'client'] },
+      {
+        to: '/properties', label: 'Property Listing', icon: Building2, permission: 'properties.view', hideForTypes: ['realtor', 'client'],
+        badge: 'properties', badgeLabel: 'properties awaiting approval',
+      },
       { to: '/properties/types',       label: 'Property Setup',       icon: Wrench,        permission: 'properties.manage' },
-      { to: '/properties/inspections', label: 'Property Inspection',  icon: ClipboardList, permission: 'properties.inspections.view' },
+      {
+        to: '/properties/inspections', label: 'Property Inspection', icon: ClipboardList, permission: 'properties.inspections.view',
+        badge: 'inspections', badgeLabel: 'inspection bookings awaiting approval',
+      },
       // Offices, and which properties each one runs. Staff only: a buyer or a
       // realtor has no use for a company's internal org structure.
       { to: '/branches',               label: 'Branches',             icon: Landmark,      permission: 'properties.view', hideForTypes: ['realtor', 'client'] },
@@ -265,7 +277,8 @@ export const NAV = [
           {
             to: '/finance/payables', label: 'Payables', icon: FilePlus,
             permission: 'finance.bills.view',
-            badgeLabel: 'bills awaiting approval',
+            // Declared a label and never a count, so it had never shown.
+            badge: 'bills', badgeLabel: 'bills awaiting approval',
           },
           /*
            * Money back to a buyer who paid too much.
@@ -278,14 +291,22 @@ export const NAV = [
            * have to pay out?" looks in one place, and every answer is now in
            * it.
            */
-          { to: '/finance/refunds', label: 'Refunds', icon: FileMinus, permission: 'finance.invoices.view' },
+          {
+            to: '/finance/refunds', label: 'Refunds', icon: FileMinus, permission: 'finance.invoices.view',
+            badge: 'refunds', badgeLabel: 'refunds awaiting approval',
+          },
           /**
            * Running a payout is what moves money, so it is gated on manage.
            * Reading what the engine has cost is not, which is why analytics
            * takes the view permission — an admin reviewing the bill should not
            * need the permission that changes what it will be.
            */
-          { to: '/finance/commission-payouts', label: 'Commission Payouts', icon: DollarSign, permission: 'finance.commissions.manage' },
+          {
+            to: '/finance/commission-payouts', label: 'Commission Payouts', icon: DollarSign, permission: 'finance.commissions.manage',
+            // Payout requests not yet in a run, runs awaiting approval, and
+            // flat-rate commissions whose earner has asked to be paid.
+            badge: 'commissionPayouts', badgeLabel: 'commission payouts awaiting approval',
+          },
           { to: '/finance/commission-plans',   label: 'Commission Plans',   icon: DollarSign, permission: 'finance.commissions.manage' },
           /*
            * "Commission Analytics", not "Financial Analytics".
@@ -392,7 +413,10 @@ export const NAV = [
     section: 'Marketing & Content',
     primary: true,
     items: [
-      { to: '/media/posts',           label: 'Content Posts',         icon: FileEdit,  permission: 'media.view' },
+      {
+        to: '/media/posts', label: 'Content Posts', icon: FileEdit, permission: 'media.view',
+        badge: 'mediaPosts', badgeLabel: 'posts awaiting approval',
+      },
       { to: '/media/blog',            label: 'Blog',                  icon: Newspaper, permission: 'media.blog.manage' },
       { to: '/media/social-accounts', label: 'Social Media Accounts', icon: Link2,     permission: 'media.schedule' },
       { to: '/media/analytics',       label: 'Marketing Analytics',   icon: LineChart, permission: 'media.analytics.view' },
