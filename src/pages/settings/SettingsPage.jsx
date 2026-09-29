@@ -207,6 +207,32 @@ const SETTING_GROUPS = [
     ],
   },
   {
+    /*
+     * Whether this company's payments, invoices, bills and commissions are
+     * written to the general ledger — the switch Core's accounting/posting.js
+     * reads before every journal.
+     *
+     * On unless turned off: no value means posting, so "Not set" is not offered
+     * here. Switching it off does not touch the cash book (`transactions`), and
+     * nothing recorded while it was off is posted retrospectively.
+     */
+    group: 'accounting',
+    label: 'Accounting',
+    permission: 'accounting.settings.manage',
+    fields: [
+      {
+        key: 'post_to_ledger',
+        label: 'Post payments, invoices, bills and commissions to the ledger',
+        type: 'select',
+        defaultValue: 'true',
+        options: [
+          { value: 'true', label: 'Yes — post to the ledger (default)' },
+          { value: 'false', label: 'No — keep this company off the ledger' },
+        ],
+      },
+    ],
+  },
+  {
     group: 'assistant',
     label: 'AI Assistant',
     // Answers are composed on your own servers from your own data, so there is
@@ -1534,7 +1560,10 @@ export default function SettingsPage() {
         getSettings(null, { group: 'invoicing' }),
         getSettings(null, { group: 'inventory' }),
         getSettings(null, { group: 'assistant' }),
-      ]).then(([gen, email, payment, invoicing, inventory, aiAssistant]) => {
+        // Effective, not own rows: posting follows the platform row when the
+        // company has none, and this should show what actually applies.
+        getSettings(null, { effective: true, group: 'accounting' }),
+      ]).then(([gen, email, payment, invoicing, inventory, aiAssistant, accounting]) => {
         setValues({
           ...(gen.data || {}),
           ...(email.data || {}),
@@ -1542,6 +1571,7 @@ export default function SettingsPage() {
           ...(invoicing.data || {}),
           ...(inventory.data || {}),
           ...(aiAssistant.data || {}),
+          ...(accounting.data || {}),
         });
       });
     }
@@ -1555,7 +1585,9 @@ export default function SettingsPage() {
     setSaving(true);
     setMessage(null);
     try {
-      const settings = groupDef.fields.map(({ key }) => ({ key, value: values[key] || '' }));
+      // A field with a default saves what it shows, so an untouched form
+      // records the default rather than a blank.
+      const settings = groupDef.fields.map(({ key, defaultValue }) => ({ key, value: values[key] || defaultValue || '' }));
       await bulkUpdateSettings(settings, group, targetCompanyId);
       setMessage({ type: 'success', text: 'Settings saved successfully.' });
     } catch (err) {
@@ -1705,16 +1737,17 @@ export default function SettingsPage() {
             )}
 
             <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-              {currentGroup?.fields?.map(({ key, label, type, placeholder, options }) => (
+              {currentGroup?.fields?.map(({ key, label, type, placeholder, options, defaultValue }) => (
                 <div key={key}>
                   <label className="mb-1 block text-sm font-medium">{label}<FieldMark /></label>
                   {type === 'select' ? (
                     <Select
-                      value={values[key] || ''}
+                      value={values[key] || defaultValue || ''}
                       onChange={(e) => handleChange(key, e.target.value)}
                       className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
                     >
-                      <option value="">Not set</option>
+                      {/* A field with a default is never "not set" — blank means the default. */}
+                      {!defaultValue && <option value="">Not set</option>}
                       {options.map((option) => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
