@@ -298,7 +298,7 @@ export default function PublicPropertyPage() {
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold text-slate-600">Unit Name</th>
-                    <th className="px-4 py-2 text-right font-semibold text-slate-600">Quantity</th>
+                    <th className="px-4 py-2 text-right font-semibold text-slate-600">Available</th>
                     <th className="px-4 py-2 text-right font-semibold text-slate-600">Property Size</th>
                     <th className="px-4 py-2 text-left font-semibold text-slate-600">Measured In</th>
                     <th className="px-4 py-2 text-right font-semibold text-slate-600">Price</th>
@@ -310,7 +310,8 @@ export default function PublicPropertyPage() {
                   {unitConfigs.map((unit, index) => (
                     <tr key={unit.id ?? index}>
                       <td className="px-4 py-2 font-medium text-slate-900">{unit.name || '—'}</td>
-                      <td className="px-4 py-2 text-right text-slate-700">{unit.quantity ?? '—'}</td>
+                      {/* Units already secured by other buyers' payments are not on offer. */}
+                      <td className="px-4 py-2 text-right text-slate-700">{unit.quantity_available ?? unit.quantity ?? '—'}</td>
                       <td className="px-4 py-2 text-right text-slate-700">{unit.size ? Number(unit.size).toLocaleString() : '—'}</td>
                       <td className="px-4 py-2 text-slate-700">{unit.unit || 'sqm'}</td>
                       <td className="px-4 py-2 text-right font-medium text-slate-900">{formatPrice(unit.price) || "—"}</td>

@@ -571,7 +571,23 @@ export default function PropertyDetailPage() {
                   rows={units}
                   columns={[
                     { key: 'name', label: 'Unit Name', render: (unit) => describeUnitConfig(unit) },
-                    { key: 'quantity', label: 'Quantity', render: (unit) => unit.quantity ?? '—' },
+                    {
+                      /*
+                       * What is left, not what was configured: units secured by
+                       * approved payments are subtracted. The configured total
+                       * stays beside it so staff can tell "none sold" from
+                       * "all sold"; the edit form still sets the total.
+                       */
+                      key: 'quantity_available',
+                      label: 'Available',
+                      render: (unit) => {
+                        if (unit.quantity == null) return '—';
+                        const available = unit.quantity_available ?? unit.quantity;
+                        return Number(available) === Number(unit.quantity)
+                          ? available
+                          : `${available} of ${unit.quantity}`;
+                      },
+                    },
                     {
                       key: 'size',
                       label: 'Property Size',

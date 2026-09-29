@@ -5,13 +5,21 @@ import ActionsMenu from './ActionsMenu';
 import { describeUnits, describeUnitConfig } from './PropertyUnitFields';
 import { coverImageUrl } from '../../utils/parseImages';
 
-/** Total units across every configuration, e.g. "30 units". */
+/**
+ * What is left of a configuration: the configured quantity less units already
+ * secured by payments. The list endpoints send `quantity_available`; the
+ * fallback covers any that do not.
+ */
+const availableOf = (unit) => Number(unit?.quantity_available ?? unit?.quantity) || 0;
+
+/** Units still available across every configuration, e.g. "30 units available". */
 const describeUnitTotal = (configs, property) => {
   const total = configs.length
-    ? configs.reduce((sum, u) => sum + (Number(u.quantity) || 0), 0)
+    ? configs.reduce((sum, u) => sum + availableOf(u), 0)
     : Number(property.unit_quantity) || 0;
-  if (!total) return null;
-  return `${total.toLocaleString()} ${total === 1 ? 'unit' : 'units'}`;
+  if (!configs.length && !total) return null;
+  if (!total) return 'Sold out';
+  return `${total.toLocaleString()} ${total === 1 ? 'unit' : 'units'} available`;
 };
 
 /**
@@ -34,7 +42,7 @@ export default function PropertyCard({ property, onOpen, onEdit, onDelete, onSha
   const summary = summaryMode === 'none' ? null
     : summaryMode === 'units' ? describeUnitTotal(configs, property)
     : (configs.length > 1
-      ? `${configs.length} configurations · ${configs.reduce((t, u) => t + (Number(u.quantity) || 0), 0)} units`
+      ? `${configs.length} configurations · ${configs.reduce((t, u) => t + availableOf(u), 0)} units available`
       : (configs.length === 1 ? describeUnitConfig(configs[0]) : describeUnits(property)));
 
   return (

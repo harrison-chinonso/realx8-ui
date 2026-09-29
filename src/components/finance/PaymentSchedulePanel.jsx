@@ -19,6 +19,45 @@ const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '�
  * the tones stay consistent with every other status pill in the app.
  */
 
+/** Why the units were secured, in the words the Inventory & Holds settings use. */
+const SECURED_BECAUSE = {
+  any_payment: 'on the first approved payment',
+  threshold_amount: 'once payments reached the hold amount',
+  threshold_percentage: 'once payments reached the hold percentage',
+  paid_in_full: 'when the invoice was paid in full',
+};
+
+/**
+ * Whether this invoice's units are off the market, read from its own hold
+ * record — so it states what was secured and under which rule, even if the
+ * company's hold settings have changed since.
+ */
+function SecuredUnits({ secured, quantity }) {
+  const units = (n) => `${n} unit${Number(n) === 1 ? '' : 's'}`;
+  if (!secured) {
+    return (
+      <p className="rounded-lg bg-slate-50 px-4 py-2 text-sm text-slate-600">
+        {units(quantity || 1)} not yet secured — they stay on sale until an approved payment meets the
+        company&apos;s hold rule, or the invoice is paid in full.
+      </p>
+    );
+  }
+  if (!secured.active) {
+    return (
+      <p className="rounded-lg bg-slate-50 px-4 py-2 text-sm text-slate-600">
+        {units(secured.quantity)} were released on {formatDate(secured.released_at)}
+        {secured.release_reason ? ` (${secured.release_reason})` : ''} and are back on sale.
+      </p>
+    );
+  }
+  return (
+    <p className="rounded-lg bg-green-50 px-4 py-2 text-sm text-green-800">
+      {units(secured.quantity)} secured {SECURED_BECAUSE[secured.trigger_policy] || ''} on{' '}
+      {formatDate(secured.secured_at)}. They stay held until the invoice is cancelled or expires.
+    </p>
+  );
+}
+
 /**
  * The payment plan and its schedule table for one invoice.
  *
@@ -127,6 +166,8 @@ export default function PaymentSchedulePanel({ invoiceId, onChanged }) {
           <div className="mt-1 font-semibold text-slate-900">{fmt(plan.total)}</div>
         </div>
       </div>
+
+      <SecuredUnits secured={plan.secured_units} quantity={plan.quantity} />
 
       {plan.status === 'in_default' && (
         <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">
