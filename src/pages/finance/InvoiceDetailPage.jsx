@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getInvoice, updateInvoice, sendInvoice, payInvoice, getInvoicePayments, listBankAccounts } from '../../api/financeApi';
+import { getInvoice, updateInvoice, sendInvoice, payInvoice, getInvoicePayments, listBankAccounts, recalculateInvoiceCommission } from '../../api/financeApi';
+import { usePermission } from '../../hooks/usePermission';
 import { useCurrency } from '../../context/useAppearance';
 import { openReceipt } from '../../utils/receiptDocument';
 import Badge from '../../components/common/Badge';
@@ -78,6 +79,10 @@ export default function InvoiceDetailPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [editForm, setEditForm] = useState(emptyEditForm);
   const [paymentForm, setPaymentForm] = useState(emptyPaymentForm);
+  const canManageCommission = usePermission('finance.commissions.manage');
+  const [recalculating, setRecalculating] = useState(false);
+  // { type: 'success' | 'info' | 'error', text } — the server says what it did, or why nothing.
+  const [commissionNote, setCommissionNote] = useState(null);
 
   useEffect(() => {
     if (isBuyer) return;
@@ -159,6 +164,25 @@ export default function InvoiceDetailPage() {
     if (savingPayment && !force) return;
     setShowPaymentModal(false);
     setPaymentForm(emptyPaymentForm);
+  };
+
+  /**
+   * Raise any commission this sale should have earned and did not — e.g. one
+   * settled from this screen before Record Payment and Mark as Paid raised it.
+   * Safe to press twice: the server raises nothing it has already raised, and
+   * says why when there is nothing to raise.
+   */
+  const handleRecalculateCommission = async () => {
+    setRecalculating(true);
+    setCommissionNote(null);
+    try {
+      const response = await recalculateInvoiceCommission(id);
+      setCommissionNote({ type: response?.data?.changed ? 'success' : 'info', text: response?.message || 'Done.' });
+    } catch (error) {
+      setCommissionNote({ type: 'error', text: error.userMessage || error?.response?.data?.message || 'Could not recalculate commission.' });
+    } finally {
+      setRecalculating(false);
+    }
   };
 
   const handleSendInvoice = async () => {
@@ -284,10 +308,27 @@ export default function InvoiceDetailPage() {
                     <Button variant="secondary" onClick={openEditModal}>Edit Invoice</Button>
                   </>
                 )}
+                {/* A sale with money on it, for whoever manages commission. */}
+                {canManageCommission && payments.length > 0 && invoice.type !== 'service_fee'
+                  && !['cancelled', 'expired'].includes(invoice.status) && (
+                  <Button variant="secondary" onClick={handleRecalculateCommission} disabled={recalculating}>
+                    {recalculating ? 'Recalculating…' : 'Recalculate Commission'}
+                  </Button>
+                )}
               </>
             )}
           </div>
         </div>
+
+        {commissionNote && (
+          <div className={`rounded-lg px-4 py-2 text-sm ${
+            commissionNote.type === 'error' ? 'bg-red-50 text-red-700'
+              : commissionNote.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-slate-50 text-slate-700'
+          }`}
+          >
+            {commissionNote.text}
+          </div>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>

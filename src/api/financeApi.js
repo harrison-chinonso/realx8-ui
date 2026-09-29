@@ -11,6 +11,8 @@ export const payInvoice = (id, payload) => client.post(`/invoices/${id}/pay`, pa
 
 /** Settle the whole outstanding balance in one entry. */
 export const markInvoicePaid = (id, payload) => client.post(`/invoices/${id}/mark-paid`, payload || {}).then(r => r.data);
+// Re-runs the commission step for a sale from its payments as they stand. Idempotent.
+export const recalculateInvoiceCommission = (id) => client.post(`/invoices/${id}/recalculate-commission`).then(r => r.data);
 export const getInvoicePayments = (id) => client.get(`/invoices/${id}/payments`).then(r => r.data);
 
 /**
