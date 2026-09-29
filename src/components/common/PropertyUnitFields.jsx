@@ -8,14 +8,18 @@ export const MEASUREMENT_UNITS = ['sqm', 'sqft', 'hectares', 'acres', 'plots'];
 /** An empty unit configuration, used to seed forms. */
 export const emptyUnitConfig = { name: '', size: '', unit: 'sqm', price: '', quantity: '' };
 
-/** Human-readable summary of one configuration, e.g. "4 × 500 sqm". */
-export const describeUnitConfig = ({ name, quantity, size, unit }) => {
+/**
+ * What one configuration IS, e.g. "500 sqm" — its name, or its size.
+ *
+ * Deliberately says nothing about how many. It used to read "4 × 500 sqm"
+ * from the CONFIGURED quantity, so a card or a unit table showed four long
+ * after two had been sold. How many are left is `quantity_available`, which
+ * each caller states beside this.
+ */
+export const describeUnitConfig = ({ name, size, unit }) => {
   if (name) return name;
-  const qty = Number(quantity) || 0;
   const measure = Number(size) || 0;
   const label = unit || 'sqm';
-  if (qty && measure) return `${qty} × ${measure.toLocaleString()} ${label}`;
-  if (qty) return `${qty} × ${label}`;
   if (measure) return `${measure.toLocaleString()} ${label}`;
   return '—';
 };

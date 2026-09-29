@@ -43,7 +43,12 @@ export default function PropertyCard({ property, onOpen, onEdit, onDelete, onSha
     : summaryMode === 'units' ? describeUnitTotal(configs, property)
     : (configs.length > 1
       ? `${configs.length} configurations · ${configs.reduce((t, u) => t + availableOf(u), 0)} units available`
-      : (configs.length === 1 ? describeUnitConfig(configs[0]) : describeUnits(property)));
+      : (configs.length === 1
+        ? `${describeUnitConfig(configs[0])} · ${availableOf(configs[0])
+          ? `${availableOf(configs[0]).toLocaleString()} available` : 'Sold out'}`
+        // No configurations: the legacy mirrored fields. Holds are placed on
+        // configurations, so nothing has been subtracted from these.
+        : describeUnits(property)));
 
   return (
     <div className="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200 transition-shadow hover:shadow-md">

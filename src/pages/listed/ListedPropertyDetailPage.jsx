@@ -176,7 +176,8 @@ export default function ListedPropertyDetailPage() {
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="px-4 py-2 text-left font-semibold text-slate-600">Unit Name</th>
-                    <th className="px-4 py-2 text-right font-semibold text-slate-600">Quantity</th>
+                    {/* The configured total, beside what is still for sale — so "3 of 10 left" reads as scarcity rather than as a small estate. */}
+                    <th className="px-4 py-2 text-right font-semibold text-slate-600">Total</th>
                     <th className="px-4 py-2 text-right font-semibold text-slate-600">Property Size</th>
                     <th className="px-4 py-2 text-left font-semibold text-slate-600">Measured In</th>
                     <th className="px-4 py-2 text-right font-semibold text-slate-600">Price</th>
