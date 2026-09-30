@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { getPublicProperty, createPurchaseRequest } from '../../api/propertyApi';
+import { getPublicProperty } from '../../api/propertyApi';
 import useAuthStore from '../../store/authStore';
 import useSharedBrand from '../../hooks/useSharedBrand';
 import { looksLikeShareCode } from '../../utils/shareCode';
@@ -39,7 +39,7 @@ function Message({ title, body }) {
 export default function PublicPropertyPage() {
   const { token } = useParams();
   const navigate = useNavigate();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   /**
    * Brands this page for the company that shared the link, before the prospect
    * has any account to derive a theme from.
@@ -60,12 +60,12 @@ export default function PublicPropertyPage() {
   // Signed-in realtors browsing a shared link do not get a purchase action;
   // anonymous visitors do, since they register as clients.
   const isRealtor = useAuthStore((s) => s.effectiveType()) === 'realtor';
+  // The company the signed-in account belongs to, when the session said so.
+  const myCompanyCode = useAuthStore((s) => s.company?.code ?? null);
   const [property, setProperty] = useState(null);
   const [state, setState] = useState('loading');
-  const [selectedUnit, setSelectedUnit] = useState(null);
-  const [buying, setBuying] = useState(false);
-  const [purchase, setPurchase] = useState(null);
-  const [purchaseError, setPurchaseError] = useState('');
+  // Set when a signed-in client belongs to a different company than this listing.
+  const [wrongCompany, setWrongCompany] = useState(false);
   // Which media item the viewer is showing; null means closed. Declared up here
   // with the other hooks because the loading/expired/missing branches below
   // return early.
@@ -86,30 +86,25 @@ export default function PublicPropertyPage() {
     return () => { cancelled = true; };
   }, [token]);
 
-  // Returning from registration: finish the purchase the visitor started.
+  /**
+   * Where buying actually happens: the property's page inside the app, with
+   * the purchase dialog open (`buy=1`) and, when a unit's own button was
+   * pressed, that unit already picked (`unit`). Unit, quantity and payment
+   * plan are chosen there and the invoice is raised straight away — this page
+   * no longer files a "purchase request" for somebody to follow up.
+   */
+  const purchasePath = (unitId) => `/properties/listed/${property?.id}?buy=1${unitId ? `&unit=${unitId}` : ''}`;
+
+  /*
+   * Links from before this change sent a new account back HERE with
+   * `?purchase=1` to finish. Honour them by forwarding to the purchase page.
+   */
   useEffect(() => {
-    if (state !== 'ready' || !accessToken || params.get('purchase') !== '1' || purchase) return;
+    if (state !== 'ready' || !accessToken || params.get('purchase') !== '1' || isRealtor) return;
     const unit = params.get('unit');
-    submitPurchase(unit ? Number(unit) : null);
-    const next = new URLSearchParams(params);
-    next.delete('purchase');
-    next.delete('unit');
-    setParams(next, { replace: true });
+    navigate(purchasePath(unit ? Number(unit) : null), { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, accessToken]);
-
-  const submitPurchase = async (unitId) => {
-    setBuying(true);
-    setPurchaseError('');
-    try {
-      const response = await createPurchaseRequest({ token, unit_id: unitId ?? undefined });
-      setPurchase(response?.data ?? response);
-    } catch (error) {
-      setPurchaseError(error?.response?.data?.message || error?.userMessage || 'Could not submit your request.');
-    } finally {
-      setBuying(false);
-    }
-  };
 
   /**
    * Where a visitor with no account goes when they press Purchase.
@@ -121,8 +116,13 @@ export default function PublicPropertyPage() {
    *
    * Three things travel with them, and each is separate:
    *
-   *   redirect      back to this property, with the unit they picked, so the
-   *                 purchase completes by itself once they have an account.
+   *   redirect      the purchase page for this property, with the unit they
+   *                 picked — the sign-up signs them in and lands them there,
+   *                 so buying is three clicks: Purchase, Create account,
+   *                 choose the unit.
+   *   intent        `purchase`, which tells the sign-up page this is a buyer
+   *                 mid-purchase: it skips straight to their details, as a
+   *                 client, since the company and the reason are both known.
    *   ref           the share code, which brands the sign-up page as this
    *                 company and carries the attribution in a form the visitor
    *                 cannot edit.
@@ -141,10 +141,7 @@ export default function PublicPropertyPage() {
    * referral could be re-attributed by hand.
    */
   const registrationUrl = (unitId) => {
-    const back = `/p/${token}?purchase=1${unitId ? `&unit=${unitId}` : ''}`
-      + `${params.get('ref') ? `&ref=${encodeURIComponent(params.get('ref'))}` : ''}`;
-
-    const query = new URLSearchParams({ redirect: back });
+    const query = new URLSearchParams({ redirect: purchasePath(unitId), intent: 'purchase' });
     if (sealedRef) query.set('ref', sealedRef);
     if (property?.company_code) query.set('company_code', property.company_code);
     /**
@@ -159,12 +156,28 @@ export default function PublicPropertyPage() {
     return `/register?${query.toString()}`;
   };
 
+  /** An existing customer's way in: their company's sign-in page, returning to the purchase. */
+  const signInUrl = (unitId = null) => {
+    const code = property?.company_code;
+    return `${code ? `/login/${encodeURIComponent(code)}` : '/login'}?redirect=${encodeURIComponent(purchasePath(unitId))}`;
+  };
+
   const handlePurchase = (unitId) => {
     if (!accessToken) {
       navigate(registrationUrl(unitId));
       return;
     }
-    submitPurchase(unitId);
+    /*
+     * Signed in already. A client of THIS company goes straight to the
+     * purchase; one whose account is with another company cannot buy here
+     * (every listing belongs to its own company), and is told so rather than
+     * sent to a page that would only say "not available".
+     */
+    if (myCompanyCode && property?.company_code && myCompanyCode !== property.company_code) {
+      setWrongCompany(true);
+      return;
+    }
+    navigate(purchasePath(unitId));
   };
 
   if (state === 'loading') return <Message title="Loading" body="Fetching property details..." />;
@@ -229,7 +242,7 @@ export default function PublicPropertyPage() {
             </div>
           </div>
           {!accessToken && (
-            <Link to="/login" className="shrink-0 text-sm font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
+            <Link to={signInUrl()} className="shrink-0 text-sm font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
               Sign in
             </Link>
           )}
@@ -318,31 +331,31 @@ export default function PublicPropertyPage() {
         </header>
 
         <section className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          {purchase ? (
-            <div className="rounded-lg bg-green-50 px-4 py-3 text-sm text-green-800">
-              Your purchase request has been sent. The team will contact you shortly.
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-slate-900">Interested in this property?</h2>
+              <p className="mt-0.5 text-sm text-slate-500">
+                {accessToken
+                  ? 'Choose your unit and how to pay on the next screen.'
+                  : 'Create a free account and you go straight to choosing your unit.'}
+                {!accessToken && (
+                  <>
+                    {' '}Already a customer?{' '}
+                    <Link to={signInUrl()} className="font-semibold hover:underline" style={{ color: 'var(--primary)' }}>Sign in to buy</Link>
+                  </>
+                )}
+                {isRealtor && ' Purchasing is available to client accounts — switch to your client profile to buy.'}
+              </p>
             </div>
-          ) : (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0">
-                <h2 className="text-lg font-semibold text-slate-900">Interested in this property?</h2>
-                <p className="mt-0.5 text-sm text-slate-500">
-                  {unitConfigs.length > 0
-                    ? 'Pick a unit option below, or send a general request.'
-                    : 'Send a purchase request and the team will get in touch.'}
-                  {!accessToken && ' You will be asked to create an account first.'}
-                  {isRealtor && ' Purchasing is available to client accounts — switch to your client profile to buy.'}
-                </p>
-              </div>
-              {!isRealtor && (
-                <Button type="button" disabled={buying} onClick={() => { setSelectedUnit(null); handlePurchase(null); }}>
-                  {buying && selectedUnit === null ? 'Sending…' : 'Purchase'}
-                </Button>
-              )}
+            {!isRealtor && (
+              <Button type="button" onClick={() => handlePurchase(null)}>Purchase</Button>
+            )}
+          </div>
+          {wrongCompany && (
+            <div className="mt-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900" role="alert">
+              This property is sold by {companyName || 'another company'}, and your account is with a different company.{' '}
+              <Link to={registrationUrl(null)} className="font-semibold underline">Create a {companyName || 'new'} account to buy it</Link>.
             </div>
-          )}
-          {purchaseError && (
-            <div className="mt-3 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{purchaseError}</div>
           )}
         </section>
 
@@ -442,13 +455,8 @@ export default function PublicPropertyPage() {
                       </td>
                       <td className="px-4 py-2 text-right">
                         {!isRealtor && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            disabled={buying || !!purchase}
-                            onClick={() => { setSelectedUnit(unit.id); handlePurchase(unit.id); }}
-                          >
-                            {buying && selectedUnit === unit.id ? 'Sending…' : 'Purchase'}
+                          <Button type="button" size="sm" onClick={() => handlePurchase(unit.id)}>
+                            Purchase
                           </Button>
                         )}
                       </td>
@@ -493,13 +501,13 @@ export default function PublicPropertyPage() {
         )}
 
         {/* What happens after "Purchase", so pressing it is not a leap in the dark. */}
-        {!purchase && !isRealtor && (
+        {!isRealtor && (
           <section className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <h2 className="mb-3 text-lg font-semibold text-slate-900">How buying works</h2>
             <ol className="grid gap-3 sm:grid-cols-3">
               {[
-                ['Choose a unit', accessToken ? 'Pick a unit option above, or send a general request.' : 'Pick a unit option above. You will create a free account in a minute.'],
-                ['Get your invoice', plans?.plans ? 'Pay outright, or spread it over one of the installment plans.' : 'The team confirms your request and sends the invoice.'],
+                ['Press Purchase', accessToken ? 'You go straight to the purchase screen.' : 'Create a free account — you are signed in straight away.'],
+                ['Choose your unit', plans?.plans ? 'Pick the unit and quantity, and pay outright or over an installment plan.' : 'Pick the unit and quantity; your invoice is raised at once.'],
                 ['Pay and upload proof', 'Your payment is reviewed, and your receipt and documents appear in your account.'],
               ].map(([title, body], index) => (
                 <li key={title} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">

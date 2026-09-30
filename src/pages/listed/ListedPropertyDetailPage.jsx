@@ -34,6 +34,8 @@ export default function ListedPropertyDetailPage() {
   const [property, setProperty] = useState(null);
   const [state, setState] = useState('loading');
   const [showPurchase, setShowPurchase] = useState(false);
+  // The unit whose own Purchase button brought the buyer here (`?unit=`), picked for them in the dialog.
+  const [purchaseUnitId, setPurchaseUnitId] = useState(null);
   // Purchasing is for clients only. Uses the ACTIVE profile, so a realtor who
   // switches to their client profile can buy.
   const activeType = useAuthStore((s) => s.effectiveType());
@@ -108,9 +110,11 @@ export default function ListedPropertyDetailPage() {
   useEffect(() => {
     if (state !== 'ready' || !canPurchase) return;
     if (searchParams.get('buy') !== '1') return;
+    setPurchaseUnitId(searchParams.get('unit') || null);
     setShowPurchase(true);
     const next = new URLSearchParams(searchParams);
     next.delete('buy');
+    next.delete('unit');
     setSearchParams(next, { replace: true });
   }, [state, canPurchase, searchParams, setSearchParams]);
 
@@ -191,7 +195,7 @@ export default function ListedPropertyDetailPage() {
                 <Share2 size={14} /> Share
               </Button>
             )}
-            {canPurchase && <Button type="button" onClick={() => setShowPurchase(true)}>Purchase Now</Button>}
+            {canPurchase && <Button type="button" onClick={() => { setPurchaseUnitId(null); setShowPurchase(true); }}>Purchase Now</Button>}
           </div>
         </div>
         {property.description && (
@@ -221,6 +225,7 @@ export default function ListedPropertyDetailPage() {
       <PurchaseModal
         open={showPurchase && canPurchase}
         property={property}
+        initialUnitId={purchaseUnitId}
         onClose={() => setShowPurchase(false)}
         /**
          * Both branches have already created the same invoice; `intent` only

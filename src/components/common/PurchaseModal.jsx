@@ -43,7 +43,9 @@ const describeGrace = (terms) => (Number(terms?.grace_period_days) > 0
  *                      list to pay it whenever they like.
  *   Proceed to Payment straight to the payment page, no return trip.
  */
-export default function PurchaseModal({ open, property, onClose, onInvoice }) {
+export default function PurchaseModal({
+  open, property, onClose, onInvoice, initialUnitId = null,
+}) {
   const fmt = useCurrency();
   const units = useMemo(() => (property?.units || []).filter((u) => availableOf(u) > 0), [property]);
 
@@ -65,14 +67,23 @@ export default function PurchaseModal({ open, property, onClose, onInvoice }) {
 
   useEffect(() => {
     if (!open) return;
-    setUnitId(units.length === 1 ? String(units[0].id) : '');
+    /*
+     * The unit the buyer already chose — its own Purchase button on a shared
+     * property page — when it is still available; otherwise the only unit, or
+     * nothing, so they pick. It stays changeable either way.
+     */
+    const preferred = initialUnitId != null && units.some((u) => String(u.id) === String(initialUnitId))
+      ? String(initialUnitId)
+      : null;
+    setUnitId(preferred || (units.length === 1 ? String(units[0].id) : ''));
     setQuantity('1');
     setPaymentType('outright');
     setPlanId('');
     setOptions(null);
     setError('');
     setOptionsError('');
-  }, [open, units.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, units.length, initialUnitId]);
 
   /**
    * Reprice whenever the unit or quantity changes.
