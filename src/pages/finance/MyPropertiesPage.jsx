@@ -10,6 +10,7 @@ import { STATE_TONE, STATE_LABEL } from '../../utils/invoiceState';
 import MediaLightbox from '../../components/common/MediaLightbox';
 import SummaryTile from '../../components/dashboard/SummaryTile';
 import Button from '../../components/ui/Button';
+import { DashboardHero, HeroFigure, SplitBar } from '../../components/dashboard/DashboardKit';
 import { safeHref } from '../../utils/safeHref';
 
 /**
@@ -126,6 +127,45 @@ function DocumentRow({ doc }) {
   );
 }
 
+/**
+ * How far through its installments one purchase is: a segment per schedule,
+ * filled once paid, and the next one due. Read from `row.plan`, which the same
+ * endpoint sends — nothing extra is fetched.
+ */
+function PlanProgress({ plan, fmt }) {
+  if (!plan?.schedules) return null;
+  // Past ~24 a segment is too thin to read; the bar says the same thing.
+  const segmented = plan.schedules <= 24;
+  return (
+    <div className="rounded-lg bg-white p-4 ring-1 ring-slate-200">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Installment plan</p>
+        <p className="text-sm text-slate-700">
+          <strong className="text-slate-900">{plan.paid_schedules}</strong> of {plan.schedules} paid
+          {plan.remaining ? ` · ${plan.remaining} to go` : ' · complete'}
+        </p>
+      </div>
+      <div className="mt-2">
+        {segmented ? (
+          <div role="img" aria-label={`${plan.paid_schedules} of ${plan.schedules} installments paid`} className="flex gap-1">
+            {Array.from({ length: plan.schedules }, (_, i) => (
+              <span key={i} className={`h-2.5 flex-1 rounded-full ${i < plan.paid_schedules ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+            ))}
+          </div>
+        ) : (
+          <SplitBar done={plan.paid_schedules} total={plan.schedules} label={`${plan.paid_schedules} of ${plan.schedules} installments paid`} />
+        )}
+      </div>
+      {plan.next_due && (
+        <p className={`mt-2 text-sm ${plan.next_due.overdue ? 'font-semibold text-rose-700' : 'text-slate-600'}`}>
+          {plan.next_due.overdue ? 'Overdue: ' : 'Next installment: '}
+          <strong className="text-slate-900">{fmt(plan.next_due.amount)}</strong> due {formatDate(plan.next_due.date)}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function MyPropertiesPage() {
   const fmt = useCurrency();
   const [rows, setRows] = useState(null);
@@ -145,19 +185,39 @@ export default function MyPropertiesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">My Properties</h1>
-        <p className="text-sm text-slate-500">
-          Everything you have purchased — the unit, the invoice, what you have paid, and your documents.
-        </p>
-      </div>
+      {(() => {
+        const next = totals?.next_due;
+        const invoiceLink = next?.invoice_id ? `/finance/invoices/${next.invoice_id}` : null;
+        return (
+          <DashboardHero
+            kicker="Your purchases"
+            title="My Properties"
+            subtitle="Everything you have purchased — the unit, the invoice, what you have paid, and your documents."
+            aside={next ? (
+              <div className="min-w-[14rem]">
+                <HeroFigure label={next.overdue ? 'Overdue installment' : 'Next payment'} value={fmt(next.amount)} />
+                <p className="mt-1 text-sm text-[color:var(--sf-ink-muted)]">
+                  Due {formatDate(next.date)}{next.property ? ` · ${next.property}` : ''}
+                </p>
+                {invoiceLink && (
+                  <Link to={invoiceLink} className="mt-3 inline-block">
+                    <Button type="button" size="sm">Pay now</Button>
+                  </Link>
+                )}
+              </div>
+            ) : null}
+          />
+        );
+      })()}
 
       {totals && rows.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <SummaryTile label="Properties" value={totals.properties} sub={`${totals.purchases} purchases`} accent />
           <SummaryTile label="Total Value" value={fmt(totals.value)} />
-          <SummaryTile label="Paid" value={fmt(totals.paid)} />
+          <SummaryTile label="Paid" value={fmt(totals.paid)} sub={totals.value ? `${Math.round((totals.paid / totals.value) * 100)}% of value` : undefined} />
           <SummaryTile label="Outstanding" value={fmt(totals.balance)} />
+          <SummaryTile label="Units secured" value={(totals.held_units ?? 0).toLocaleString()} sub="Reserved in your name" />
+          <SummaryTile label="Installments to go" value={(totals.installments_remaining ?? 0).toLocaleString()} sub="Across every plan" />
         </div>
       )}
 
@@ -179,6 +239,11 @@ export default function MyPropertiesPage() {
                 {row.unit.quantity ? ` × ${row.unit.quantity}` : ''}
                 {row.unit.price ? ` · ${fmt(row.unit.price)} each` : ''}
               </p>
+              {row.held_units > 0 && (
+                <p className="mt-1 inline-flex rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-800">
+                  {row.held_units} unit{row.held_units === 1 ? '' : 's'} secured for you
+                </p>
+              )}
             </div>
             {row.invoice && (
               <span className={`shrink-0 self-start whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold ${STATE_TONE[row.invoice.state] || 'bg-slate-100 text-slate-600'}`}>
@@ -212,6 +277,18 @@ export default function MyPropertiesPage() {
                   <div className="mt-0.5 text-sm font-semibold text-slate-900">{fmt(row.invoice.balance)}</div>
                 </div>
               </div>
+
+              {Number(row.invoice.amount) > 0 && (
+                <div className="mt-3">
+                  <SplitBar
+                    done={Number(row.invoice.paid) || 0}
+                    total={Number(row.invoice.amount)}
+                    label={`${fmt(row.invoice.paid)} of ${fmt(row.invoice.amount)} paid`}
+                  />
+                </div>
+              )}
+
+              {row.plan && <div className="mt-3"><PlanProgress plan={row.plan} fmt={fmt} /></div>}
 
               {row.payments.length > 0 && (
                 <div className="mt-3 border-t border-slate-200 pt-3">

@@ -3,6 +3,10 @@ import client from './client';
 // Properties
 export const listProperties = (params) => client.get('/properties', { params }).then(r => r.data);
 export const getProperty = (id) => client.get(`/properties/${id}`).then(r => r.data);
+// The staff listing's company-wide summary strip: status and approval counts, unit stock, this month's requests.
+export const getPropertiesSummary = () => client.get('/properties/summary').then(r => r.data?.data ?? null);
+// A property's money received and the plans offered on each unit (staff detail page).
+export const getPropertyInsights = (id) => client.get(`/properties/${id}/insights`).then(r => r.data?.data ?? null);
 export const createProperty = (payload) => client.post('/properties', payload).then(r => r.data);
 export const updateProperty = (id, payload) => client.put(`/properties/${id}`, payload).then(r => r.data);
 export const deleteProperty = (id) => client.delete(`/properties/${id}`).then(r => r.data);

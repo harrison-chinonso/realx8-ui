@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { getPublicProperty, createPurchaseRequest } from '../../api/propertyApi';
 import useAuthStore from '../../store/authStore';
 import useSharedBrand from '../../hooks/useSharedBrand';
@@ -10,6 +10,8 @@ import { parseImages } from '../../utils/parseImages';
 import { resolveMedia } from '../../utils/mediaUrl';
 import MediaLightbox from '../../components/common/MediaLightbox';
 import { enumLabel } from '../../utils/enumLabel';
+import { stockOf, priceRangeOf, soldPercent } from '../../components/property/propertyFigures';
+import { useAppearance } from '../../context/useAppearance';
 
 const imageUrl = (image) => (typeof image === 'string' ? image : image?.url);
 
@@ -47,7 +49,10 @@ export default function PublicPropertyPage() {
    * more. A legacy `/p/<long token>?ref=…` link still brands from the query.
    */
   const pathCode = looksLikeShareCode(token) ? token : null;
-  useSharedBrand(pathCode);
+  const brand = useSharedBrand(pathCode);
+  // The sharing company's logo, applied by useSharedBrand from the link's branding.
+  const { app_logo: companyLogo } = useAppearance();
+  const [logoFailed, setLogoFailed] = useState(false);
   // What to carry forward to the sign-up page so it brands itself the same way
   // and attributes the new account to the same people.
   const sealedRef = params.get('ref') || pathCode;
@@ -170,10 +175,105 @@ export default function PublicPropertyPage() {
   const images = parseImages(property.images);
   const unitConfigs = property.units || [];
   const location = [property.address, property.city, property.state, property.country].filter(Boolean).join(', ');
+  const stock = stockOf(unitConfigs, property);
+  const range = priceRangeOf(unitConfigs);
+  const plans = property.plan_summary;
+  // The first photograph (not a video) for the banner — the grid below still shows them all.
+  const cover = images
+    .map((image) => {
+      const url = imageUrl(image);
+      return url ? resolveMedia(url, typeof image === 'string' ? undefined : image?.type) : null;
+    })
+    .find((media) => media?.kind === 'image')?.src;
+  const coverIndex = cover ? images.findIndex((image) => {
+    const url = imageUrl(image);
+    return url && resolveMedia(url, typeof image === 'string' ? undefined : image?.type)?.src === cover;
+  }) : -1;
+  const facts = [
+    stock.total > 0 && { label: 'Units available', value: `${stock.available.toLocaleString()} of ${stock.total.toLocaleString()}` },
+    range && { label: 'Prices from', value: formatPrice(range.min) },
+    { label: 'Payment plans', value: plans?.plans ? `${plans.plans} plan${plans.plans === 1 ? '' : 's'}${plans.max_months ? ` · up to ${plans.max_months} mo` : ''}` : 'Outright' },
+    plans?.min_monthly && { label: 'Installments from', value: `${formatPrice(plans.min_monthly)} / mo` },
+  ].filter(Boolean);
+  const companyName = brand.company;
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/*
+        Whose listing this is, before anything else. The company comes from the
+        share code the link already carries (useSharedBrand); the realtor line
+        only appears when the link names one — never guessed.
+      */}
+      <div className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            {companyLogo && !logoFailed ? (
+              <img
+                src={companyLogo}
+                alt=""
+                onError={() => setLogoFailed(true)}
+                className="h-9 w-9 shrink-0 rounded-xl bg-white object-contain p-0.5 ring-1 ring-slate-200"
+              />
+            ) : companyName && (
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary font-heading text-sm font-extrabold text-white" aria-hidden="true">
+                {companyName.trim().charAt(0).toUpperCase()}
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-slate-900">{companyName || 'Property listing'}</p>
+              {(brand.realtorName || property.realtor_code) && (
+                <p className="truncate text-xs text-slate-500">
+                  Shared with you by {brand.realtorName || 'a realtor'}{companyName ? ` at ${companyName}` : ''}
+                </p>
+              )}
+            </div>
+          </div>
+          {!accessToken && (
+            <Link to="/login" className="shrink-0 text-sm font-semibold hover:underline" style={{ color: 'var(--primary)' }}>
+              Sign in
+            </Link>
+          )}
+        </div>
+      </div>
+
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
+        {cover && (
+          <button
+            type="button"
+            onClick={() => setViewerIndex(coverIndex)}
+            aria-label={`View photos of ${property.name}`}
+            className="relative block h-56 w-full overflow-hidden rounded-2xl bg-slate-900 sm:h-80"
+          >
+            <img src={cover} alt={property.name} className="h-full w-full object-cover" />
+            <span className="absolute bottom-3 left-3 rounded-full bg-slate-900/60 px-3 py-1 text-xs font-bold text-white">
+              {images.length} {images.length === 1 ? 'item' : 'items'} · tap to view
+            </span>
+          </button>
+        )}
+
+        {/*
+          What the company is running on this property right now — the same
+          live campaigns its dashboards advertise, tested against their dates
+          on the server. The price itself is still worked out at checkout.
+        */}
+        {(property.promotions || []).map((promo) => (
+          <section key={promo.id} className="flex flex-col gap-1 rounded-2xl bg-pink-50 px-5 py-4 ring-1 ring-pink-200 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-pink-700 px-2.5 py-0.5 text-xs font-extrabold text-white">{promo.benefit_label || 'Offer'}</span>
+                <span className="font-heading text-base font-extrabold text-slate-900">{promo.name}</span>
+              </p>
+              {promo.customer_message && <p className="mt-1 text-sm text-slate-700">{promo.customer_message}</p>}
+              {promo.terms && <p className="mt-1 text-xs text-slate-500">{promo.terms}</p>}
+            </div>
+            {promo.ends_at && (
+              <p className="shrink-0 text-xs font-semibold text-pink-800">
+                Ends {new Date(promo.ends_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+              </p>
+            )}
+          </section>
+        ))}
+
         <header className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
           {/*
             * Stacked on a phone, side by side from `sm` up — the same shape as
@@ -199,6 +299,21 @@ export default function PublicPropertyPage() {
           </div>
           {property.description && (
             <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-700">{property.description}</p>
+          )}
+          {facts.length > 0 && (
+            <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {facts.map((f) => (
+                <div key={f.label} className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
+                  <dt className="text-[11px] font-semibold text-slate-500">{f.label}</dt>
+                  <dd className="font-heading text-base font-extrabold tabular-nums text-slate-900">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+          {stock.total > 0 && (
+            <div role="img" aria-label={`${stock.available} of ${stock.total} units available`} className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+              <span className="block h-full rounded-full bg-primary" style={{ width: `${soldPercent(stock)}%` }} />
+            </div>
           )}
         </header>
 
@@ -303,6 +418,7 @@ export default function PublicPropertyPage() {
                     <th className="px-4 py-2 text-left font-semibold text-slate-600">Measured In</th>
                     <th className="px-4 py-2 text-right font-semibold text-slate-600">Price</th>
                     <th className="px-4 py-2 text-left font-semibold text-slate-600">Status</th>
+                    <th className="px-4 py-2 text-left font-semibold text-slate-600">Payment</th>
                     <th className="px-4 py-2 text-right font-semibold text-slate-600"></th>
                   </tr>
                 </thead>
@@ -316,6 +432,14 @@ export default function PublicPropertyPage() {
                       <td className="px-4 py-2 text-slate-700">{unit.unit || 'sqm'}</td>
                       <td className="px-4 py-2 text-right font-medium text-slate-900">{formatPrice(unit.price) || "—"}</td>
                       <td className="px-4 py-2 text-slate-500">{enumLabel(unit.status || 'available')}</td>
+                      <td className="px-4 py-2 text-slate-600">
+                        {unit.plans > 0 ? (
+                          <>
+                            Outright or {unit.plans} plan{unit.plans === 1 ? '' : 's'}
+                            {unit.min_monthly && <span className="block text-xs text-slate-500">from {formatPrice(unit.min_monthly)} / mo</span>}
+                          </>
+                        ) : 'Outright'}
+                      </td>
                       <td className="px-4 py-2 text-right">
                         {!isRealtor && (
                           <Button
@@ -365,6 +489,26 @@ export default function PublicPropertyPage() {
                 </span>
               ))}
             </div>
+          </section>
+        )}
+
+        {/* What happens after "Purchase", so pressing it is not a leap in the dark. */}
+        {!purchase && !isRealtor && (
+          <section className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <h2 className="mb-3 text-lg font-semibold text-slate-900">How buying works</h2>
+            <ol className="grid gap-3 sm:grid-cols-3">
+              {[
+                ['Choose a unit', accessToken ? 'Pick a unit option above, or send a general request.' : 'Pick a unit option above. You will create a free account in a minute.'],
+                ['Get your invoice', plans?.plans ? 'Pay outright, or spread it over one of the installment plans.' : 'The team confirms your request and sends the invoice.'],
+                ['Pay and upload proof', 'Your payment is reviewed, and your receipt and documents appear in your account.'],
+              ].map(([title, body], index) => (
+                <li key={title} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-extrabold text-white">{index + 1}</span>
+                  <p className="mt-2 text-sm font-bold text-slate-900">{title}</p>
+                  <p className="mt-0.5 text-xs text-slate-600">{body}</p>
+                </li>
+              ))}
+            </ol>
           </section>
         )}
 

@@ -371,6 +371,36 @@ export default function useDashboardData() {
           .filter((t) => inRange(getDate(t, txnDateKeys), ytdFrom, new Date()))
           .reduce((s, t) => s + Number(t.amount || 0), 0);
 
+      /*
+       * How many payments made up the period's revenue, and their average.
+       *
+       * The same two sources as rangedRevenue — completed invoice payments and
+       * credit transactions — counted over the same window, so the average is
+       * that figure divided by this count and cannot disagree with it.
+       */
+      const paymentsInRange = allPayments.filter((p) => inRange(getDate(p, invDateKeys), from, to)).length
+        + creditTxns.filter((t) => inRange(getDate(t, txnDateKeys), from, to)).length;
+      const averagePayment = paymentsInRange > 0 ? rangedRevenue / paymentsInRange : null;
+
+      /*
+       * Days from raising an invoice to its final payment, over settled
+       * invoices. Settled ones only: an invoice still being paid has no end
+       * date yet, and counting it would drag the figure toward "today".
+       */
+      const settleDays = paidInvoices
+        .map((i) => {
+          const raised = getDate(i, ['createdAt', 'created_at']);
+          const last = completedPayments(i)
+            .map((p) => getDate(p, invDateKeys))
+            .filter(Boolean)
+            .sort((a, b) => b - a)[0];
+          return raised && last ? Math.max(Math.round((last - raised) / 86400000), 0) : null;
+        })
+        .filter((d) => d !== null);
+      const avgDaysToSettle = settleDays.length
+        ? Math.round(settleDays.reduce((t, d) => t + d, 0) / settleDays.length)
+        : null;
+
       // Credit transactions add to total paid revenue (Invoice vs Sales card)
       const totalCreditTxn = creditTxns.reduce((s, t) => s + Number(t.amount || 0), 0);
 
@@ -560,6 +590,22 @@ export default function useDashboardData() {
         // Cash position band — collected + outstanding always reconcile to
         // totalInvoiceAmount because collected is derived, not summed.
         collected,
+        collectionRateBand,
+        paymentsInRange,
+        averagePayment,
+        avgDaysToSettle,
+        // Units across every property: configured, still for sale, and held by
+        // an approved payment. The list endpoint sends each unit's availability.
+        units: propertiesList.reduce((acc, property) => {
+          (property.units || []).forEach((unit) => {
+            const total = Number(unit.quantity) || 0;
+            const held = Number(unit.quantity_held) || 0;
+            acc.total += total;
+            acc.held += held;
+            acc.available += Math.max(Number(unit.quantity_available ?? total - held) || 0, 0);
+          });
+          return acc;
+        }, { total: 0, available: 0, held: 0 }),
         oldestUnpaidDays,
         overdueCount,
 

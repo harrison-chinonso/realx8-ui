@@ -14,6 +14,9 @@ import Button from '../../components/ui/Button';
 import SmsSettingsPanel from '../../components/settings/SmsSettingsPanel';
 import Input from '../../components/ui/Input';
 import { brightenForDark } from '../../utils/colorUtils';
+import {
+  ACCENT_COUNT, DEFAULT_ACCENTS, brandAccents, parseAccents, serialiseAccents,
+} from '../../components/layout/launcherPalette';
 import { CURRENCIES, currencyOptionLabel } from '../../constants/currencies';
 import Select from '../../components/ui/Select';
 import FieldMark from '../../components/ui/FieldMark';
@@ -525,8 +528,25 @@ const TEMPLATE_OPTIONS = [
   },
 ];
 
+/**
+ * The module launcher's settings, from a stored appearance record.
+ *
+ * Kept as one helper because the form is filled from three places — the
+ * signed-in person's appearance, a chosen company's, and a reset after save —
+ * and a field added to two of them is the kind of bug that shows up as a
+ * setting that will not stick.
+ */
+const launcherFormFrom = (src = {}) => ({
+  accent_colors: parseAccents(src.accent_colors),
+  launcher_banner_image: src.launcher_banner_image || '',
+  launcher_welcome_text: src.launcher_welcome_text || '',
+  launcher_badge: src.launcher_badge || '',
+  app_tagline: src.app_tagline || '',
+});
+
 function AppearanceTab() {
-  const { app_name, app_logo, primary_color, secondary_color, dark_primary_color, dark_secondary_color, font_heading, font_body, font_ui, dark_mode, currency, template, refresh } = useAppearance();
+  const current = useAppearance();
+  const { app_name, app_logo, primary_color, secondary_color, dark_primary_color, dark_secondary_color, font_heading, font_body, font_ui, dark_mode, currency, template, refresh } = current;
   const [form, setForm] = useState({
     app_name: app_name || '',
     primary_color: primary_color || '#2563eb',
@@ -539,6 +559,7 @@ function AppearanceTab() {
     dark_mode: dark_mode || 'off',
     currency: currency || 'NGN',
     template: template || 'launcher',
+    ...launcherFormFrom(current),
   });
   const [logoPreview, setLogoPreview] = useState(app_logo || null);
   const [logoFile, setLogoFile] = useState(null);
@@ -568,9 +589,14 @@ function AppearanceTab() {
       dark_mode: dark_mode || 'off',
       currency: currency || 'NGN',
       template: template || 'launcher',
+      ...launcherFormFrom(current),
     });
     setLogoPreview(app_logo || null);
-  }, [companyId, app_name, app_logo, primary_color, secondary_color, dark_primary_color, dark_secondary_color, font_heading, font_body, font_ui, dark_mode, currency, template]);
+    // `current` is read for the launcher fields; its own identity changes on
+    // every render, so the fields that matter are listed instead.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [companyId, app_name, app_logo, primary_color, secondary_color, dark_primary_color, dark_secondary_color, font_heading, font_body, font_ui, dark_mode, currency, template,
+    current.accent_colors, current.launcher_banner_image, current.launcher_welcome_text, current.launcher_badge, current.app_tagline]);
 
   /** A chosen company's own appearance, read fresh. */
   useEffect(() => {
@@ -593,6 +619,7 @@ function AppearanceTab() {
           dark_mode: data.dark_mode || 'off',
           currency: data.currency || 'NGN',
           template: data.template || 'launcher',
+          ...launcherFormFrom(data),
         });
         setLogoPreview(data.app_logo || null);
         setLogoFile(null);
@@ -629,6 +656,12 @@ function AppearanceTab() {
         { key: 'dark_mode', value: form.dark_mode },
         { key: 'currency', value: form.currency },
         { key: 'template', value: form.template },
+        // The module launcher. Blank values fall back to the built-in defaults.
+        { key: 'accent_colors', value: serialiseAccents(form.accent_colors) },
+        { key: 'launcher_banner_image', value: form.launcher_banner_image.trim() },
+        { key: 'launcher_welcome_text', value: form.launcher_welcome_text.trim() },
+        { key: 'launcher_badge', value: form.launcher_badge.trim() },
+        { key: 'app_tagline', value: form.app_tagline.trim() },
       ];
       await bulkUpdateSettings(settings, 'appearance', companyId);
 
@@ -792,6 +825,98 @@ function AppearanceTab() {
             </div>
           </div>
           <p className="mt-2 text-xs text-slate-500">Affects the sidebar background, brand band, and dark accent elements.</p>
+        </div>
+
+        {/*
+          ── Module launcher ───────────────────────────────────────────────
+          Eight colours, one per module card, because two brand colours across
+          eight cards either repeat or need six nobody chose. The header,
+          banner and footer stay in the primary and secondary above; only the
+          cards take these. Every glyph and label on a card is derived from its
+          colour, so any choice stays readable.
+        */}
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Module launcher</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Used by the Launcher layout. Each module card on the launcher takes one of these colours.
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-700">Module colours<FieldMark /></label>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {['Dashboard', 'People & Access', 'Properties', 'Sales & CRM', 'Finance', 'Investments', 'Marketing & Content', 'Operations & Support']
+                .slice(0, ACCENT_COUNT).map((label, index) => (
+                  <label key={label} className="flex items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-2">
+                    <input
+                      type="color"
+                      value={form.accent_colors[index]}
+                      onChange={(e) => setForm((f) => {
+                        const next = [...f.accent_colors];
+                        next[index] = e.target.value;
+                        return { ...f, accent_colors: next };
+                      })}
+                      className="h-8 w-8 shrink-0 cursor-pointer rounded border-0 p-0"
+                      aria-label={`${label} colour`}
+                    />
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-medium text-slate-700">{label}</span>
+                      <span className="block font-mono text-[11px] text-slate-500">{form.accent_colors[index]}</span>
+                    </span>
+                  </label>
+                ))}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button type="button" variant="secondary" size="sm" onClick={() => setForm((f) => ({ ...f, accent_colors: [...DEFAULT_ACCENTS] }))}>
+                Use the suggested palette
+              </Button>
+              <Button type="button" variant="secondary" size="sm" onClick={() => setForm((f) => ({ ...f, accent_colors: brandAccents(f.primary_color) }))}>
+                Generate from my primary colour
+              </Button>
+            </div>
+            {/* A live strip, so the eight can be judged together before saving. */}
+            <div className="mt-3 flex overflow-hidden rounded-lg ring-1 ring-slate-200" aria-hidden="true">
+              {form.accent_colors.map((colour, index) => (
+                <span key={`${colour}-${index}`} className="h-3 flex-1" style={{ backgroundColor: colour }} />
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block space-y-1">
+              <span className="text-sm font-medium text-slate-700">Welcome banner image URL<FieldMark /></span>
+              <Input
+                value={form.launcher_banner_image}
+                onChange={(e) => setForm({ ...form, launcher_banner_image: e.target.value })}
+                placeholder="https://… — blank shows a skyline illustration"
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-sm font-medium text-slate-700">Welcome message<FieldMark /></span>
+              <Input
+                value={form.launcher_welcome_text}
+                onChange={(e) => setForm({ ...form, launcher_welcome_text: e.target.value })}
+                placeholder="Manage your properties, clients, transactions and more — all in one place."
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-sm font-medium text-slate-700">Banner badge<FieldMark /></span>
+              <Input
+                value={form.launcher_badge}
+                onChange={(e) => setForm({ ...form, launcher_badge: e.target.value })}
+                placeholder="Grow · Track · Succeed"
+              />
+            </label>
+            <label className="block space-y-1">
+              <span className="text-sm font-medium text-slate-700">Footer tagline<FieldMark /></span>
+              <Input
+                value={form.app_tagline}
+                onChange={(e) => setForm({ ...form, app_tagline: e.target.value })}
+                placeholder="Smarter tools. Greater results."
+              />
+            </label>
+          </div>
         </div>
 
         <div className="space-y-5">

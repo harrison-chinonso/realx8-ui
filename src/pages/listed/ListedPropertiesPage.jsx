@@ -10,6 +10,8 @@ import useShareToken from '../../hooks/useShareToken';
 import useAuthStore from '../../store/authStore';
 import useMyVerification from '../../hooks/useMyVerification';
 import VerificationRequiredNotice from '../../components/common/VerificationRequiredNotice';
+import usePromotionAdverts from '../../hooks/usePromotionAdverts';
+import { DashboardHero } from '../../components/dashboard/DashboardKit';
 
 const EMPTY = { data: [], pagination: { page: 1, totalPages: 1, total: 0 } };
 const PAGE_SIZE = 12;
@@ -31,7 +33,16 @@ export default function ListedPropertiesPage() {
   const { token: sealedToken, code: shortCode } = useShareToken();
   const shareToken = shortCode || sealedToken;
   const [query, setQuery] = useState('');
+  // "Installments available" narrows the query on the server; "All" does not.
+  const [installmentsOnly, setInstallmentsOnly] = useState(false);
   const [page, setPage] = useState(1);
+  /*
+   * Which properties are on promotion, from the showcase the dashboards
+   * already read — the ribbon on a card names the offer. One request, and the
+   * same answer the promotion carousel gives.
+   */
+  const { slides } = usePromotionAdverts();
+  const promoFor = new Map((slides || []).map((slide) => [Number(slide.property?.id), slide.name]));
   const [result, setResult] = useState(EMPTY);
   const [loading, setLoading] = useState(true);
   const [share, setShare] = useState(null);   // { name, url } once a link is ready
@@ -40,12 +51,12 @@ export default function ListedPropertiesPage() {
 
   // A new search starts the list over; without this, page 2 of an old query
   // would append onto results for the new one.
-  useEffect(() => { setPage(1); }, [query]);
+  useEffect(() => { setPage(1); }, [query, installmentsOnly]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    listListedProperties({ search: query, page, limit: PAGE_SIZE })
+    listListedProperties({ search: query, page, limit: PAGE_SIZE, ...(installmentsOnly ? { installments: 1 } : {}) })
       .then((response) => {
         if (cancelled) return;
         const next = response ?? EMPTY;
@@ -58,7 +69,7 @@ export default function ListedPropertiesPage() {
       .catch(() => { if (!cancelled && page === 1) setResult(EMPTY); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [query, page]);
+  }, [query, page, installmentsOnly]);
 
   const items = result.data || [];
   const total = result.pagination?.total ?? items.length;
@@ -97,18 +108,37 @@ export default function ListedPropertiesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 md:flex-row md:items-end md:justify-between">
-        <div className="flex-1">
-          <Input
-            label="Search listed properties"
-            value={query}
-            onChange={(event) => { setQuery(event.target.value); setPage(1); }}
-            placeholder="Search by name, city, state, type..."
-          />
-        </div>
-        <p className="text-sm text-slate-500">
-          {result.pagination?.total ?? 0} approved propert{(result.pagination?.total ?? 0) === 1 ? 'y' : 'ies'} available
-        </p>
+      <DashboardHero
+        kicker="Listed properties"
+        title={`${result.pagination?.total ?? 0} approved propert${(result.pagination?.total ?? 0) === 1 ? 'y' : 'ies'} available`}
+        subtitle={promoFor.size ? `${promoFor.size} on promotion right now` : 'Approved estates you can sell or buy today.'}
+        aside={(
+          <div className="w-full min-w-[18rem] text-left text-slate-900 sm:w-96 [&_label]:text-[color:var(--sf-ink)]">
+            <Input
+              label="Search listed properties"
+              value={query}
+              onChange={(event) => { setQuery(event.target.value); setPage(1); }}
+              placeholder="Search by name, city, state, type..."
+            />
+          </div>
+        )}
+      />
+
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter">
+        {[
+          { on: !installmentsOnly, label: 'All', pick: () => setInstallmentsOnly(false) },
+          { on: installmentsOnly, label: 'Installments available', pick: () => setInstallmentsOnly(true) },
+        ].map((chip) => (
+          <button
+            key={chip.label}
+            type="button"
+            aria-pressed={chip.on}
+            onClick={chip.pick}
+            className={`h-9 rounded-full px-3.5 text-[13px] font-bold transition-colors ${chip.on ? 'bg-slate-900 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50'}`}
+          >
+            {chip.label}
+          </button>
+        ))}
       </div>
 
       {/*
@@ -134,11 +164,12 @@ export default function ListedPropertiesPage() {
           Loading properties...
         </div>
       ) : items.length ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((property) => (
             <PropertyCard
               key={property.id}
               property={property}
+              promo={promoFor.get(Number(property.id)) || null}
               onOpen={() => navigate(`/properties/listed/${property.id}`)}
               // No share action at all while unverified: the link it produces
               // would carry a code the server refuses to attribute.
@@ -154,13 +185,14 @@ export default function ListedPropertiesPage() {
               implying the company has listed nothing. */}
           {noCompany
             ? 'Your account is not linked to a company yet, so there are no properties to browse. Ask an administrator to attach it.'
-            : query ? 'No properties match your search.' : 'No approved properties are available yet.'}
+            : query ? 'No properties match your search.'
+              : installmentsOnly ? 'No listed properties offer installments yet.' : 'No approved properties are available yet.'}
         </div>
       )}
 
       {items.length > 0 && (
         <div className="flex flex-col items-center gap-3">
-          <p className="text-xs text-slate-400">
+          <p className="text-sm text-slate-600">
             Showing {items.length} of {total} {total === 1 ? 'property' : 'properties'}
           </p>
           {hasMore && (

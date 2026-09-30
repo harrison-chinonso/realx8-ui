@@ -1,6 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { RefreshCw, ArrowUpRight, ArrowUp, ArrowDown, Minus, Send, Plus, Download } from 'lucide-react';
+import {
+  RefreshCw, ArrowUpRight, ArrowUp, ArrowDown, Minus, Send, Plus, Download, Wallet, AlertTriangle,
+  Users, Home, FileText, Briefcase, Award, CreditCard, ShieldCheck,
+} from 'lucide-react';
 
 import useDashboardData from '../../hooks/useDashboardData';
 import Select from '../../components/ui/Select';
@@ -8,7 +11,12 @@ import ExportProgress from '../../components/common/ExportProgress';
 import { isStaleBuildError } from '../../utils/lazyImport';
 import { exportDashboardPdf, exportDashboardExcel } from '../../utils/dashboardExport';
 import useDashboardStore from '../../store/dashboardStore';
-import { useCurrency, useAppearance, useBrandSurface } from '../../context/useAppearance';
+import { useCurrency, useAppearance, useOnPrimary } from '../../context/useAppearance';
+import useNavBadgeStore from '../../store/navBadgeStore';
+import {
+  DashboardHero, TintCard, Panel, PanelLink, MiniStat, SectionHeading, SplitBar, useModuleAccent,
+} from '../../components/dashboard/DashboardKit';
+import { accentStyle } from '../../components/layout/launcherPalette';
 import useAuthStore from '../../store/authStore';
 
 import DateFilterBar from '../../components/dashboard/DateFilterBar';
@@ -121,14 +129,12 @@ export default function DashboardPage() {
 
 function StaffDashboard() {
   const fmt = useCurrency();
-  const { primary_color, currencySymbol } = useAppearance();
-  /*
-   * The executive card's palette, derived from the tenant's darker brand
-   * colour. Spread onto the card as a style object; everything inside reads
-   * var(--sf-…) from it.
-   */
-  const surface = useBrandSurface();
-  const accent = primary_color || '#2563eb';
+  const { currencySymbol } = useAppearance();
+  // The ink for the one button filled with the primary colour.
+  const onPrimary = useOnPrimary();
+  const { accentFor } = useModuleAccent();
+  // The approval-queue counts the sidebar badges already fetched.
+  const badgeCounts = useNavBadgeStore((s) => s.counts);
   const user = useAuthStore((s) => s.user);
   const hasPermission = useAuthStore((s) => s.hasPermission);
   /*
@@ -202,6 +208,9 @@ function StaffDashboard() {
   }, []);
 
   const firstName = resolveFirstName(user);
+  // The full name for the welcome banner — unless the first word looks like a
+  // role, in which case the whole value is a role and not a person's name.
+  const fullName = firstName ? (user?.name || firstName) : null;
 
   // ── Loading state ───────────────────────────────────────────────────────────
   if (loading) {
@@ -237,6 +246,8 @@ function StaffDashboard() {
     totalClients, totalProperties, totalInvoices, totalSales,
     totalStaff, totalRealtors,
     totalInvoiceAmount, collected, outstanding,
+    collectionRateBand, paymentsInRange, averagePayment, avgDaysToSettle,
+    units = { total: 0, available: 0, held: 0 },
     oldestUnpaidDays, overdueCount,
     rangedRevenue, momGrowth, momGrowthKind, ytdRevenue, weekComparison,
     qualifiedLeads, conversionRate,
@@ -251,269 +262,322 @@ function StaffDashboard() {
 
   const collectedPct = totalInvoiceAmount > 0 ? (collected / totalInvoiceAmount) * 100 : 0;
   const outstandingPct = totalInvoiceAmount > 0 ? 100 - collectedPct : 0;
+  const hour = new Date().getHours();
+  const greeting = `Good ${hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'}`;
+
+  /*
+   * What is waiting on this person, from the counts the sidebar badges already
+   * hold. Absent when the store has no count for a queue, which is how it says
+   * this person cannot approve that queue — so the row shows only what is
+   * theirs to act on.
+   */
+  const queues = [
+    { key: 'pendingApprovals', label: 'Payment approvals', sub: 'Receipts to confirm', icon: CreditCard, to: '/receipts', module: 'Finance' },
+    { key: 'commissionPayouts', label: 'Commission payouts', sub: 'Requests and draft runs', icon: Wallet, to: '/finance/commission-payouts', module: 'People & Access' },
+    { key: 'bills', label: 'Bills', sub: 'Awaiting approval', icon: FileText, to: '/finance/payables', module: 'Sales & CRM' },
+    { key: 'realtorVerifications', label: 'Realtor verifications', sub: 'Identity to review', icon: ShieldCheck, to: '/users/verifications', module: 'Properties' },
+  ].filter((queue) => badgeCounts[queue.key] !== undefined);
+
+  const portfolio = [
+    { label: 'Clients', value: totalClients, to: '/users/clients', icon: Users, module: 'Dashboard' },
+    { label: 'Properties', value: totalProperties, to: '/properties', icon: Home, module: 'Properties' },
+    { label: 'Invoices', value: totalInvoices, to: '/finance/invoices', icon: FileText, module: 'Finance' },
+    { label: 'Staff', value: totalStaff, to: '/users/employees', icon: Briefcase, module: 'Sales & CRM' },
+    { label: 'Realtors', value: totalRealtors, to: '/users/realtors', icon: Award, module: 'People & Access' },
+  ];
 
   return (
-    <div className="space-y-8 print:space-y-4">
+    <div className="space-y-6 print:space-y-4">
 
-      {/* ══ HEADER ═══════════════════════════════════════════════════════════ */}
-      <div className="border-b border-slate-100 pb-5 print:hidden">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-xl font-semibold text-slate-900">
-              Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}{firstName ? `, ${firstName}` : ''}
-            </h1>
-            <p className="mt-0.5 text-xs text-[#5A5A5A]">
+      {/* ══ WELCOME + CONTROLS ═══════════════════════════════════════════════ */}
+      <div className="print:hidden">
+        <DashboardHero
+          kicker={`${greeting},`}
+          title={fullName || 'Welcome back'}
+          subtitle={(
+            <>
               {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               {lastUpdated && <> · updated {formatUpdatedAgo(lastUpdated)}</>}
-            </p>
-          </div>
-          {/* min-w-0 on every child below stops long labels ("Print / Export")
-              from being clipped at the container edge instead of wrapping. */}
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <DateFilterBar />
-            <NotificationsPanel notifications={notifications} onDismiss={dismissNotif} />
-            <button
-              onClick={reload}
-              aria-label="Refresh dashboard data"
-              title="Refresh dashboard data"
-              className="shrink-0 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors motion-reduce:transition-none"
-            >
-              <RefreshCw size={14} />
-            </button>
-            {/*
-              The shared Select, matching DateFilterBar beside it.
-
-              This was a native <select>, whose option list is drawn by the
-              operating system and so ignores the design tokens entirely — it
-              looked like a different application next to the controls either
-              side of it. Select renders its own list, and the wrapper here
-              mirrors DateFilterBar's framing so the two read as a pair.
-            */}
-            <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 shadow-sm">
-              <Download size={13} className="shrink-0 text-slate-400" />
-              <Select
-                value=""
-                disabled={Boolean(exporting) || loading}
-                aria-label="Export the dashboard"
-                placeholder={exporting ? 'Preparing…' : 'Export'}
-                onChange={(event) => { if (event.target.value) runExport(event.target.value); }}
-                className="h-7 cursor-pointer border-0 bg-transparent px-0 text-xs font-medium text-slate-700 shadow-none focus-visible:ring-0"
-                options={EXPORT_CHOICES.map(([value, label]) => ({ value, label }))}
-              />
-            </div>
-            <QuickActionBar />
-            <WidgetToggleBar />
-          </div>
-          {(exportProgress || exportError) && (
-            <div className="mt-2 max-w-md">
-              <ExportProgress
-                progress={exportProgress}
-                error={exportError}
-                staleBuild={exportStale}
-                onDismiss={() => setExportError('')}
-              />
-            </div>
+            </>
           )}
-        </div>
+        >
+          {/* min-w-0 on every child below stops long labels from being clipped
+              at the container edge instead of wrapping. */}
+          <DateFilterBar />
+          <NotificationsPanel notifications={notifications} onDismiss={dismissNotif} />
+          <button
+            onClick={reload}
+            aria-label="Refresh dashboard data"
+            title="Refresh dashboard data"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-600 shadow-sm hover:text-slate-900 transition-colors motion-reduce:transition-none"
+          >
+            <RefreshCw size={15} />
+          </button>
+          {/* The shared Select, matching DateFilterBar beside it — a native
+              <select> draws its list with the operating system's styling. */}
+          <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-1 shadow-sm">
+            <Download size={13} className="shrink-0 text-slate-500" />
+            <Select
+              value=""
+              disabled={Boolean(exporting) || loading}
+              aria-label="Export the dashboard"
+              placeholder={exporting ? 'Preparing…' : 'Export'}
+              onChange={(event) => { if (event.target.value) runExport(event.target.value); }}
+              className="h-7 cursor-pointer border-0 bg-transparent px-0 text-xs font-medium text-slate-700 shadow-none focus-visible:ring-0"
+              options={EXPORT_CHOICES.map(([value, label]) => ({ value, label }))}
+            />
+          </div>
+          <QuickActionBar />
+          <WidgetToggleBar />
+        </DashboardHero>
+        {(exportProgress || exportError) && (
+          <div className="mt-2 max-w-md">
+            <ExportProgress
+              progress={exportProgress}
+              error={exportError}
+              staleBuild={exportStale}
+              onDismiss={() => setExportError('')}
+            />
+          </div>
+        )}
       </div>
 
-      {/* ══ CASH POSITION ════════════════════════════════════════════════════
+      {/* ══ CASH POSITION + REVENUE ═══════════════════════════════════════════
           Revenue, receivables and collection rate are one number split two
           ways, not three independent facts — a stacked bar makes that
-          arithmetic visible instead of three cards that can silently drift
-          apart. "Collected" here is derived (invoiced − outstanding), so it
-          can never disagree with the other two. */}
-      <Section visible={widgets.kpiSummary} allowed={allow('kpiSummary')}>
-        <div className="space-y-3">
-          {/*
-            Filled with the tenant's darker brand colour, and everything inside
-            it derived from that fill — see useBrandSurface and surfaceTokens.
-            It was slate-900 with fourteen hand-picked slates, emeralds and
-            ambers on top, each of which was right for slate-900 and would have
-            been wrong for anything else.
-          */}
-          <section aria-label="Cash position" style={surface} className="rounded-2xl bg-[color:var(--sf-fill)] p-6 text-[color:var(--sf-ink)] sm:p-8">
-            <p className="text-xs text-[color:var(--sf-ink-subtle)]">Invoiced to date · {preset}</p>
-            <p className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-3xl font-bold tabular-nums sm:text-4xl lg:text-[44px]" title={fmt(totalInvoiceAmount)}>
-              {abbreviate(totalInvoiceAmount, currencySymbol)}
-              <span className="text-sm font-normal text-[color:var(--sf-ink-subtle)]">across {totalInvoices.toLocaleString()} invoice{totalInvoices === 1 ? '' : 's'}</span>
-            </p>
-
-            <div
-              role="img"
-              aria-label={`${collectedPct.toFixed(1)} percent collected, ${outstandingPct.toFixed(1)} percent outstanding`}
-              className="mt-5 flex h-3 overflow-hidden rounded-full bg-[color:var(--sf-track)]"
-            >
-              {/* Collected: positive fill. Outstanding: neutral, not red — it's expected, not a failure.
-                  Both keep their hue and move only in lightness, far enough to stay visible on whatever
-                  the card is filled with. */}
-              <span className="bg-[color:var(--sf-positive)] transition-all motion-reduce:transition-none" style={{ width: `${collectedPct}%` }} />
-              <span className="bg-[color:var(--sf-warning-soft)] transition-all motion-reduce:transition-none" style={{ width: `${outstandingPct}%` }} />
+          arithmetic visible. "Collected" is derived (invoiced − outstanding),
+          so it can never disagree with the other two. */}
+      <div className="grid gap-5 xl:grid-cols-12">
+        <Section visible={widgets.kpiSummary} allowed={allow('kpiSummary')}>
+          <section
+            aria-label="Cash position"
+            style={accentStyle(accentFor('Finance'))}
+            className="flex min-w-0 flex-col gap-5 rounded-[22px] border border-[color:var(--rx-card-edge)] bg-[linear-gradient(160deg,#ffffff_0%,var(--rx-card-tint)_75%)] p-6 sm:p-7 xl:col-span-8"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-600">Invoiced to date · {preset}</p>
+                <p className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-heading text-3xl font-extrabold tabular-nums tracking-tight text-slate-900 sm:text-[42px]" title={fmt(totalInvoiceAmount)}>
+                  {abbreviate(totalInvoiceAmount, currencySymbol)}
+                  <span className="font-sans text-sm font-normal text-slate-600">across {totalInvoices.toLocaleString()} invoice{totalInvoices === 1 ? '' : 's'}</span>
+                </p>
+              </div>
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--rx-card-fill)] text-[color:var(--rx-card-on-fill)]">
+                <Wallet size={27} aria-hidden="true" />
+              </span>
             </div>
 
+            <SplitBar
+              done={collected}
+              total={totalInvoiceAmount}
+              label={`${collectedPct.toFixed(1)} percent collected, ${outstandingPct.toFixed(1)} percent outstanding`}
+            />
+
             {/* Text equivalent for the bar above — kept visible, not a tooltip. */}
-            <dl className="mt-5 flex flex-wrap gap-x-10 gap-y-3">
-              <div className="min-w-0">
-                <dt className="flex items-center gap-1.5 text-xs text-[color:var(--sf-ink-subtle)]"><span className="h-2 w-2 rounded-sm bg-[color:var(--sf-positive)]" aria-hidden="true" /> Collected</dt>
-                <dd className="mt-1 text-lg font-semibold tabular-nums" title={fmt(collected)}>
-                  {abbreviate(collected, currencySymbol)} <span className="text-sm font-normal text-[color:var(--sf-ink-subtle)]">· {totalInvoiceAmount > 0 ? collectedPct.toFixed(1) : '0.0'}%</span>
-                </dd>
+            <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                <dt className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-600"><span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" aria-hidden="true" /> Collected</dt>
+                <dd className="mt-1 font-heading text-xl font-extrabold tabular-nums text-slate-900" title={fmt(collected)}>{abbreviate(collected, currencySymbol)}</dd>
+                <dd className="text-xs font-semibold text-emerald-800">{totalInvoiceAmount > 0 ? collectedPct.toFixed(1) : '0.0'}% of invoiced</dd>
               </div>
-              <div className="min-w-0">
-                <dt className="flex items-center gap-1.5 text-xs text-[color:var(--sf-ink-subtle)]"><span className="h-2 w-2 rounded-sm bg-[color:var(--sf-warning)]" aria-hidden="true" /> Outstanding</dt>
-                <dd className="mt-1 text-lg font-semibold tabular-nums">
+              <div className="min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                <dt className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-600"><span className="h-2.5 w-2.5 rounded-sm bg-amber-500" aria-hidden="true" /> Outstanding</dt>
+                <dd className="mt-1 font-heading text-xl font-extrabold tabular-nums">
                   <Link
                     to="/finance/invoices?status=unpaid&sort=oldest"
                     title={fmt(outstanding)}
-                    className="rounded underline decoration-current/50 decoration-1 underline-offset-2 hover:decoration-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--sf-ink)]"
+                    className="rounded text-slate-900 underline decoration-amber-500 decoration-2 underline-offset-4 hover:decoration-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                   >
                     {abbreviate(outstanding, currencySymbol)}
                   </Link>
                 </dd>
+                <dd className="text-xs font-semibold text-slate-600">{totalInvoiceAmount > 0 ? outstandingPct.toFixed(1) : '0.0'}% still to collect</dd>
+              </div>
+              <div className="min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                <dt className="text-[13px] font-semibold text-slate-600">Collection rate</dt>
+                <dd className="mt-1 font-heading text-xl font-extrabold tabular-nums text-slate-900">{collectionRateBand == null ? '—' : `${collectionRateBand.toFixed(0)}%`}</dd>
+                <dd className="text-xs font-semibold text-slate-600">Of everything invoiced</dd>
+              </div>
+              <div className="min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
+                <dt className="text-[13px] font-semibold text-slate-600">Avg. days to settle</dt>
+                <dd className="mt-1 font-heading text-xl font-extrabold tabular-nums text-slate-900">{avgDaysToSettle == null ? '—' : `${avgDaysToSettle} day${avgDaysToSettle === 1 ? '' : 's'}`}</dd>
+                <dd className="text-xs font-semibold text-slate-600">Raised to fully paid</dd>
               </div>
             </dl>
 
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--sf-line)] pt-4 text-xs text-[color:var(--sf-ink-muted)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[color:var(--rx-card-edge)] pt-4 text-sm text-slate-700">
               {oldestUnpaidDays !== null ? (
-                <p>
-                  {overdueCount > 0 && <span className="font-semibold text-[color:var(--sf-warning)]">{overdueCount} invoice{overdueCount === 1 ? '' : 's'} overdue</span>}
-                  {overdueCount > 0 && ' · '}
-                  oldest unpaid <span className="font-semibold text-[color:var(--sf-ink)] tabular-nums">{oldestUnpaidDays} day{oldestUnpaidDays === 1 ? '' : 's'}</span>
+                <p className="flex items-center gap-2">
+                  <AlertTriangle size={16} className="shrink-0 text-amber-600" aria-hidden="true" />
+                  <span>
+                    {overdueCount > 0 && <strong className="text-slate-900">{overdueCount} invoice{overdueCount === 1 ? '' : 's'} overdue</strong>}
+                    {overdueCount > 0 && ' · '}
+                    oldest unpaid <strong className="tabular-nums text-slate-900">{oldestUnpaidDays} day{oldestUnpaidDays === 1 ? '' : 's'}</strong>
+                  </span>
                 </p>
-              ) : <p className="text-[color:var(--sf-ink-subtle)]">No outstanding invoices</p>}
+              ) : <p className="text-slate-600">No outstanding invoices</p>}
               <Link
                 to="/finance/payment-reminders"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-[color:var(--sf-border)] px-3 py-1.5 font-medium text-[color:var(--sf-ink)] hover:border-[color:var(--sf-border-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--sf-ink)] transition-colors motion-reduce:transition-none"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-[color:var(--on-primary,#fff)] shadow-sm hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                style={{ color: onPrimary }}
               >
-                <Send size={12} /> Send reminders
+                <Send size={14} /> Send reminders
               </Link>
             </div>
           </section>
+        </Section>
 
-          {/* ══ PORTFOLIO — one compact row of slow-moving counts ══════════ */}
-          <nav aria-label="Portfolio" className="flex flex-wrap divide-y divide-slate-100 overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 sm:flex-nowrap sm:divide-x sm:divide-y-0">
-            {[
-              { label: 'Clients', value: totalClients, to: '/users/clients' },
-              { label: 'Properties', value: totalProperties, to: '/properties' },
-              { label: 'Invoices', value: totalInvoices, to: '/finance/invoices' },
-              { label: 'Staff', value: totalStaff, to: '/users/employees' },
-              { label: 'Realtors', value: totalRealtors, to: '/users/realtors' },
-            ].map((item) => (
+        <Section visible={widgets.financeSummary} allowed={allow('financeSummary')}>
+          <section
+            style={accentStyle(accentFor('People & Access'))}
+            className="flex min-w-0 flex-col gap-4 rounded-[22px] border border-[color:var(--rx-card-edge)] bg-[linear-gradient(160deg,#ffffff_0%,var(--rx-card-tint)_75%)] p-6 xl:col-span-4"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="font-heading text-lg font-extrabold text-slate-900">Revenue</h2>
+                <p className="text-[13px] text-slate-600">Money actually received, {preset.toLowerCase()}</p>
+              </div>
+              <Link to="/finance/reports" className="flex shrink-0 items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50">
+                <ArrowUpRight size={12} /> View report
+              </Link>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold text-slate-600">Period revenue · {preset}</p>
+              <p className="mt-1 break-words font-heading text-3xl font-extrabold tabular-nums tracking-tight text-slate-900" title={fmt(rangedRevenue)}>{fmt(rangedRevenue)}</p>
+              {/* Value and delta are both computed over the SAME window
+                  (rangedRevenue vs the prior period of equal length), so this
+                  can never contradict the figure it sits next to. */}
+              {momGrowthKind === 'pct' && (
+                <p className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${parseFloat(momGrowth) > 0 ? 'bg-emerald-100 text-emerald-800' : parseFloat(momGrowth) < 0 ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'}`}>
+                  {parseFloat(momGrowth) > 0 ? <ArrowUp size={12} /> : parseFloat(momGrowth) < 0 ? <ArrowDown size={12} /> : <Minus size={12} />}
+                  {momGrowth > 0 ? '+' : ''}{momGrowth}% vs prior period
+                </p>
+              )}
+              {momGrowthKind === 'from-zero' && <p className="mt-2 text-xs font-semibold text-slate-600">New this period</p>}
+              {momGrowthKind === 'no-baseline' && <p className="mt-2 text-xs text-slate-600">No prior period</p>}
+            </div>
+            <dl className="mt-auto space-y-2 border-t border-[color:var(--rx-card-edge)] pt-4 text-sm">
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="font-semibold text-slate-600">Payments received</dt>
+                <dd className="font-heading font-extrabold tabular-nums text-slate-900">
+                  {paymentsInRange.toLocaleString()}{averagePayment != null && <span className="font-sans text-xs font-semibold text-slate-600"> · avg {abbreviate(averagePayment, currencySymbol)}</span>}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3">
+                <dt className="font-semibold text-slate-600">Year to date</dt>
+                <dd className="font-heading text-lg font-extrabold tabular-nums text-slate-900" title={fmt(ytdRevenue)}>{fmt(ytdRevenue)}</dd>
+              </div>
+            </dl>
+          </section>
+        </Section>
+      </div>
+
+      {/* ══ PORTFOLIO — slow-moving counts, each a door to its list ══════════ */}
+      <Section visible={widgets.kpiSummary} allowed={allow('kpiSummary')}>
+        <nav aria-label="Portfolio" className="grid gap-4 sm:grid-cols-3 xl:grid-cols-5">
+          {portfolio.map((item) => (
+            <TintCard
+              key={item.label}
+              to={item.to}
+              accent={accentFor(item.module)}
+              icon={item.icon}
+              value={item.value.toLocaleString()}
+              label={item.label}
+            />
+          ))}
+        </nav>
+      </Section>
+
+      {/* ══ NEEDS YOUR ATTENTION — the approval queues this person can act on ═ */}
+      {queues.length > 0 && (
+        <section aria-label="Needs your attention" className="space-y-3 print:hidden">
+          <SectionHeading>Needs your attention</SectionHeading>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {queues.map((queue) => (
               <Link
-                key={item.label}
-                to={item.to}
-                className="group flex min-w-0 flex-1 basis-1/2 items-baseline gap-2 px-5 py-3.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:basis-auto"
+                key={queue.key}
+                to={queue.to}
+                style={accentStyle(accentFor(queue.module))}
+                className="flex items-center gap-4 rounded-[18px] border border-[color:var(--rx-card-edge)] bg-[linear-gradient(160deg,#ffffff_0%,var(--rx-card-tint)_75%)] p-4 transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                <span className="text-lg font-semibold tabular-nums text-slate-900">{item.value.toLocaleString()}</span>
-                <span className="truncate text-xs text-slate-500 group-hover:text-slate-700">{item.label}</span>
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[color:var(--rx-card-fill)] text-[color:var(--rx-card-on-fill)]">
+                  <queue.icon size={21} aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-slate-900">{queue.label}</span>
+                  <span className="block text-xs text-slate-600">{queue.sub}</span>
+                </span>
+                <span className={`min-w-[2rem] rounded-full px-2.5 py-1 text-center font-heading text-sm font-extrabold tabular-nums ${badgeCounts[queue.key] > 0 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                  {badgeCounts[queue.key]}
+                </span>
               </Link>
             ))}
-          </nav>
-        </div>
-      </Section>
+          </div>
+        </section>
+      )}
 
       {/*
         ══ TOP PERFORMERS ══════════════════════════════════════════════════
-        Placed directly under the executive numbers because it answers the
-        question those numbers raise: the cash position says how much came in,
-        this says where from.
+        Directly under the executive numbers because it answers the question
+        those numbers raise: the cash position says how much came in, this
+        says where from.
       */}
       <Section visible={widgets.topPerformers} allowed={allow('topPerformers')}>
         <TopPerformersPanel data={topPerformers} fmt={fmt} period={preset} />
       </Section>
 
-      {/* ══ REVENUE TREND CHART ════════════════════════════════════════════════ */}
-      <Section visible={widgets.revenueChart} allowed={allow('revenueChart')}>
-        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-4">
-            {/*
-              Title and link share one baseline — the link is a destination for
-              this panel, not a second heading, so it sits on the title's line
-              and is muted until it is wanted.
-            */}
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <h2 className="text-sm font-semibold text-slate-900">Revenue Trend</h2>
-              <Link
-                to="/finance/reports"
-                className="rounded text-[13px] text-slate-500 underline-offset-4 transition-colors hover:text-slate-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              >
-                View detailed report →
-              </Link>
+      {/* ══ REVENUE TREND + PROPERTY STATUS ══════════════════════════════════ */}
+      <div className="grid gap-5 xl:grid-cols-12">
+        <Section visible={widgets.revenueChart} allowed={allow('revenueChart')}>
+          <Panel
+            className="xl:col-span-8"
+            title="Revenue trend"
+            action={<PanelLink to="/finance/reports">View detailed report →</PanelLink>}
+            subtitle={(
+              <>
+                {/* Compared LIKE FOR LIKE, against last week up to the same day —
+                    and shaped by the delta classifier in useDashboardData, so a
+                    near-zero baseline reads as a multiple, not a fault. */}
+                This week vs last week, day for day
+                {weekComparison?.delta && weekComparison.delta.kind !== 'no-baseline' && (
+                  <>
+                    {' · '}
+                    {weekComparison.delta.kind === 'from-zero' ? (
+                      <strong className="text-emerald-800">New this week</strong>
+                    ) : (
+                      <strong className={weekComparison.delta.pct >= 0 ? 'text-emerald-800' : 'text-rose-700'}>
+                        {weekComparison.delta.pct >= 0 ? '▲' : '▼'}{' '}
+                        {weekComparison.delta.kind === 'large'
+                          ? `${weekComparison.delta.multiple.toFixed(weekComparison.delta.multiple >= 10 ? 0 : 1)}× last week`
+                          : `${Math.abs(weekComparison.delta.pct).toFixed(1)}%`}
+                      </strong>
+                    )}
+                    {` through ${weekComparison.throughDay}`}
+                  </>
+                )}
+              </>
+            )}
+          >
+            <RevenueChart data={weekComparison} fmt={fmt} />
+          </Panel>
+        </Section>
+        <Section visible={widgets.propertyStatus} allowed={allow('propertyStatus')}>
+          <Panel
+            className={widgets.revenueChart && allow('revenueChart') ? 'xl:col-span-4' : 'xl:col-span-12'}
+            title="Property status"
+            subtitle="Portfolio availability breakdown"
+            action={<PanelLink to="/properties">View all →</PanelLink>}
+          >
+            <PropertyStatusChart statusMap={propertyStatusMap} />
+            <div className="grid grid-cols-2 gap-3">
+              <MiniStat accent={accentFor('Properties')} value={units.total ? `${units.available.toLocaleString()} / ${units.total.toLocaleString()}` : '—'} label="Units available" />
+              <MiniStat accent={accentFor('Sales & CRM')} value={units.held.toLocaleString()} label="Units held by payments" />
             </div>
-            {/*
-              The comparison is stated in words as well as drawn, because the
-              number people repeat to each other is "up 12% on last week" —
-              and it is compared LIKE FOR LIKE, against last week up to the
-              same day. Against last week's full total this week would be
-              behind until Sunday evening, every week.
+          </Panel>
+        </Section>
+      </div>
 
-              What SHAPE that statement takes depends on the data: see the
-              delta classifier in useDashboardData. A percentage against a
-              near-zero baseline is arithmetically true and reads as a fault,
-              so past 500% it becomes a multiple, and a week that began from
-              nothing says so instead of dividing by zero.
-            */}
-            <p className="text-[11px] text-slate-400">
-              This week vs last week, day for day
-              {weekComparison?.delta && weekComparison.delta.kind !== 'no-baseline' && (
-                <>
-                  {' · '}
-                  {weekComparison.delta.kind === 'from-zero' ? (
-                    <span className="text-emerald-600">New this week</span>
-                  ) : (
-                    <span className={weekComparison.delta.pct >= 0 ? 'text-emerald-600' : 'text-rose-500'}>
-                      {weekComparison.delta.pct >= 0 ? '▲' : '▼'}{' '}
-                      {weekComparison.delta.kind === 'large'
-                        ? `${weekComparison.delta.multiple.toFixed(weekComparison.delta.multiple >= 10 ? 0 : 1)}× last week`
-                        : `${Math.abs(weekComparison.delta.pct).toFixed(1)}%`}
-                    </span>
-                  )}
-                  {` through ${weekComparison.throughDay}`}
-                </>
-              )}
-            </p>
-          </div>
-          <RevenueChart data={weekComparison} fmt={fmt} />
-        </section>
-      </Section>
-
-      {/* ══ REVENUE PANEL ════════════════════════════════════════════════════ */}
-      <Section visible={widgets.financeSummary} allowed={allow('financeSummary')}>
-        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-slate-900">Revenue Panel</h2>
-              <p className="text-[11px] text-slate-400">Money actually received, {preset.toLowerCase()}</p>
-            </div>
-            <Link to="/finance/reports" className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors">
-              <ArrowUpRight size={11} /> View Report
-            </Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Period Revenue · {preset}</p>
-              <p className="mt-1 break-words text-2xl font-bold leading-tight tabular-nums" style={{ color: accent }} title={fmt(rangedRevenue)}>{fmt(rangedRevenue)}</p>
-              {/* Value and delta are both computed over the SAME window
-                  (rangedRevenue vs the prior period of equal length), so this
-                  can never contradict the figure it sits next to. */}
-              {momGrowthKind === 'pct' && (
-                <div className={`mt-1.5 flex items-center gap-1 text-xs font-medium ${parseFloat(momGrowth) > 0 ? 'text-emerald-600' : parseFloat(momGrowth) < 0 ? 'text-rose-600' : 'text-slate-400'}`}>
-                  {parseFloat(momGrowth) > 0 ? <ArrowUp size={12} /> : parseFloat(momGrowth) < 0 ? <ArrowDown size={12} /> : <Minus size={12} />}
-                  {momGrowth > 0 ? '+' : ''}{momGrowth}% vs prior period
-                </div>
-              )}
-              {momGrowthKind === 'from-zero' && <p className="mt-1.5 text-xs font-medium text-slate-400">New this period</p>}
-              {momGrowthKind === 'no-baseline' && <p className="mt-1.5 text-xs text-slate-400">No prior period</p>}
-            </div>
-            <div className="min-w-0 rounded-xl bg-slate-50 border border-slate-100 p-4">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Year to date</p>
-              <p className="mt-1 break-words text-xl font-bold leading-tight text-slate-900 tabular-nums" title={fmt(ytdRevenue)}>{fmt(ytdRevenue)}</p>
-            </div>
-          </div>
-        </section>
-      </Section>
-
-      {/* ══ SECTION 4 — DEBTORS + REMINDERS ══════════════════════════════════ */}
+      {/* ══ DEBTORS + REMINDERS ══════════════════════════════════════════════ */}
       <div className="grid gap-5 xl:grid-cols-2">
         <Section visible={widgets.topDuePayments} allowed={allow('topDuePayments')}>
           <TopDuePaymentsTable invoices={duePayments} fmt={fmt} />
@@ -523,88 +587,80 @@ function StaffDashboard() {
         </Section>
       </div>
 
-      {/* ══ SECTION 5 — LEAD STATUS + PROPERTY STATUS ════════════════════════ */}
-      <div className="grid gap-5 xl:grid-cols-2">
+      {/* ══ LEADS + PIPELINE + SUPPORT ═══════════════════════════════════════ */}
+      <div className="grid gap-5 xl:grid-cols-3">
         <Section visible={widgets.leadStatus} allowed={allow('leadStatus')}>
           <LeadStatusPanel statusMap={leadStatusMap} totalLeads={totalLeadsInRange} />
         </Section>
-        <Section visible={widgets.propertyStatus} allowed={allow('propertyStatus')}>
-          <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">Property Status</h2>
-                <p className="text-[11px] text-slate-400">Portfolio availability breakdown</p>
-              </div>
-              <Link to="/properties" className="text-xs font-medium text-blue-600 hover:underline">View All →</Link>
+
+        {/* ══ PIPELINE — the one place a stepped/funnel treatment is earned ═══ */}
+        <Section visible={widgets.operationalSummary} allowed={allow('operationalSummary')}>
+          <Panel aria-label="Sales pipeline" title="Pipeline" subtitle={preset}>
+            <div className="space-y-2.5">
+              {[
+                { label: 'Leads', value: totalLeadsInRange, note: totalLeadsInRange === 0 ? 'None captured' : 'Captured this period', width: '100%', module: 'Dashboard' },
+                {
+                  label: 'Qualified',
+                  value: qualifiedLeads,
+                  note: totalLeadsInRange > 0 ? `${((qualifiedLeads / totalLeadsInRange) * 100).toFixed(0)}% of leads` : 'No leads to qualify',
+                  width: '84%',
+                  module: 'Properties',
+                },
+                {
+                  label: 'Sales',
+                  value: totalSales,
+                  note: totalLeadsInRange === 0 ? 'No prior period' : conversionRate != null ? `${conversionRate}% conversion` : '—',
+                  width: '68%',
+                  module: 'People & Access',
+                },
+              ].map((step) => (
+                <div
+                  key={step.label}
+                  style={{ ...accentStyle(accentFor(step.module)), width: step.width }}
+                  className="mx-auto flex items-center justify-between gap-3 rounded-2xl bg-[color:var(--rx-card-tint)] px-4 py-3"
+                >
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold text-slate-900">{step.label}</span>
+                    <span className="block truncate text-xs text-slate-600">{step.note}</span>
+                  </span>
+                  <strong className={`font-heading text-2xl font-extrabold tabular-nums ${step.value === 0 ? 'text-slate-400' : 'text-slate-900'}`}>{step.value}</strong>
+                </div>
+              ))}
             </div>
-            <PropertyStatusChart statusMap={propertyStatusMap} />
-          </section>
+
+            {totalLeadsInRange === 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed border-slate-300 px-4 py-3">
+                <p className="text-xs text-slate-600">No leads came in this period. Add one to start tracking conversion.</p>
+                <Link
+                  to="/crm/leads"
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <Plus size={12} /> Add a lead
+                </Link>
+              </div>
+            )}
+          </Panel>
+        </Section>
+
+        <Section visible={widgets.supportStats} allowed={allow('supportStats')}>
+          <SupportStatsWidget
+            open={openTickets}
+            closed={closedTickets}
+            escalated={escalatedTickets}
+            total={totalTickets}
+            avgResolutionHours={avgResolutionHours}
+          />
         </Section>
       </div>
 
-      {/* ══ SECTION 6 — REALTOR LEADERBOARD ══════════════════════════════════ */}
+      {/* ══ REALTOR LEADERBOARD ══════════════════════════════════════════════ */}
       <Section visible={widgets.realtorLeaderboard} allowed={allow('realtorLeaderboard')}>
         <RealtorLeaderboard realtors={realtorLeaderboard} fmt={fmt} period={preset} range={getDateRange()} />
       </Section>
 
-      {/* ══ SECTION 7 — ACTIVITY FEED + RECENT SALES ════════════════════════ */}
+      {/* ══ ACTIVITY FEED + RECENT SALES ═════════════════════════════════════ */}
       <Section visible={widgets.recentActivities}>
         <RecentActivitiesFeed activities={activities} recentSales={recentSales} fmt={fmt} />
-      </Section>
-
-      {/* ══ PIPELINE — the one place a stepped/funnel treatment is earned ═══ */}
-      <Section visible={widgets.operationalSummary} allowed={allow('operationalSummary')}>
-        <section aria-label="Sales pipeline" className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
-            <h2 className="text-sm font-semibold text-slate-900">Pipeline</h2>
-            <span className="text-[11px] text-slate-400">{preset}</span>
-          </div>
-
-          <div className="flex flex-col divide-y divide-slate-100 sm:flex-row sm:divide-x sm:divide-y-0">
-            <div className="min-w-0 flex-1 pb-4 sm:pb-0 sm:pr-6">
-              <p className="text-xs text-[#5A5A5A]">Leads</p>
-              <p className={`mt-1 text-[28px] font-semibold leading-none tabular-nums ${totalLeadsInRange === 0 ? 'font-normal text-slate-300' : 'text-slate-900'}`}>{totalLeadsInRange}</p>
-              <p className="mt-1.5 text-xs text-slate-400">{totalLeadsInRange === 0 ? 'None captured' : 'Captured this period'}</p>
-            </div>
-            <div className="min-w-0 flex-1 py-4 sm:py-0 sm:px-6">
-              <p className="text-xs text-[#5A5A5A]">Qualified</p>
-              <p className={`mt-1 text-[28px] font-semibold leading-none tabular-nums ${qualifiedLeads === 0 ? 'font-normal text-slate-300' : 'text-slate-900'}`}>{qualifiedLeads}</p>
-              <p className="mt-1.5 text-xs font-medium" style={{ color: totalLeadsInRange > 0 ? accent : undefined }}>
-                {totalLeadsInRange > 0 ? `${((qualifiedLeads / totalLeadsInRange) * 100).toFixed(0)}% of leads` : <span className="font-normal text-slate-400">No leads to qualify</span>}
-              </p>
-            </div>
-            <div className="min-w-0 flex-1 pt-4 sm:pt-0 sm:pl-6">
-              <p className="text-xs text-[#5A5A5A]">Sales</p>
-              <p className={`mt-1 text-[28px] font-semibold leading-none tabular-nums ${totalSales === 0 ? 'font-normal text-slate-300' : 'text-slate-900'}`}>{totalSales}</p>
-              <p className="mt-1.5 text-xs text-slate-400">
-                {totalLeadsInRange === 0 ? 'No prior period' : conversionRate != null ? `${conversionRate}% conversion` : '—'}
-              </p>
-            </div>
-          </div>
-
-          {totalLeadsInRange === 0 && (
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-slate-200 px-4 py-3">
-              <p className="text-xs text-slate-500">No leads came in this period. Add one to start tracking conversion.</p>
-              <Link
-                to="/crm/leads"
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors"
-              >
-                <Plus size={12} /> Add a lead
-              </Link>
-            </div>
-          )}
-        </section>
-      </Section>
-
-      {/* ══ SECTION 8 — SUPPORT PERFORMANCE ════════════════════════════════ */}
-      <Section visible={widgets.supportStats} allowed={allow('supportStats')}>
-        <SupportStatsWidget
-          open={openTickets}
-          closed={closedTickets}
-          escalated={escalatedTickets}
-          total={totalTickets}
-          avgResolutionHours={avgResolutionHours}
-        />
       </Section>
 
     </div>

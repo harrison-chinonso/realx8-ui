@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LayoutGrid, List, Download, Upload } from 'lucide-react';
-import { listProperties, updateProperty, deleteProperty, listPropertyTypes, listBranches, exportPropertiesToExcel } from '../../api/propertyApi';
+import {
+  LayoutGrid, List, Download, Upload, Home, CheckCircle2, Clock, FileText, ShieldAlert,
+} from 'lucide-react';
+import { listProperties, updateProperty, deleteProperty, listPropertyTypes, listBranches, exportPropertiesToExcel, getPropertiesSummary } from '../../api/propertyApi';
+import { TintCard, useModuleAccent } from '../../components/dashboard/DashboardKit';
+import { stockOf, priceRangeOf } from '../../components/property/propertyFigures';
+import { useCurrency } from '../../context/useAppearance';
 import Table from '../../components/common/Table';
 import Badge from '../../components/common/Badge';
 import Pagination from '../../components/common/Pagination';
@@ -40,8 +45,25 @@ const emptyEditForm = {
   images: [],
 };
 
+/**
+ * The quick filters above the grid. Each is a column filter the list endpoint
+ * already understands (`filter[status]`, `filter[approval_status]`), so a chip
+ * narrows the query rather than the page on screen.
+ */
+const QUICK_FILTERS = [
+  { key: 'all', label: 'All', filter: null, count: (s) => s?.properties },
+  { key: 'available', label: 'Available', filter: { status: 'available' }, count: (s) => s?.by_status?.available },
+  { key: 'pending', label: 'Awaiting approval', filter: { approval_status: 'pending_review' }, count: (s) => s?.by_approval?.pending_review },
+  { key: 'sold', label: 'Sold', filter: { status: 'sold' }, count: (s) => s?.by_status?.sold },
+  { key: 'rented', label: 'Rented', filter: { status: 'rented' }, count: (s) => s?.by_status?.rented },
+];
+
 export default function PropertiesPage() {
   const { currency, currencySymbol } = useAppearance();
+  const fmt = useCurrency();
+  const { accentFor } = useModuleAccent();
+  const [summary, setSummary] = useState(null);
+  const [quick, setQuick] = useState('all');
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -57,15 +79,20 @@ export default function PropertiesPage() {
   const [exporting, setExporting] = useState(false);
   const [banner, setBanner] = useState(null);
 
+  const activeFilter = QUICK_FILTERS.find((f) => f.key === quick)?.filter;
   const loadProperties = () => {
-    listProperties({ search: query, page, limit: 8 })
+    listProperties({ search: query, page, limit: 8, ...(activeFilter ? { filter: activeFilter } : {}) })
       .then(setResult)
       .catch(() => setResult({ data: [], pagination: { page: 1, totalPages: 1 } }));
   };
 
   useEffect(() => {
     loadProperties();
-  }, [query, page]);
+  }, [query, page, quick]);
+
+  // One call for the whole strip; re-read after anything that changes stock.
+  const loadSummary = () => getPropertiesSummary().then(setSummary).catch(() => setSummary(null));
+  useEffect(() => { loadSummary(); }, []);
 
   useEffect(() => {
     listPropertyTypes({ limit: 100 })
@@ -134,6 +161,7 @@ export default function PropertiesPage() {
         branch_id: editForm.branch_id === '' ? null : Number(editForm.branch_id),
       });
       await loadProperties();
+      loadSummary();
       closeEditModal(true);
     } catch (error) {
       console.error(error);
@@ -149,19 +177,68 @@ export default function PropertiesPage() {
     try {
       await deleteProperty(property.id);
       await loadProperties();
+      loadSummary();
     } catch (error) {
       console.error(error);
       alert('Failed to delete property.');
     }
   };
 
+  const pagination = result.pagination || {};
+  const shownFrom = (result.data || []).length ? ((pagination.page || 1) - 1) * 8 + 1 : 0;
+  const shownTo = shownFrom ? shownFrom + (result.data || []).length - 1 : 0;
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200 md:flex-row md:items-end md:justify-between">
-        <div className="flex-1">
-          <Input label="Search properties" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name, city, status..." />
+    <div className="space-y-5">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="min-w-0">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-600">Property listing</p>
+          <h1 className="font-heading text-2xl font-extrabold text-slate-900 sm:text-3xl">All properties</h1>
+          <p className="text-sm text-slate-600">Every estate your company sells, its stock, and where each one is in approval.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="secondary" onClick={handleExport} disabled={exporting}>
+            <Download size={15} /> {exporting ? 'Exporting…' : 'Export'}
+          </Button>
+          <Button type="button" variant="secondary" onClick={() => setShowImport(true)}>
+            <Upload size={15} /> Import
+          </Button>
+          <Link to="/properties/create"><Button>Create property</Button></Link>
+        </div>
+      </div>
+
+      {/* Company-wide, not the page on screen — one summary call. */}
+      {summary && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <TintCard accent={accentFor('Properties')} icon={Home} value={summary.properties.toLocaleString()} label="Properties" />
+          <TintCard accent={accentFor('People & Access')} icon={CheckCircle2} value={`${summary.units.available.toLocaleString()} / ${summary.units.total.toLocaleString()}`} label="Units available" />
+          <TintCard accent={accentFor('Sales & CRM')} icon={Clock} value={summary.units.held.toLocaleString()} label="Units held by payments" />
+          <TintCard accent={accentFor('Dashboard')} icon={FileText} value={summary.purchase_requests_this_month.toLocaleString()} label="Purchase requests" sub="This month" />
+          <TintCard accent={accentFor('Marketing & Content')} icon={ShieldAlert} value={(summary.by_approval?.pending_review ?? 0).toLocaleString()} label="Awaiting approval" />
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3 rounded-[18px] bg-white p-3 shadow-sm ring-1 ring-slate-200 lg:flex-row lg:items-end">
+        <div className="flex-1">
+          <Input label="Search properties" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} placeholder="Search by name, city, status..." />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {QUICK_FILTERS.map((chip) => {
+            const count = chip.count(summary);
+            if (chip.key !== 'all' && !count) return null;
+            const on = quick === chip.key;
+            return (
+              <button
+                key={chip.key}
+                type="button"
+                aria-pressed={on}
+                onClick={() => { setQuick(chip.key); setPage(1); }}
+                className={`h-9 rounded-full px-3.5 text-[13px] font-bold transition-colors ${on ? 'bg-slate-900 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50'}`}
+              >
+                {chip.label}{count != null ? ` · ${Number(count).toLocaleString()}` : ''}
+              </button>
+            );
+          })}
           <div className="inline-flex rounded-lg border border-slate-300 p-0.5">
             {[
               { key: 'list', label: 'List view', Icon: List },
@@ -183,13 +260,6 @@ export default function PropertiesPage() {
               </button>
             ))}
           </div>
-          <Button type="button" variant="secondary" onClick={handleExport} disabled={exporting}>
-            <Download size={15} /> {exporting ? 'Exporting…' : 'Export'}
-          </Button>
-          <Button type="button" variant="secondary" onClick={() => setShowImport(true)}>
-            <Upload size={15} /> Import
-          </Button>
-          <Link to="/properties/create"><Button>Create property</Button></Link>
         </div>
       </div>
 
@@ -201,11 +271,12 @@ export default function PropertiesPage() {
 
       {view === 'grid' ? (
         (result.data || []).length ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {result.data.map((row) => (
               <PropertyCard
                 key={row.id}
                 property={row}
+                showApproval
                 onOpen={() => navigate(`/properties/${row.id}`)}
                 onEdit={() => openEditModal(row)}
                 onDelete={() => handleDelete(row)}
@@ -225,6 +296,24 @@ export default function PropertiesPage() {
             { key: 'name', label: 'Property' },
             { key: 'city', label: 'City' },
             { key: 'status', label: 'Status', render: (row) => <Badge value={row.status} /> },
+            { key: 'approval_status', label: 'Approval', render: (row) => <Badge value={row.approval_status || 'draft'} /> },
+            { key: 'submitted_by', label: 'Submitted by', render: (row) => row.submitted_by?.name || '—' },
+            {
+              key: 'units',
+              label: 'Units available',
+              render: (row) => {
+                const stock = stockOf(row.units || [], row);
+                return stock.total ? `${stock.available.toLocaleString()} of ${stock.total.toLocaleString()}` : '—';
+              },
+            },
+            {
+              key: 'from',
+              label: 'From',
+              render: (row) => {
+                const range = priceRangeOf(row.units || []);
+                return range ? fmt(range.min) : '—';
+              },
+            },
           ]}
           rows={result.data || []}
           renderActions={(row) => (
@@ -240,12 +329,17 @@ export default function PropertiesPage() {
           )}
         />
       )}
-      <Pagination page={result.pagination?.page || 1} totalPages={result.pagination?.totalPages || 1} onPageChange={setPage} />
+      <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+        {shownFrom > 0 && pagination.total != null && (
+          <p className="text-sm text-slate-600">Showing {shownFrom}–{shownTo} of {Number(pagination.total).toLocaleString()} properties</p>
+        )}
+        <Pagination page={pagination.page || 1} totalPages={pagination.totalPages || 1} onPageChange={setPage} />
+      </div>
 
       <PropertyImportModal
         open={showImport}
         onClose={() => setShowImport(false)}
-        onImported={() => { setPage(1); loadProperties(); }}
+        onImported={() => { setPage(1); loadProperties(); loadSummary(); }}
       />
 
       {editingProperty && (

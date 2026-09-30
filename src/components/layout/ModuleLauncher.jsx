@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, LayoutGrid, Search, X } from 'lucide-react';
+import {
+  ArrowLeft, Bell, ChevronRight, LayoutGrid, Search, X,
+} from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
 import { LAUNCHER_CSS } from './launcherStyles';
@@ -8,6 +10,12 @@ import { DESCRIPTIONS, orderTiles } from './launcherGroups';
 import { rememberVisit, recentVisits } from './recentScreens';
 import NavBadge from './NavBadge';
 import { focusUnlessTouch, dismissKeyboard } from '../../utils/softKeyboard';
+import useNavBadgeStore from '../../store/navBadgeStore';
+import { useAppearance } from '../../context/useAppearance';
+import {
+  darkerOf, mixHex, readableOn, readableTextOn,
+} from '../../utils/colorUtils';
+import { accentSlotFor, accentStyle, parseAccents } from './launcherPalette';
 
 /**
  * The module launcher — every area of the product, in one grid.
@@ -89,32 +97,64 @@ const useSections = () => {
 const SLOT_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
 
 /**
- * One tile. Identical to every other tile — no featured one, no per-module
- * colour, no counts. Only the words change.
+ * One module card.
  *
- * A link when it goes somewhere, a button when it opens a drawer. The
- * description is the two words saying what a module HOLDS, so it appears on the
- * grouped tiles and not on a tile that already names the screen it opens.
+ * ── The card is the colour, and the colour is the company's ─────────────────
+ *
+ * Each module takes a slot in the company's launcher palette (see
+ * launcherPalette): the icon tile is that colour, the card is a pale tint of
+ * it, the chevron sits in a slightly stronger tint. Every foreground is derived
+ * from the colour behind it, so a company can pick any palette and nothing on
+ * the card stops being legible.
+ *
+ * ── Two ways in ─────────────────────────────────────────────────────────────
+ *
+ * The whole card opens the module (a link when it goes somewhere, a button
+ * when it opens a drawer — its ::after covers the card). Below that, on wider
+ * screens, the first few screens inside the module are their own links, so the
+ * one somebody wants most is one click from the launcher rather than two.
+ * They sit above the card's cover so each is a target of its own, and nothing
+ * interactive is nested inside anything else.
  */
-function Tile({ icon: Icon, name, description, slot, badge, onOpen, to, innerRef, ...props }) {
+function Card({
+  icon: Icon, name, description, slot, badge, onOpen, to, innerRef, accent, links = [], onLink, more = 0, ...props
+}) {
   const body = (
     <>
       {slot && <span className="rx-slot" aria-hidden="true">{slot}</span>}
-      {/* Top-right, where the slot key used to sit — the slot key is on hover
-          only and moved to the left, because a count that is always there
-          should not have something appearing on top of it. */}
-      {badge}
       {/* Decorative: the name is the accessible name. */}
-      <span className="rx-ic"><Icon aria-hidden="true" strokeWidth={1.75} size={20} /></span>
+      <span className="rx-ic"><Icon aria-hidden="true" strokeWidth={1.9} /></span>
       <span className="rx-name">{name}</span>
       {description && <span className="rx-desc">{description}</span>}
+      <span className="rx-chev" aria-hidden="true"><ChevronRight strokeWidth={2.25} /></span>
     </>
   );
 
-  return to
-    ? <Link ref={innerRef} to={to} className="rx-tile" onClick={onOpen} {...props}>{body}</Link>
-    : <button ref={innerRef} type="button" className="rx-tile" onClick={onOpen} {...props}>{body}</button>;
+  return (
+    <div className="rx-card" style={accentStyle(accent)}>
+      {to
+        ? <Link ref={innerRef} to={to} className="rx-card-main" onClick={onOpen} {...props}>{body}</Link>
+        : <button ref={innerRef} type="button" className="rx-card-main" onClick={onOpen} {...props}>{body}</button>}
+      {badge}
+      {links.length > 0 && (
+        <div className="rx-card-links">
+          {links.map((item) => (
+            <Link key={item.to} to={item.to} className="rx-card-link" onClick={() => onLink?.(item)}>
+              {item.label}
+            </Link>
+          ))}
+          {more > 0 && <span className="rx-card-more">+{more} more</span>}
+        </div>
+      )}
+    </div>
+  );
 }
+
+/** How many of a module's screens appear on its card as shortcuts. */
+const SHORTCUTS = 3;
+
+/** The leaves under a nav entry, in order — what a card's shortcuts are drawn from. */
+const leavesOf = (items = []) => items.flatMap((item) => (item.children?.length ? leavesOf(item.children) : [item]));
 
 /**
  * Where the launcher was standing when it sent you somewhere.
@@ -474,165 +514,55 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [open, close, term, visibleTiles, openTile]);
 
+  const appearance = useAppearance();
+  const user = useAuthStore((s) => s.user);
+  const unread = useNavBadgeStore((state) => state.counts.unreadNotifications) || 0;
+  const palette = useMemo(() => parseAccents(appearance?.accent_colors), [appearance?.accent_colors]);
+
   /**
-   * Resolve the brand colours, and the ink each one can actually carry.
+   * The brand surfaces — header, banner, footer — and the ink each carries.
    *
-   * ── Where the two colours land ───────────────────────────────────────────
+   * Read from the COMPUTED --primary / --secondary rather than the raw
+   * settings, so dark-mode brightening and a shared link's branding are
+   * followed. Every foreground is chosen against the colour it actually sits
+   * on, because a tenant's primary can be anything: white on #d6c7cb is 1.6:1.
    *
-   * The primary fills the ICON, not the tile: at rest a tile is the neutral
-   * surface it always was, with one brand-coloured chip in the middle of it.
-   * The secondary fills the whole tile on hover, so the colour arrives as an
-   * event rather than as wallpaper — sixty tiles at rest stay quiet, and the
-   * one under the pointer is unmistakable.
-   *
-   * ── Why it is computed and not written in CSS ────────────────────────────
-   *
-   * Both colours end up carrying something: a glyph on the chip, and the whole
-   * tile's text on hover. A tenant colour can be anything — #CCCCCC under
-   * white is 1.6:1, invisible — so neither foreground can be a fixed value.
-   * They are derived from the fills here, once, when the launcher opens.
-   *
-   * ── And why the hover is not simply the secondary ────────────────────────
-   *
-   * A secondary close to the resting surface is a hover nobody sees: the
-   * pointer moves, the tile does nothing, and the interface feels dead rather
-   * than themed. The secondary is used exactly as given when it reads as a
-   * change against the resting tile, and moved away from it when it does not.
+   *   hero     the header band, primary into a touch of the secondary
+   *   banner   the welcome panel, the DARKER of the two brand colours, so its
+   *            weight holds whichever way round they were entered
+   *   badge    the pill on the banner, in the primary
+   *   focus    the focus ring, held at 3:1 against the white page
    */
-  useEffect(() => {
-    if (!open || !panelRef.current) return;
-    const panel = panelRef.current;
-    const styles = getComputedStyle(panel);
-
-    /** '#1e3a8a' or 'rgb(30, 58, 138)' → [30, 58, 138]. */
-    const toRgb = (value) => {
-      const text = String(value || '').trim();
-      const hex = /^#?([0-9a-f]{6})$/i.exec(text);
-      if (hex) return [0, 2, 4].map((i) => parseInt(hex[1].slice(i, i + 2), 16));
-      const rgb = /rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/i.exec(text);
-      return rgb ? [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])] : null;
+  const brand = useMemo(() => {
+    if (!open) return null;
+    const styles = getComputedStyle(document.documentElement);
+    const hex = (name, fallback) => {
+      const value = styles.getPropertyValue(name).trim();
+      return /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
     };
-
-    const toHex = (rgb) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
-
-    // WCAG relative luminance — linearised, unlike the quick Rec. 709 average,
-    // because it is being used for a contrast RATIO and not just a threshold.
-    const luminance = ([r, g, b]) => {
-      const channel = (v) => {
-        const c = v / 255;
-        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-      };
-      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    const primary = hex('--primary', '#1e3a8a');
+    const secondary = hex('--secondary', '#0f172a');
+    const heroEnd = mixHex(primary, secondary, 0.35);
+    // The ink has to hold across the whole gradient, so it is judged against
+    // the end it contrasts with LEAST.
+    const heroInk = readableTextOn(mixHex(primary, heroEnd, 0.5));
+    const banner = darkerOf(primary, secondary);
+    return {
+      '--rx-hero-a': primary,
+      '--rx-hero-b': heroEnd,
+      '--rx-on-hero': heroInk,
+      '--rx-banner': banner,
+      '--rx-banner-2': mixHex(banner, primary, 0.45),
+      '--rx-on-banner': readableTextOn(banner),
+      '--rx-badge-bg': primary,
+      '--rx-on-badge': readableTextOn(primary),
+      '--rx-focus': readableOn(primary, '#ffffff', 3),
     };
-
-    const ratio = (a, b) => {
-      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-      return (hi + 0.05) / (lo + 0.05);
-    };
-
-    const WHITE = [255, 255, 255];
-    const BLACK = [0, 0, 0];
-    const INK = [22, 24, 26];           // --rx-ink
-
-    const mix = (a, b, amount) => a.map((v, i) => v + (b[i] - v) * amount);
-
-    /**
-     * The ink a fill carries: whichever of the two reads better ON it.
-     *
-     * Measured, not thresholded. A luminance cutoff gets the ends of the range
-     * right and the middle wrong — #FF00AA sits just under it and takes white
-     * at 3.6:1, while the dark ink on the same pink is 5.8:1. The question is
-     * which contrasts more, so that is the question asked.
-     */
-    const inkFor = (fill) => (ratio(fill, WHITE) >= ratio(fill, INK) ? WHITE : INK);
-
-    /**
-     * Move a fill until its ink is legible on it.
-     *
-     * Some colours cannot carry either ink at 4.5:1 — a mid-tone teal is about
-     * 2.6 against white and 4.1 against the ink, and no choice of foreground
-     * fixes that. The fill itself has to give a little: away from the ink, in
-     * 4% steps, until it clears AA or the cap stops it.
-     *
-     * This is the one place the tenant's colour is not reproduced exactly, and
-     * it is the right place. The tile name is the primary navigation of the
-     * application; a brand shade that cannot be read is not a brand decision
-     * anyone made on purpose. Colours that already pass — most do — are
-     * untouched.
-     */
-    const legible = (fill, ink, min = 4.5) => {
-      const away = ink === WHITE ? BLACK : WHITE;
-      let out = fill;
-      for (let i = 0; i < 14 && ratio(out, ink) < min; i += 1) out = mix(out, away, 0.04);
-      return out;
-    };
-
-    /** Toward white for a dark colour, toward black for a light one. */
-    const lift = (rgb, amount) => mix(rgb, luminance(rgb) > 0.35 ? BLACK : WHITE, amount);
-
-    /**
-     * Has the colour visibly changed?
-     *
-     * A contrast ratio alone is the wrong question, and measuring proved it:
-     * #FF00AA to #00B3A4 — magenta to teal, about as different as two colours
-     * get — scores 1.43, because the two sit at nearly the same LIGHTNESS. A
-     * ratio only ever sees lightness. Meanwhile #1e3a8a to #0f172a, two navies,
-     * scores 1.72 on the strength of lightness alone and reads clearly.
-     *
-     * Both are real changes, arrived at differently, so both count: a lightness
-     * step of 1.5:1, or a straight-line distance of 72 in RGB, which is about
-     * where a hue shift stops being a shade of the same colour. Requiring both
-     * would have dragged the teal through a pointless lightening; requiring
-     * neither leaves the identical-colour case with no hover at all.
-     */
-    const distance = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-    const distinct = (a, b) => ratio(a, b) >= 1.5 || distance(a, b) >= 72;
-
-    const primaryRaw = toRgb(styles.getPropertyValue('--rx-accent'));
-    if (!primaryRaw) return;
-    const secondaryRaw = toRgb(styles.getPropertyValue('--secondary')) || primaryRaw;
-    // The tile at rest, which is what the hover has to distinguish itself from.
-    const resting = toRgb(styles.getPropertyValue('--rx-surface-2')) || [245, 245, 242];
-
-    /*
-     * The chip. Adjusted only if its own glyph would not be legible on it —
-     * most brand colours carry one of the two inks comfortably and pass through
-     * untouched.
-     */
-    const icon = legible(primaryRaw, inkFor(primaryRaw));
-
-    /*
-     * The hover fill, separated from the RESTING tile rather than from the
-     * primary — that is what the eye compares it against now.
-     *
-     * Separate, then make legible, then check the separation survived: the
-     * second step can walk the colour back toward the first. Three passes is
-     * enough for every palette tried and cannot loop for ever on one that is
-     * pathological.
-     */
-    let hover = secondaryRaw;
-    for (let pass = 0; pass < 3; pass += 1) {
-      for (let i = 0; i < 12 && !distinct(resting, hover); i += 1) hover = lift(hover, 0.08);
-      const adjusted = legible(hover, inkFor(hover));
-      const settled = adjusted === hover || distinct(resting, adjusted);
-      hover = adjusted;
-      if (settled) break;
-    }
-
-    /*
-     * The focus ring sits on the panel, outside the tile, so it is the brand
-     * colour against white — and a pale brand against white is a ring a
-     * keyboard user cannot find. Darkened until it holds 3:1 there, which is
-     * the threshold for a non-text indicator.
-     */
-    const focus = legible(primaryRaw, WHITE, 3);
-
-    panel.style.setProperty('--rx-fill-icon', toHex(icon));
-    panel.style.setProperty('--rx-on-icon', toHex(inkFor(icon)));
-    panel.style.setProperty('--rx-fill-hover', toHex(hover));
-    panel.style.setProperty('--rx-on-fill-hover', toHex(inkFor(hover)));
-    panel.style.setProperty('--rx-focus', toHex(focus));
-  }, [open]);
+    // The settings are not read here — the computed variables are — but they
+    // are what CHANGES those variables, so they are what re-runs this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, appearance?.primary_color, appearance?.secondary_color,
+    appearance?.dark_primary_color, appearance?.dark_secondary_color, appearance?.dark_mode]);
 
   const recent = useMemo(() => (open ? recentVisits(allDestinations) : []), [open, allDestinations]);
 
@@ -640,48 +570,51 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
 
   tileRefs.current = [];
 
-  /**
-   * One grid of screens. `offset` keeps tileRefs in visual order across the
-   * rows, which is the order the arrow keys walk.
-   */
   const heading = [section?.section, group?.label].filter(Boolean).join(' → ');
+  const colourOf = (name) => palette[accentSlotFor(name)];
+  // Inside a module every card wears the module's colour, so drilling in reads
+  // as going deeper into the same place rather than somewhere new.
+  const levelAccent = section ? colourOf(section.section) : null;
+  const leave = (item) => { rememberVisit(item); noteDrill(item); close(); };
 
   /**
-   * A grid of top-level tiles — modules for staff and realtors, screens for a
-   * client, and the same code for the overflow behind More.
+   * The module cards — modules for staff and realtors, screens for a client,
+   * and the same code for the overflow behind More.
    */
   const renderModuleTiles = (tiles, offset = 0) => (
-    <div className="rx-modules">
+    <div className="rx-cards">
       {tiles.map((tile, index) => {
         // A tile that GOES somewhere takes its own words; only a tile that opens
         // a drawer speaks for the section behind it. A realtor's Finance holds
         // one screen, My Commissions, and was describing itself as "Invoices
         // and payments".
         const opensDrawer = !tile.to;
+        const inside = tile.kind === 'section' && opensDrawer ? tile.item.destinations : [];
         return (
-          <Tile
+          <Card
             key={tile.name}
             innerRef={(node) => { tileRefs.current[offset + index] = node; }}
             icon={tile.icon}
             name={tile.name}
+            accent={colourOf(tile.name)}
             description={opensDrawer
               ? (DESCRIPTIONS[tile.item.section] ?? DESCRIPTIONS[tile.name])
               : DESCRIPTIONS[tile.name]}
             slot={SLOT_KEYS[offset + index]}
             /*
-             * The count of work waiting inside, on the tile that opens it.
-             *
-             * Payment Approvals is three levels down — Finance, then Payments,
-             * then the screen — so without this the badge exists and is behind
-             * two folds, which is where a notification is no use. NavBadge sums
-             * every badged leaf beneath whatever it is given, which is how the
-             * sidebar templates put the same number on a collapsed section.
+             * The count of work waiting inside, on the card that opens it.
+             * NavBadge sums every badged leaf beneath whatever it is given,
+             * which is how the sidebar puts the same number on a collapsed
+             * section.
              */
             badge={opensDrawer
               ? <NavBadge items={tile.item.items} className="rx-badge" />
               : <NavBadge item={tile.item} className="rx-badge" />}
             to={tile.to}
             onOpen={() => openTile(tile)}
+            links={inside.slice(0, SHORTCUTS)}
+            more={Math.max(inside.length - SHORTCUTS, 0)}
+            onLink={(item) => { rememberVisit(item); lastDrill = null; close(); }}
             aria-label={opensDrawer ? `${tile.name} — ${tile.count} screens` : undefined}
           />
         );
@@ -689,35 +622,29 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
     </div>
   );
 
-  /** A grid of tiles built from drill-in entries, which may open rather than go. */
+  /** Inside a module: its screens, and its sub-menus as cards of their own. */
   const renderEntries = (tiles) => (
-    <div className="rx-modules">
+    <div className="rx-cards">
       {tiles.map((tile, index) => {
         const entry = tile.item;
         const isDrawer = tile.kind === 'group';
+        const inside = isDrawer ? leavesOf(entry.children) : [];
         return (
-          <Tile
+          <Card
             key={`${tile.kind}-${entry.label || entry.section}-${index}`}
             innerRef={(node) => { tileRefs.current[index] = node; }}
             icon={entry.icon}
             name={entry.label}
+            accent={levelAccent || colourOf(entry.label)}
+            description={isDrawer ? `${inside.length} screens` : null}
+            slot={SLOT_KEYS[index]}
             to={isDrawer ? undefined : entry.to}
-            /*
-             * The same count carried down from the module tile, one level at a
-             * time, instead of stopping at the first fold.
-             *
-             * renderModuleTiles put the badge on Finance because Payment
-             * Approvals is three folds deep; this is the SECOND and THIRD of
-             * those folds — the "Income" group tile, and then the "Payment
-             * Approvals" tile itself once inside Income. Leaving it off here
-             * meant the count vanished the moment you opened the very drawer it
-             * was telling you to open, which read as the badge having been
-             * wrong. NavBadge already sums recursively, so a group tile (entry
-             * has children) and a leaf tile (entry does not) both work from the
-             * same prop.
-             */
+            // The same count carried down one fold at a time — see NavBadge.
             badge={<NavBadge item={entry} className="rx-badge" />}
             onOpen={() => openTile(tile)}
+            links={inside.slice(0, SHORTCUTS)}
+            more={Math.max(inside.length - SHORTCUTS, 0)}
+            onLink={leave}
             aria-label={isDrawer ? `${entry.label} — ${entry.children.length} screens` : undefined}
           />
         );
@@ -725,138 +652,213 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
     </div>
   );
 
+  /** Search results, each in the colour of the module it belongs to. */
   const renderTiles = (items, offset = 0) => (
-    <div className="rx-grid">
+    <div className="rx-cards">
       {items.map((item, index) => (
-        <Tile
+        <Card
           key={item.to}
           innerRef={(node) => { tileRefs.current[offset + index] = node; }}
           icon={item.icon}
           name={item.label}
+          description={item.section || null}
+          accent={colourOf(item.section || item.label)}
           to={item.to}
-          onOpen={() => { rememberVisit(item); noteDrill(item); close(); }}
+          onOpen={() => leave(item)}
         />
       ))}
     </div>
   );
+
+  const appName = appearance?.app_name || 'Realx8';
+  const logo = appearance?.app_logo;
+  const initials = (user?.name || '?').split(/\s+/).filter(Boolean).slice(0, 2)
+    .map((part) => part[0].toUpperCase()).join('');
+  // Only an http(s) image is drawn — the value is company-supplied text.
+  const bannerImage = /^https?:\/\/\S+$/i.test(appearance?.launcher_banner_image || '')
+    ? appearance.launcher_banner_image : null;
+  const atTop = !term && !section && !group && !showOverflow;
 
   return (
     <div className="rx-launcher fixed inset-0 z-[70] flex bg-slate-900/40">
       <style>{LAUNCHER_CSS}</style>
       <div className="absolute inset-0" onClick={close} aria-hidden="true" />
 
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Modules" className={`rx-panel relative${isGrouped ? ' rx-panel-grouped' : ''}`}>
-        <div className="rx-search">
-          {(section || group || showOverflow) && !term && (
-            <button
-              type="button"
-              onClick={() => {
-                if (group) return setGroup(null);
-                if (section) return setSection(null);
-                return setShowOverflow(false);
-              }}
-              aria-label={group ? `Back to ${section?.section || 'the section'}` : 'Back to all modules'}
-              style={{ color: 'var(--rx-ink-3)', flexShrink: 0 }}
-            >
-              <ArrowLeft size={18} />
-            </button>
-          )}
-          <Search aria-hidden="true" size={18} style={{ color: 'var(--rx-ink-3)', flexShrink: 0 }} />
-          <input
-            ref={searchRef}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            type="search"
-            /* Not "Search": this does not search clients or properties, and a
-               placeholder promising that would be one that lies. */
-            placeholder="Find a screen or jump to a record…"
-            aria-label="Find a screen"
-          />
-          <div className="rx-keys" aria-hidden="true">
-            <span className="rx-key">↑↓</span>
-            <span className="rx-key">↵</span>
-            <span className="rx-key">esc</span>
-          </div>
-          <button type="button" onClick={close} aria-label="Close modules" style={{ color: 'var(--rx-ink-3)', flexShrink: 0 }}>
-            <X size={18} />
-          </button>
-        </div>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Modules"
+        className={`rx-panel relative${isGrouped ? ' rx-panel-grouped' : ''}`}
+        style={brand || undefined}
+      >
+        <div className="rx-scroll">
+          <header className="rx-hero">
+            <div className="rx-hero-row">
+              <Link to="/" onClick={close} aria-label={`${appName} — home`}><Brand logo={logo} name={appName} /></Link>
+              <div className="rx-hero-actions">
+                <Link
+                  to="/notifications"
+                  onClick={close}
+                  className="rx-hero-btn"
+                  aria-label={unread ? `Notifications, ${unread} unread` : 'Notifications'}
+                >
+                  <Bell aria-hidden="true" />
+                  {unread > 0 && <span className="rx-hero-count" aria-hidden="true">{unread > 99 ? '99+' : unread}</span>}
+                </Link>
+                <Link to="/profile" onClick={close} className="rx-avatar" aria-label="Your profile">
+                  {initials}
+                </Link>
+                <button type="button" onClick={close} className="rx-hero-btn" aria-label="Close modules">
+                  <X aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </header>
 
-        {/* Recently visited: most launcher trips are return trips, and a chip
-            answers that in a glance where a grid needs a scan. */}
-        {!term && recent.length > 0 && (
-          <div className="rx-recent">
-            <span className="rx-recent-label">Recent</span>
-            {recent.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className="rx-chip"
-                onClick={() => { rememberVisit(item); noteDrill(item); close(); }}
+          <div className="rx-search">
+            {(section || group || showOverflow) && !term && (
+              <button
+                type="button"
+                className="rx-search-back"
+                onClick={() => {
+                  if (group) return setGroup(null);
+                  if (section) return setSection(null);
+                  return setShowOverflow(false);
+                }}
+                aria-label={group ? `Back to ${section?.section || 'the section'}` : 'Back to all modules'}
               >
-                <item.icon aria-hidden="true" size={13} />
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/*
-          Every view but search fills the page: the modules, the screens inside
-          one of them, and a client's flat list. Search results still scroll,
-          being a list of unknown length rather than a fixed grid.
-        */}
-        <div className={`rx-body${term ? '' : ' rx-body-modules'}`}>
-          <nav aria-label="Modules">
-            {term ? (
-              matches.length
-                /* Headed like every other row, so searching rearranges the page
-                   rather than replacing it with something shaped differently. */
-                ? (
-                  <div className="rx-group">
-                    <div className="rx-group-head">
-                      <span>Results</span><i /><span>{matches.length}</span>
-                    </div>
-                    {renderTiles(matches)}
-                  </div>
-                )
-                : <p className="rx-empty">Nothing matches “{query.trim()}”.</p>
-            ) : (section || group) ? (
-              /* Inside a module: the screens it holds, or the drawer's contents. */
-              <div className="rx-group">
-                <div className="rx-group-head">
-                  <span>{heading}</span><i /><span>{visibleTiles.length}</span>
-                </div>
-                {renderEntries(visibleTiles)}
-              </div>
-            ) : showOverflow ? (
-              /* Behind More: everything the eight-tile grid could not hold. */
-              <div className="rx-group">
-                <div className="rx-group-head">
-                  <span>More</span><i /><span>{overflowTiles.length}</span>
-                </div>
-                {renderModuleTiles(overflowTiles)}
-              </div>
-            ) : (
-              /*
-               * The top level: four across the top, four across the bottom.
-               *
-               * Staff and realtors see a tile per module; a client sees a tile
-               * per screen, because grouping a client's four menus would give
-               * four tiles each opening one or two things. Either way the grid
-               * is the same shape and never more than eight — see the cap.
-               */
-              renderModuleTiles(mainTiles.concat(overflowTiles.length ? [{
-                kind: 'overflow',
-                name: 'More',
-                icon: LayoutGrid,
-                item: { items: overflowTiles.map((t) => t.item) },
-                count: overflowTiles.length,
-              }] : []))
+                <ArrowLeft size={18} />
+              </button>
             )}
-          </nav>
+            <Search aria-hidden="true" size={20} className="rx-search-icon" />
+            <input
+              ref={searchRef}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              type="search"
+              /* Not "Search": this does not search clients or properties, and a
+                 placeholder promising that would be one that lies. */
+              placeholder="Find a screen or jump to a record…"
+              aria-label="Find a screen"
+            />
+            <div className="rx-keys" aria-hidden="true">
+              <span className="rx-key">↑↓</span>
+              <span className="rx-key">↵</span>
+              <span className="rx-key">esc</span>
+            </div>
+          </div>
+
+          <div className="rx-content">
+            {atTop && (
+              <section className="rx-banner" aria-label="Welcome">
+                <div className="rx-banner-text">
+                  <span className="rx-banner-kicker">Welcome back,</span>
+                  <span className="rx-banner-name">{user?.name || 'there'}</span>
+                  <span className="rx-banner-lead">
+                    {appearance?.launcher_welcome_text
+                      || 'Manage your properties, clients, transactions and more — all in one place.'}
+                  </span>
+                </div>
+                <div className="rx-banner-art" aria-hidden="true">
+                  {bannerImage ? <img src={bannerImage} alt="" /> : <Skyline />}
+                </div>
+                <span className="rx-banner-badge">
+                  <span className="rx-bars" aria-hidden="true"><i /><i /><i /></span>
+                  {appearance?.launcher_badge || 'Grow · Track · Succeed'}
+                </span>
+              </section>
+            )}
+
+            {/* Recently visited: most launcher trips are return trips, and a chip
+                answers that in a glance where a grid needs a scan. */}
+            {!term && recent.length > 0 && atTop && (
+              <div className="rx-recent">
+                <span className="rx-recent-label">Recent</span>
+                {recent.map((item) => (
+                  <Link key={item.to} to={item.to} className="rx-chip" onClick={() => leave(item)}>
+                    <item.icon aria-hidden="true" size={13} />
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            <nav aria-label="Modules">
+              {term ? (
+                matches.length
+                  ? (
+                    <div className="rx-group">
+                      <div className="rx-group-head"><span>Results</span><i /><span>{matches.length}</span></div>
+                      {renderTiles(matches)}
+                    </div>
+                  )
+                  : <p className="rx-empty">Nothing matches “{query.trim()}”.</p>
+              ) : (section || group) ? (
+                <div className="rx-group">
+                  <div className="rx-group-head"><span>{heading}</span><i /><span>{visibleTiles.length}</span></div>
+                  {renderEntries(visibleTiles)}
+                </div>
+              ) : showOverflow ? (
+                <div className="rx-group">
+                  <div className="rx-group-head"><span>More</span><i /><span>{overflowTiles.length}</span></div>
+                  {renderModuleTiles(overflowTiles)}
+                </div>
+              ) : (
+                /* The top level: never more than eight — see the cap. */
+                renderModuleTiles(mainTiles.concat(overflowTiles.length ? [{
+                  kind: 'overflow',
+                  name: 'More',
+                  icon: LayoutGrid,
+                  item: { items: overflowTiles.map((t) => t.item) },
+                  count: overflowTiles.length,
+                }] : []))
+              )}
+            </nav>
+          </div>
+
+          <footer className="rx-footer">
+            <Brand logo={logo} name={appName} small />
+            <span className="rx-footer-tag">{appearance?.app_tagline || 'Smarter tools. Greater results.'}</span>
+          </footer>
         </div>
       </div>
     </div>
+  );
+}
+
+/** The company's logo and name, on the header and again in the footer. */
+function Brand({ logo, name, small = false }) {
+  return (
+    <span className={`rx-brand${small ? ' rx-brand-sm' : ''}`}>
+      {logo
+        ? <img src={logo} alt="" className="rx-brand-logo" />
+        : <span className="rx-brand-mark" aria-hidden="true">{name.charAt(0)}</span>}
+      <span className="rx-brand-name">{name}</span>
+    </span>
+  );
+}
+
+/**
+ * The banner's picture when a company has not supplied one: a row of
+ * buildings in the banner's own ink, faint enough to stay decoration.
+ */
+function Skyline() {
+  return (
+    <svg viewBox="0 0 240 120" preserveAspectRatio="xMaxYMax meet" focusable="false">
+      <g fill="currentColor">
+        <rect x="18" y="58" width="30" height="62" rx="2" opacity=".35" />
+        <rect x="54" y="30" width="38" height="90" rx="2" opacity=".55" />
+        <rect x="98" y="46" width="28" height="74" rx="2" opacity=".4" />
+        <path d="M134 120V62l34-24 34 24v58z" opacity=".7" />
+        <rect x="206" y="72" width="26" height="48" rx="2" opacity=".35" />
+      </g>
+      <g fill="currentColor" opacity=".9">
+        {[0, 1, 2, 3].map((row) => [0, 1].map((col) => (
+          <rect key={`${row}-${col}`} x={62 + col * 14} y={40 + row * 18} width="8" height="9" rx="1" opacity=".35" />
+        )))}
+        <rect x="160" y="92" width="16" height="28" rx="1" opacity=".35" />
+      </g>
+    </svg>
   );
 }

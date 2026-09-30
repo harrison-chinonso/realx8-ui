@@ -13,6 +13,7 @@ import {
   getPropertyDocuments,
   getPropertyPlots,
   getPropertyUnits,
+  getPropertyInsights,
   listPurchaseRequests,
   rejectProperty,
   requestRevision,
@@ -28,6 +29,9 @@ import Input from '../../components/ui/Input';
 import PropertyMediaPanel from '../../components/common/PropertyMediaPanel';
 import PropertyMap, { toCoords } from '../../components/common/PropertyMap';
 import PublicLinkPanel from '../../components/common/PublicLinkPanel';
+import PhotoGallery from '../../components/property/PhotoGallery';
+import { stockOf, priceRangeOf } from '../../components/property/propertyFigures';
+import { MiniStat, useModuleAccent } from '../../components/dashboard/DashboardKit';
 import PropertyUnitFields, { emptyUnitConfig, describeUnitConfig } from '../../components/common/PropertyUnitFields';
 import { useCurrency } from '../../context/useAppearance';
 import useAuthStore from '../../store/authStore';
@@ -72,6 +76,10 @@ function DocumentTypeBadge({ value }) {
 
 export default function PropertyDetailPage() {
   const fmt = useCurrency();
+  const { accentFor } = useModuleAccent();
+  // Money received and the plans on each unit — one call, best effort.
+  const [insights, setInsights] = useState(null);
+  const loadInsights = () => getPropertyInsights(id).then(setInsights).catch(() => setInsights(null));
   const user = useAuthStore((state) => state.user);
   const { id } = useParams();
   const [tab, setTab] = useState('units');
@@ -153,6 +161,8 @@ export default function PropertyDetailPage() {
     try {
       const unitsResponse = await getPropertyUnits(id);
       setUnits(getItems(unitsResponse));
+      // A new or removed configuration changes the plan and price figures.
+      loadInsights();
     } catch (error) {
       console.error(error);
       setUnits([]);
@@ -189,6 +199,7 @@ export default function PropertyDetailPage() {
   useEffect(() => {
     loadDetails();
     loadRequests();
+    loadInsights();
   }, [id]);
 
   const handleAddUnit = async (event) => {
@@ -480,38 +491,88 @@ export default function PropertyDetailPage() {
         <Link to="/properties"><Button variant="secondary" size="sm">← Back to Properties</Button></Link>
       </div>
 
-      <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <h1 className="break-words text-2xl font-bold text-slate-900">{property.name}</h1>
-            {property.type && <p className="mt-1 text-sm font-medium" style={{ color: 'var(--primary)' }}>{property.type}</p>}
-            <p className="mt-1 text-sm text-slate-500">
-              {[property.address, property.city, property.state, property.country].filter(Boolean).join(', ') || 'No address provided.'}
-            </p>
-          </div>
-          <Badge value={property.status} />
+      {/*
+        The gallery beside everything that identifies the property. The media
+        is what the page already loaded for the Media tab — no extra request.
+      */}
+      <div className="grid gap-5 rounded-[24px] bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5 lg:grid-cols-12">
+        <div className="lg:col-span-7">
+          <PhotoGallery images={mediaImages} name={property.name} />
         </div>
-        {property.description && (
-          <p className="mt-4 text-sm leading-relaxed text-slate-700">{property.description}</p>
-        )}
-        <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          {property.type && <div className="rounded-lg bg-slate-50 p-3"><div className="mb-1 text-xs text-slate-500">Type</div><div className="font-medium text-slate-900">{property.type}</div></div>}
-          {property.status && <div className="rounded-lg bg-slate-50 p-3"><div className="mb-1 text-xs text-slate-500">Status</div><div className="font-medium text-slate-900">{enumLabel(property.status)}</div></div>}
-          <div className="rounded-lg bg-slate-50 p-3"><div className="mb-1 text-xs text-slate-500">Approval</div><div className="font-medium text-slate-900">{enumLabel(property.approval_status || 'draft')}</div></div>
-          {property.country && <div className="rounded-lg bg-slate-50 p-3"><div className="mb-1 text-xs text-slate-500">Country</div><div className="font-medium text-slate-900">{property.country}</div></div>}
+        <div className="flex min-w-0 flex-col gap-3 lg:col-span-5">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge value={property.status} />
+            <Badge value={property.approval_status || 'draft'} />
+            {property.branch?.name && (
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{property.branch.name} branch</span>
+            )}
+          </div>
+          <h1 className="break-words font-heading text-2xl font-extrabold tracking-tight text-slate-900 sm:text-[32px]">{property.name}</h1>
+          {property.type && <p className="text-sm font-bold" style={{ color: 'var(--secondary-read, var(--primary))' }}>{property.type}</p>}
+          <p className="text-sm text-slate-600">
+            {[property.address, property.city, property.state, property.country].filter(Boolean).join(', ') || 'No address provided.'}
+          </p>
+          {property.description && (
+            <p className="text-sm leading-relaxed text-slate-700">{property.description}</p>
+          )}
+          {/* Who put it up and who let it go live — recorded on every property, now shown. */}
+          {(insights?.submitted_by || insights?.approved_by) && (
+            <dl className="mt-auto grid gap-2 border-t border-slate-100 pt-3 text-sm sm:grid-cols-2">
+              {insights.submitted_by && (
+                <div>
+                  <dt className="text-xs font-semibold text-slate-500">Submitted by</dt>
+                  <dd className="font-bold text-slate-900">{insights.submitted_by.name}</dd>
+                </div>
+              )}
+              {insights.approved_by && (
+                <div>
+                  <dt className="text-xs font-semibold text-slate-500">Approved by</dt>
+                  <dd className="font-bold text-slate-900">
+                    {insights.approved_by.name}
+                    {insights.approved_at && (
+                      <span className="block text-xs font-normal text-slate-500">
+                        {new Date(insights.approved_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          )}
         </div>
       </div>
 
-      {coords && (
-        <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold text-slate-900">Location</h2>
-            <span className="font-mono text-xs text-slate-500">{coords[0].toFixed(6)}, {coords[1].toFixed(6)}</span>
+      {(() => {
+        const stock = stockOf(units, property);
+        const range = priceRangeOf(units);
+        const facts = [
+          property.type && { label: 'Type', value: property.type, module: 'Properties' },
+          property.status && { label: 'Status', value: enumLabel(property.status), module: 'People & Access' },
+          { label: 'Approval', value: enumLabel(property.approval_status || 'draft'), module: 'Sales & CRM' },
+          property.country && { label: 'Country', value: property.country, module: 'Dashboard' },
+          { label: 'Units available', value: stock.total ? `${stock.available.toLocaleString()} of ${stock.total.toLocaleString()}` : '—', module: 'People & Access' },
+          { label: 'Price range', value: range ? (range.min === range.max ? fmt(range.min) : `${fmt(range.min)} – ${fmt(range.max)}`) : '—', module: 'Finance' },
+          { label: 'Purchase requests', value: requests.length.toLocaleString(), module: 'Marketing & Content' },
+          { label: 'Received so far', value: insights ? fmt(insights.received?.total ?? 0) : '—', module: 'Operations & Support' },
+        ].filter(Boolean);
+        return (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
+            {facts.map((f) => <MiniStat key={f.label} accent={accentFor(f.module)} value={f.value} label={f.label} />)}
           </div>
-          <PropertyMap latitude={property.latitude} longitude={property.longitude} label={property.name} height={360} />
+        );
+      })()}
+
+      <div className={`grid gap-5 ${coords ? 'xl:grid-cols-3' : 'xl:grid-cols-2'}`}>
+      {coords && (
+        <div className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-heading text-lg font-extrabold text-slate-900">Location</h2>
+            <span className="font-mono text-xs text-slate-600">{coords[0].toFixed(6)}, {coords[1].toFixed(6)}</span>
+          </div>
+          <PropertyMap latitude={property.latitude} longitude={property.longitude} label={property.name} height={220} />
           <a
-            className="mt-3 inline-block text-sm font-medium hover:underline"
-            style={{ color: 'var(--primary)' }}
+            className="mt-3 inline-block text-sm font-bold hover:underline"
+            style={{ color: 'var(--secondary-read, var(--primary))' }}
             href={`https://www.google.com/maps/search/?api=1&query=${coords[0]},${coords[1]}`}
             target="_blank"
             rel="noreferrer"
@@ -527,6 +588,41 @@ export default function PropertyDetailPage() {
       />
 
       {renderApprovalPanel()}
+      </div>
+
+      {/*
+        How often the share links to this property have been opened, and whose
+        link is doing the work. Counted without a write per open (see
+        shareViews.js on the server), so the figure can be up to a minute behind.
+      */}
+      {insights?.share_views?.links > 0 && (
+        <div className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-slate-200">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-heading text-lg font-extrabold text-slate-900">Share activity</h2>
+            <p className="text-sm text-slate-600">
+              <strong className="text-slate-900">{insights.share_views.views.toLocaleString()}</strong> opens across{' '}
+              {insights.share_views.links} link{insights.share_views.links === 1 ? '' : 's'}
+              {insights.share_views.last_viewed_at && ` · last opened ${new Date(insights.share_views.last_viewed_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}`}
+            </p>
+          </div>
+          {insights.share_views.top?.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {insights.share_views.top.map((row) => {
+                const top = insights.share_views.top[0]?.views || 1;
+                return (
+                  <li key={row.realtor_code || 'company'} className="grid grid-cols-[minmax(0,10rem)_1fr_auto] items-center gap-3 text-sm">
+                    <span className="truncate font-semibold text-slate-800" title={row.name}>{row.name}</span>
+                    <span className="h-2 overflow-hidden rounded-full bg-slate-100">
+                      <span className="block h-full rounded-full bg-primary" style={{ width: `${Math.max((row.views / top) * 100, 4)}%` }} />
+                    </span>
+                    <span className="tabular-nums text-slate-700">{row.views.toLocaleString()}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      )}
 
       {message && (
         <div className={`rounded-lg px-4 py-2 text-sm ${message.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
@@ -535,9 +631,9 @@ export default function PropertyDetailPage() {
       )}
 
       <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <div className="mb-4 flex gap-3 flex-wrap">
+        <div className="mb-5 flex flex-wrap gap-1.5 rounded-2xl bg-slate-50 p-1.5 ring-1 ring-slate-200">
           {['units', 'payment plans', 'plots', 'amenities', 'media', 'documents', 'requests'].map((item) => (
-            <Button key={item} variant={tab === item ? 'primary' : 'secondary'} size="sm" onClick={() => setTab(item)}>
+            <Button key={item} variant={tab === item ? 'primary' : 'ghost'} size="sm" className="capitalize" onClick={() => setTab(item)}>
               {item === 'requests'
                 ? `Purchase Requests${requests.length ? ` (${requests.length})` : ''}`
                 : item === 'media'
@@ -595,6 +691,21 @@ export default function PropertyDetailPage() {
                     },
                     { key: 'unit', label: 'Measured In', render: (unit) => unit.unit || 'sqm' },
                     { key: 'price', label: 'Price', render: (unit) => fmt(unit.price || 0) },
+                    // Units secured by an approved payment and not yet released.
+                    { key: 'quantity_held', label: 'Held', render: (unit) => Number(unit.quantity_held || 0).toLocaleString() },
+                    {
+                      key: 'plans',
+                      label: 'How it can be paid',
+                      render: (unit) => {
+                        if (!insights) return '—';
+                        const count = insights.plans_by_unit?.[unit.id]?.plans || 0;
+                        return (
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-800">
+                            {count ? `Outright + ${count} plan${count === 1 ? '' : 's'}` : 'Outright only'}
+                          </span>
+                        );
+                      },
+                    },
                     { key: 'status', label: 'Status', render: (unit) => <Badge value={unit.status} /> },
                   ]}
                   emptyMessage="No unit configurations yet. Add one below."

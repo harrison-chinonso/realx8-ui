@@ -21,6 +21,13 @@ const DEFAULTS = {
   dark_mode: 'off',
   currency: 'NGN',
   template: 'launcher',
+  // The module launcher. Blank means the built-in default for each — see
+  // launcherPalette.js for the colours and ModuleLauncher for the words.
+  accent_colors: '',
+  launcher_banner_image: '',
+  launcher_welcome_text: '',
+  launcher_badge: '',
+  app_tagline: '',
 };
 
 function hexToRgb(hex) {
