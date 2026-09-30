@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { getListedProperty } from '../../api/propertyApi';
+import { Share2 } from 'lucide-react';
+import { getListedProperty, getPropertyShareLink } from '../../api/propertyApi';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import PurchaseModal from '../../components/common/PurchaseModal';
@@ -11,6 +12,14 @@ import PropertyMediaPanel from '../../components/common/PropertyMediaPanel';
 import { parseImages } from '../../utils/parseImages';
 import { useCurrency } from '../../context/useAppearance';
 import { enumLabel } from '../../utils/enumLabel';
+import PhotoGallery from '../../components/property/PhotoGallery';
+import { availableOf, stockOf, priceRangeOf, soldPercent } from '../../components/property/propertyFigures';
+import { MiniStat, useModuleAccent } from '../../components/dashboard/DashboardKit';
+import usePromotionAdverts from '../../hooks/usePromotionAdverts';
+import ShareLinkPanel from '../../components/common/ShareLinkPanel';
+import { publicUrlFor } from '../../components/common/PublicLinkPanel';
+import useShareToken from '../../hooks/useShareToken';
+import useMyVerification from '../../hooks/useMyVerification';
 
 /**
  * Read-only property detail for realtors and clients. Mirrors the information
@@ -27,7 +36,39 @@ export default function ListedPropertyDetailPage() {
   const [showPurchase, setShowPurchase] = useState(false);
   // Purchasing is for clients only. Uses the ACTIVE profile, so a realtor who
   // switches to their client profile can buy.
-  const canPurchase = useAuthStore((s) => s.effectiveType()) === 'client';
+  const activeType = useAuthStore((s) => s.effectiveType());
+  const canPurchase = activeType === 'client';
+  const { accentFor } = useModuleAccent();
+  // The offer this property is on, if any — the same showcase the listing's ribbons read.
+  const { slides } = usePromotionAdverts();
+  const promo = (slides || []).find((slide) => Number(slide.property?.id) === Number(id))?.name || null;
+  /*
+   * Sharing, for realtors, exactly as the listing's card does it: this
+   * realtor's own link, the native share sheet where there is one, and no
+   * share action at all while their identity is unverified.
+   */
+  const verification = useMyVerification();
+  const { token: sealedToken, code: shortCode } = useShareToken();
+  const canShare = activeType === 'realtor' && !verification.blocked;
+  const [share, setShare] = useState(null);
+  const [shareError, setShareError] = useState('');
+  const handleShare = async () => {
+    setShareError('');
+    try {
+      const data = (await getPropertyShareLink(property.id))?.data ?? {};
+      if (!data.public_token) throw new Error('No share link was returned.');
+      const url = publicUrlFor(data.public_token, data.company_code, data.realtor_code, shortCode || sealedToken, data.code);
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: property.name, url });
+          return;
+        } catch { /* dismissed or unsupported — fall back to the panel */ }
+      }
+      setShare({ name: property.name, url });
+    } catch (error) {
+      setShareError(error?.userMessage || 'Could not create a share link for this property.');
+    }
+  };
   /**
    * A client or realtor with no company sees nothing at all, by design: the
    * catalogue is company-scoped and an account attached to nobody cannot be
@@ -99,10 +140,30 @@ export default function ListedPropertyDetailPage() {
   const images = parseImages(property.images);
   const unitConfigs = property.units || [];
   const location = [property.address, property.city, property.state, property.country].filter(Boolean).join(', ');
+  const stock = stockOf(unitConfigs, property);
+  const range = priceRangeOf(unitConfigs);
+  const plans = property.plan_summary;
+  const facts = [
+    { label: 'From', value: range ? fmt(range.min) : '—', note: range && range.max !== range.min ? `up to ${fmt(range.max)}` : null, module: 'Finance' },
+    { label: 'Units available', value: stock.total ? `${stock.available.toLocaleString()} of ${stock.total.toLocaleString()}` : '—', note: stock.held ? `${stock.held.toLocaleString()} held` : null, module: 'Properties' },
+    {
+      label: 'Payment plans',
+      value: plans?.plans ? `${plans.plans} plan${plans.plans === 1 ? '' : 's'}` : 'Outright only',
+      note: plans?.plans ? [plans.max_months && `up to ${plans.max_months} months`, plans.min_monthly && `from ${fmt(plans.min_monthly)} / mo`].filter(Boolean).join(' · ') : null,
+      module: 'Sales & CRM',
+    },
+    promo && { label: 'On offer', value: promo, module: 'Marketing & Content' },
+  ].filter(Boolean);
 
   return (
     <div className="space-y-6">
       <Link to="/properties/listed"><Button variant="secondary" size="sm">← Back to Listed Properties</Button></Link>
+
+      <PhotoGallery
+        images={images}
+        name={property.name}
+        badge={promo ? <span className="rounded-full bg-pink-700 px-3 py-1 text-xs font-extrabold text-white">{promo}</span> : null}
+      />
 
       <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         {/*
@@ -125,13 +186,30 @@ export default function ListedPropertyDetailPage() {
               the narrowest phones. */}
           <div className="flex flex-wrap items-center gap-2">
             <Badge value={property.status} />
+            {canShare && (
+              <Button type="button" variant="secondary" onClick={handleShare}>
+                <Share2 size={14} /> Share
+              </Button>
+            )}
             {canPurchase && <Button type="button" onClick={() => setShowPurchase(true)}>Purchase Now</Button>}
           </div>
         </div>
         {property.description && (
           <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-slate-700">{property.description}</p>
         )}
+        {canShare && property.my_share_views?.views > 0 && (
+          <p className="mt-3 text-sm text-slate-600">
+            Your link has been opened <strong className="text-slate-900">{property.my_share_views.views.toLocaleString()}</strong> time{property.my_share_views.views === 1 ? '' : 's'}
+            {property.my_share_views.last_viewed_at && `, most recently ${new Date(property.my_share_views.last_viewed_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`}.
+          </p>
+        )}
+        <div className={`mt-5 grid grid-cols-2 gap-3 ${facts.length > 3 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+          {facts.map((f) => <MiniStat key={f.label} accent={accentFor(f.module)} value={f.value} label={f.label} note={f.note} />)}
+        </div>
       </div>
+
+      {shareError && <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{shareError}</div>}
+      {share && <ShareLinkPanel share={share} onClose={() => setShare(null)} />}
 
       {images.length > 0 && (
         <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
@@ -196,7 +274,21 @@ export default function ListedPropertyDetailPage() {
                       <td className="px-4 py-2 text-right text-slate-700">{unit.size ? Number(unit.size).toLocaleString() : '—'}</td>
                       <td className="px-4 py-2 text-slate-700">{unit.unit || 'sqm'}</td>
                       <td className="px-4 py-2 text-right font-medium text-slate-900">{fmt(unit.price || 0)}</td>
-                      <td className="px-4 py-2 text-right text-slate-700">{unit.quantity_available ?? unit.quantity ?? '—'}</td>
+                      <td className="px-4 py-2 text-right text-slate-700">
+                        {unit.quantity_available ?? unit.quantity ?? '—'}
+                        {Number(unit.quantity) > 0 && (
+                          <span
+                            role="img"
+                            aria-label={`${availableOf(unit)} of ${unit.quantity} available`}
+                            className="mt-1 ml-auto block h-1.5 w-20 overflow-hidden rounded-full bg-slate-100"
+                          >
+                            <span
+                              className="block h-full rounded-full bg-primary"
+                              style={{ width: `${soldPercent({ total: Number(unit.quantity), available: availableOf(unit) })}%` }}
+                            />
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-2 text-slate-500">{enumLabel(unit.status || 'available')}</td>
                       <td className="px-4 py-2 align-top">
                         <UnitPaymentOptions unitId={unit.id} />
