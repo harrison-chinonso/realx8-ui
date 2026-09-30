@@ -1,65 +1,36 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { forgotPassword, forcedSetup2FA, forcedVerify2FA, login, loginToCompany, resetPassword, verify2FA, verifyResetOtp } from '../../api/authApi';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Lock } from 'lucide-react';
+import {
+  forgotPassword, forcedSetup2FA, forcedVerify2FA, login, loginToCompany, passcodeLogin, resetPassword, verify2FA, verifyResetOtp,
+} from '../../api/authApi';
 import Modal from '../../components/common/Modal';
-import PropertyCarousel from '../../components/common/PropertyCarousel';
 import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
 import { googleAuthUrl, codesFromLocation } from '../../utils/googleAuthUrl';
 import FieldMark from '../../components/ui/FieldMark';
 import { PASSWORD_HINT } from '../../constants/password';
 import Select from '../../components/ui/Select';
+import useCompanyCode from '../../hooks/useCompanyCode';
+import {
+  forgetAccount, initialsOf, maskEmail, readKnownAccount, rememberAccount,
+} from '../../lib/knownAccount';
+import { enumLabel } from '../../utils/enumLabel';
+import {
+  AuthBrand, AuthField, AuthShell, PasswordField, ShowcasePanel, ghostButton, primaryButton, primaryInk,
+} from '../../components/auth/AuthKit';
 
-// A full-page redirect, not an XHR, so it has to be a URL the BROWSER can
-// follow. Derived from the API base rather than hardcoded: pinned to
-// localhost:3000, Google login broke in every deployment but a local one.
 /*
- * Built per render, because it carries the codes from THIS visit. Somebody who
- * follows an agent's property link and presses "Continue with Google" without
- * having an account yet is signing UP, and the sign-up needs both codes.
+ * The sign-in page, for the platform and for each company.
+ *
+ * /login is the platform's page; /login/<company code> is a company's — its
+ * logo, colours and fonts from the first paint, and its own listings and
+ * offers beside the form where the stock photographs used to be. A device
+ * that was told to keep its owner signed in greets them by name next time.
+ * Every way in is unchanged: email or phone and password, the passcode, Google,
+ * a choice of company, two-factor and its forced enrolment, and the password
+ * reset below.
  */
-
-/* ── Brand logo — uses DB-backed platform/company name ── */
-function RealtoBrand({ light = false }) {
-  const { app_name, app_logo, nameLoaded } = useAppearance();
-
-  // Skeleton placeholder while name is loading
-  if (!nameLoaded) {
-    return (
-      <span
-        className="inline-block h-6 w-32 rounded animate-pulse"
-        style={{ background: light ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.1)' }}
-      />
-    );
-  }
-
-  if (app_logo) {
-    // Wrap in a small pill so white-background logos look intentional on dark panels
-    return (
-      <div
-        className="inline-flex items-center justify-center rounded-lg px-2 py-1"
-        style={{ background: light ? 'rgba(255,255,255,0.08)' : 'transparent', maxWidth: 200 }}
-      >
-        <img
-          src={app_logo}
-          alt={app_name || 'Realx8'}
-          className="object-contain"
-          style={{ height: 40, maxWidth: 180 }}
-        />
-      </div>
-    );
-  }
-  const name = app_name || 'Realx8';
-  const lastSpace = name.lastIndexOf(' ');
-  const head = lastSpace > 0 ? name.slice(0, lastSpace + 1) : '';
-  const tail = lastSpace > 0 ? name.slice(lastSpace + 1) : name;
-  const baseColor = light ? 'rgba(255,255,255,0.9)' : '#160D3A';
-  return (
-    <span className="text-xl font-bold tracking-tight" style={{ color: baseColor }}>
-      {head}<span style={{ color: 'var(--primary)' }}>{tail}</span>
-    </span>
-  );
-}
 
 /* ── Google icon ── */
 function GoogleIcon() {
@@ -159,14 +130,31 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
   const location = useLocation();
+  const { companyCode: codeInPath } = useParams();
   const setSession = useAuthStore((state) => state.setSession);
   const { app_name, refresh: refreshAppearance } = useAppearance();
 
-  const [form, setForm] = useState({ identifier: '', password: '', remember: true });
+  /**
+   * Whose sign-in page this is, most specific first: the code in the path
+   * (/login/<code>, the link a company hands its people), one on the query
+   * string (older links), then the company this device last signed in to.
+   * None of them: the platform's own page, exactly as before — which is also
+   * what a platform admin, who belongs to no company, always sees.
+   */
+  const [known, setKnown] = useState(() => readKnownAccount());
+  const linkCode = (codeInPath || searchParams.get('company_code') || searchParams.get('code') || '').toUpperCase() || null;
+  const companyCode = linkCode || known?.company_code || null;
+  const { company, properties } = useCompanyCode(companyCode, { showcase: true });
+  // A link naming a DIFFERENT company than the remembered account is a request
+  // to sign in there, so the greeting stands aside.
+  const greeting = known && (!linkCode || !known.company_code || known.company_code === linkCode) ? known : null;
+
+  const [form, setForm] = useState(() => ({ identifier: greeting?.email || '', password: '', remember: true }));
   const [loginMethod, setLoginMethod] = useState('email'); // 'email' | 'phone'
   const [totpToken, setTotpToken] = useState('');
+  const [passcode, setPasscode] = useState('');
   const [tempToken, setTempToken] = useState('');
-  // authStep: 'credentials' | '2fa' | '2fa-setup' | '2fa-setup-verify'
+  // authStep: 'credentials' | 'passcode' | 'company' | '2fa' | '2fa-setup' | '2fa-setup-verify'
   const [authStep, setAuthStep] = useState('credentials');
   const [setupData, setSetupData] = useState(null); // { qrCodeUrl, secret } from forced setup
   /**
@@ -187,7 +175,6 @@ export default function LoginPage() {
   const [resetCompanies, setResetCompanies] = useState([]);
   const [forgotMessage, setForgotMessage] = useState({ type: '', text: '' });
   const [forgotLoading, setForgotLoading] = useState(false);
-  const [mobileState, setMobileState] = useState('splash'); // 'splash' | 'form'
 
   /**
    * What actually went wrong with Google, in words somebody can act on.
@@ -241,13 +228,30 @@ export default function LoginPage() {
   }, [location.search]);
 
   /**
+   * A session, finished: stored, remembered on this device if asked, and on
+   * to wherever the visitor was going.
+   *
+   * The session carries the company's look and feel now, so there is nothing
+   * to wait for before the next screen — it is already in the right colours.
+   * An older server that does not send it still gets the separate read.
+   */
+  const finishSession = async (res) => {
+    setSession(res);
+    if (form.remember) rememberAccount(res);
+    else forgetAccount();
+    if (!res.appearance) await refreshAppearance();
+    navigate(redirectTo || '/');
+  };
+
+  /**
    * What the server answered, whichever step asked.
    *
-   * Shared because a sign-in can now arrive here from two places — the password
-   * form, and the company choice that may follow it — and the two-factor rules
-   * must not differ between them. The policy belongs to the company being
-   * signed in to, so it is only knowable after the choice has been made, which
-   * is exactly why this cannot live in the password handler alone.
+   * Shared because a sign-in can now arrive here from three places — the
+   * password form, the passcode, and the company choice that may follow either
+   * — and the two-factor rules must not differ between them. The policy
+   * belongs to the company being signed in to, so it is only knowable after
+   * the choice has been made, which is exactly why this cannot live in the
+   * password handler alone.
    */
   const applyAuthResponse = async (res) => {
     if (res.requires_company) {
@@ -271,9 +275,7 @@ export default function LoginPage() {
       }
       return;
     }
-    setSession(res);
-    await refreshAppearance();
-    navigate(redirectTo || '/');
+    await finishSession(res);
   };
 
   const submit = async (e) => {
@@ -284,6 +286,28 @@ export default function LoginPage() {
       await applyAuthResponse(await login({ identifier: form.identifier, password: form.password }));
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to login');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * The 6-digit passcode, for somebody who signed in with their password in the
+   * last few hours. Outside that window the server says so, and the password
+   * form comes back with the reason on it.
+   */
+  const submitPasscode = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      await applyAuthResponse(await passcodeLogin({ identifier: form.identifier, passcode }));
+    } catch (err) {
+      setError(err.response?.data?.message || 'That passcode did not work. Sign in with your password.');
+      if (err.response?.data?.reason === 'window_expired') {
+        setPasscode('');
+        setAuthStep('credentials');
+      }
     } finally {
       setLoading(false);
     }
@@ -317,10 +341,7 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await verify2FA(tempToken, totpToken);
-      setSession(res);
-      await refreshAppearance();
-      navigate(redirectTo || '/');
+      await finishSession(await verify2FA(tempToken, totpToken));
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to verify code');
     } finally {
@@ -393,17 +414,14 @@ export default function LoginPage() {
     }
   };
 
-  const resetToCredentials = () => { setAuthStep('credentials'); setTempToken(''); setTotpToken(''); setSetupData(null); setCompanyChoice(null); setError(''); };
+  const resetToCredentials = () => { setAuthStep('credentials'); setTempToken(''); setTotpToken(''); setPasscode(''); setSetupData(null); setCompanyChoice(null); setError(''); };
 
   const submitForcedSetupVerify = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      const res = await forcedVerify2FA(tempToken, totpToken);
-      setSession(res);
-      await refreshAppearance();
-      navigate(redirectTo || '/');
+      await finishSession(await forcedVerify2FA(tempToken, totpToken));
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid code. Please try again.');
     } finally {
@@ -418,139 +436,204 @@ export default function LoginPage() {
     setForgotMessage({ type: '', text: '' });
   };
 
-  /* ── Shared form card JSX (used in both mobile and desktop) ── */
-  const formCard = (
-    <div className="flex flex-col justify-center flex-1 px-8 py-10 max-w-sm mx-auto w-full lg:max-w-none lg:mx-0 lg:px-10 lg:py-0">
-      <div className="mb-6">
-        <p className="text-xl font-semibold text-white">
-          {authStep === '2fa' ? 'Verify sign in'
-            : authStep === 'company' ? 'Choose a company'
-            : authStep === '2fa-setup' || authStep === '2fa-setup-verify' ? 'Set up two-factor auth'
-            : 'Welcome back'}
-        </p>
-        <p className="text-sm text-white/40 mt-1">
-          {authStep === '2fa'
-            ? 'Enter the 6-digit code from your authenticator app.'
-            : authStep === 'company'
-            ? 'You have an account with more than one company. Pick the one to work in — you can switch at any time afterwards.'
-            : authStep === '2fa-setup'
-            ? 'Your organization requires 2FA. Scan the QR code with your authenticator app.'
-            : authStep === '2fa-setup-verify'
-            ? 'Enter the 6-digit code from your authenticator app to confirm setup.'
-            : 'Sign in to your account to continue.'}
-        </p>
+  /**
+   * "Not you?" — forget the remembered account and give the page back to
+   * whoever is at the keyboard. When the company came only from that memory
+   * (no code in the link), the platform's own look comes back with it.
+   */
+  const notYou = () => {
+    forgetAccount();
+    setKnown(null);
+    setForm({ identifier: '', password: '', remember: true });
+    resetToCredentials();
+    if (!linkCode) refreshAppearance();
+  };
+
+  const companyName = company?.name || greeting?.company_name || null;
+  const registerHref = company?.code || linkCode ? `/register?company_code=${encodeURIComponent(company?.code || linkCode)}` : '/register';
+  const errorLine = error && <p className="rounded-xl bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-200 ring-1 ring-rose-400/30" role="alert">{error}</p>;
+  const backButton = (onClick, label = 'Back') => (
+    <button type="button" onClick={onClick} className={ghostButton}>{label}</button>
+  );
+
+  const heading = authStep === '2fa' ? 'Verify sign in'
+    : authStep === 'company' ? 'Choose a company'
+    : authStep === '2fa-setup' || authStep === '2fa-setup-verify' ? 'Set up two-factor auth'
+    : authStep === 'passcode' ? 'Sign in with your passcode'
+    : greeting ? 'Good to see you again'
+    : 'Welcome back';
+  const subheading = authStep === '2fa'
+    ? 'Enter the 6-digit code from your authenticator app.'
+    : authStep === 'company'
+    ? 'You have an account with more than one company. Pick the one to work in — you can switch at any time afterwards.'
+    : authStep === '2fa-setup'
+    ? 'Your organization requires 2FA. Scan the QR code with your authenticator app.'
+    : authStep === '2fa-setup-verify'
+    ? 'Enter the 6-digit code from your authenticator app to confirm setup.'
+    : authStep === 'passcode'
+    ? 'The 6-digit passcode works for a few hours after you last signed in with your password.'
+    : greeting ? 'This device remembers you, so there is only your password left.'
+    : companyName ? `Sign in to your ${companyName} account.`
+    : 'Sign in to your account to continue.';
+
+  const googleHref = googleAuthUrl({
+    ...codesFromLocation(),
+    ...(company?.code || linkCode ? { companyCode: company?.code || linkCode } : {}),
+    redirect: searchParams.get('redirect'),
+  });
+
+  const content = (
+    <>
+      <div className="space-y-2">
+        <h1 className="font-heading text-[30px] font-extrabold leading-tight tracking-tight sm:text-[34px]">{heading}</h1>
+        <p className="text-[15px] text-[#A6ADBD]">{subheading}</p>
       </div>
 
-      {/* Credentials form */}
+      {/* The remembered account — who, which company, and a way out. */}
+      {greeting && (authStep === 'credentials' || authStep === 'passcode') && (
+        <div className="flex items-center gap-3.5 rounded-2xl border border-[#2B3350] bg-[#161B2C] p-4">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#262D44] font-heading font-bold" aria-hidden="true">
+            {initialsOf(greeting.name)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-semibold">{greeting.name || greeting.email}</p>
+            <p className="truncate text-[13px] text-[#A6ADBD]">
+              {maskEmail(greeting.email)}{greeting.type ? ` · ${enumLabel(greeting.type)}` : ''}
+            </p>
+          </div>
+          <button type="button" onClick={notYou} className="shrink-0 px-1 py-3 text-[13px] font-bold text-[#E9D8C4] hover:underline">
+            Not you?
+          </button>
+        </div>
+      )}
+
       {authStep === 'credentials' && (
         <form onSubmit={submit} className="space-y-4">
-          {/* Login method toggle */}
-          <div className="flex rounded-lg border border-white/10 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => { setLoginMethod('email'); setForm((f) => ({ ...f, identifier: '' })); }}
-              className={`flex-1 py-2 text-xs font-semibold transition-colors ${loginMethod === 'email' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'}`}
-            >
-              Email
-            </button>
-            <button
-              type="button"
-              onClick={() => { setLoginMethod('phone'); setForm((f) => ({ ...f, identifier: '' })); }}
-              className={`flex-1 py-2 text-xs font-semibold transition-colors ${loginMethod === 'phone' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'}`}
-            >
-              Phone Number
-            </button>
+          {!greeting && (
+            <>
+              <div role="group" aria-label="Sign in with" className="grid grid-cols-2 rounded-xl bg-[#161B2C] p-1">
+                {[['email', 'Email'], ['phone', 'Phone number']].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={loginMethod === value}
+                    onClick={() => { setLoginMethod(value); setForm((f) => ({ ...f, identifier: '' })); }}
+                    className={`h-10 rounded-[9px] text-sm font-semibold transition ${loginMethod === value ? 'bg-[#262D44] text-[#F3F1EC]' : 'text-[#A6ADBD] hover:text-white'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {loginMethod === 'email' ? (
+                <AuthField
+                  id="login-email"
+                  label="Email"
+                  type="email"
+                  value={form.identifier}
+                  onChange={(e) => setForm({ ...form, identifier: e.target.value })}
+                  placeholder="you@example.com"
+                  required
+                  autoComplete="email"
+                />
+              ) : (
+                <AuthField
+                  id="login-phone"
+                  label="Phone number"
+                  type="tel"
+                  value={form.identifier}
+                  onChange={(e) => setForm({ ...form, identifier: e.target.value })}
+                  placeholder="+234 803 000 0000"
+                  required
+                  inputMode="tel"
+                  autoComplete="tel"
+                />
+              )}
+            </>
+          )}
+          <PasswordField
+            id="login-password"
+            label="Password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            placeholder="Enter your password"
+            required
+            autoComplete="current-password"
+            autoFocus={Boolean(greeting)}
+            action={(
+              <button type="button" onClick={() => setShowForgotModal(true)} className="text-[13px] font-semibold text-[#E9D8C4] hover:underline">
+                Forgot password?
+              </button>
+            )}
+          />
+
+          <label className="flex cursor-pointer select-none items-center gap-2.5 text-sm text-[#D5D9E2]">
+            <input
+              type="checkbox"
+              checked={form.remember}
+              onChange={(e) => setForm({ ...form, remember: e.target.checked })}
+              className="h-[18px] w-[18px] accent-[var(--primary)]"
+            />
+            Keep me signed in on this device
+          </label>
+
+          {errorLine}
+
+          <button type="submit" disabled={loading} className={primaryButton} style={primaryInk}>
+            {loading ? 'Signing in…' : (greeting && companyName ? `Continue to ${companyName}` : 'Sign in')}
+          </button>
+
+          <div className="flex items-center gap-3 text-xs text-[#7C8497]" aria-hidden="true">
+            <span className="h-px flex-1 bg-[#262D44]" />or<span className="h-px flex-1 bg-[#262D44]" />
           </div>
 
-          {loginMethod === 'email' ? (
-            <Field
-              label="Email"
-              type="email"
+          <div className="grid grid-cols-2 gap-2.5">
+            <a href={googleHref} className={ghostButton}>
+              <GoogleIcon />
+              Google
+            </a>
+            <button type="button" onClick={() => { setError(''); setAuthStep('passcode'); }} className={ghostButton}>
+              <Lock size={16} aria-hidden="true" />
+              Passcode
+            </button>
+          </div>
+        </form>
+      )}
+
+      {authStep === 'passcode' && (
+        <form onSubmit={submitPasscode} className="space-y-4">
+          {!greeting && (
+            <AuthField
+              id="passcode-identifier"
+              label="Email or phone number"
               value={form.identifier}
               onChange={(e) => setForm({ ...form, identifier: e.target.value })}
               placeholder="you@example.com"
               required
-              autoComplete="email"
-            />
-          ) : (
-            <Field
-              label="Phone Number"
-              type="tel"
-              value={form.identifier}
-              onChange={(e) => setForm({ ...form, identifier: e.target.value })}
-              placeholder="+1 555 000 0000"
-              required
-              inputMode="tel"
-              autoComplete="tel"
+              autoComplete="username"
             />
           )}
-          <Field
-            label="Password"
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            placeholder="••••••••"
+          <AuthField
+            id="passcode"
+            label="6-digit passcode"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            pattern="[0-9]{6}"
+            placeholder="••••••"
+            value={passcode}
+            onChange={(e) => setPasscode(e.target.value.replace(/\D/g, '').slice(0, 6))}
             required
-            autoComplete="current-password"
+            autoFocus
+            inputClassName="text-center font-mono text-xl tracking-[0.5em]"
           />
-
-          <div className="flex items-center justify-between pt-1">
-            <label className="flex items-center gap-2 text-sm text-white/50 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={form.remember}
-                onChange={(e) => setForm({ ...form, remember: e.target.checked })}
-                className="h-3.5 w-3.5 rounded border-white/20 accent-[var(--primary)]"
-              />
-              Remember me
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowForgotModal(true)}
-              className="text-sm text-white/40 hover:text-white/70 transition-colors"
-            >
-              Forgot password?
-            </button>
-          </div>
-
-          {error && <p className="text-sm text-rose-400">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-11 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50 mt-2"
-            style={{ backgroundColor: `var(--primary)` }}
-          >
-            {loading ? 'Signing in…' : 'Sign In'}
+          {errorLine}
+          <button type="submit" disabled={loading || passcode.length !== 6} className={primaryButton} style={primaryInk}>
+            {loading ? 'Signing in…' : 'Sign in'}
           </button>
-
-          <div className="flex items-center gap-3 text-xs text-white/25">
-            <span className="h-px flex-1 bg-white/10" />
-            or continue with
-            <span className="h-px flex-1 bg-white/10" />
-          </div>
-
-          <a
-            href={googleAuthUrl({
-            ...codesFromLocation(),
-            redirect: new URLSearchParams(window.location.search).get('redirect'),
-          })}
-            className="flex w-full items-center justify-center gap-2 h-11 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-white/70 hover:bg-white/10 transition"
-          >
-            <GoogleIcon />
-            Sign in with Google
-          </a>
-
-          <p className="text-sm text-white/35 text-center pt-1">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-white/70 hover:text-white font-medium transition-colors">
-              Create one
-            </Link>
-          </p>
+          {backButton(resetToCredentials, 'Use my password instead')}
         </form>
       )}
 
-      {/* 2FA form */}
       {/* Which company, for somebody who belongs to several */}
       {authStep === 'company' && (
         <div className="space-y-3">
@@ -570,85 +653,66 @@ export default function LoginPage() {
                 type="button"
                 disabled={loading || Boolean(blocked)}
                 onClick={() => chooseCompany(entry.company_id)}
-                className="w-full rounded-lg border border-white/10 px-4 py-3 text-left transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-40"
+                className="w-full rounded-2xl border border-[#2B3350] bg-[#161B2C] px-4 py-3.5 text-left transition hover:border-[color:var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <span className="block text-sm font-semibold text-white">{entry.company_name}</span>
-                <span className="mt-0.5 block text-xs text-white/40">
+                <span className="block text-[15px] font-semibold">{entry.company_name}</span>
+                <span className="mt-0.5 block text-[13px] text-[#A6ADBD]">
                   {blocked || `Signed in as ${entry.type}`}
                 </span>
               </button>
             );
           })}
-          {error && <p className="text-sm text-rose-400">{error}</p>}
-          <button
-            type="button"
-            onClick={resetToCredentials}
-            className="w-full h-11 rounded-lg text-sm font-medium text-white/50 border border-white/10 hover:bg-white/5 transition"
-          >
-            Back
-          </button>
+          {errorLine}
+          {backButton(resetToCredentials)}
         </div>
       )}
 
       {authStep === '2fa' && (
         <form onSubmit={submit2FA} className="space-y-4">
-          <Field
+          <AuthField
+            id="totp"
             label="Authentication code"
             inputMode="numeric"
+            autoComplete="one-time-code"
             maxLength={6}
             pattern="[0-9]{6}"
             placeholder="123456"
             value={totpToken}
             onChange={(e) => setTotpToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
             required
+            autoFocus
+            inputClassName="text-center font-mono text-xl tracking-[0.4em]"
           />
-          {error && <p className="text-sm text-rose-400">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-11 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: `var(--primary)` }}
-          >
+          {errorLine}
+          <button type="submit" disabled={loading} className={primaryButton} style={primaryInk}>
             {loading ? 'Verifying…' : 'Verify code'}
           </button>
-          <button
-            type="button"
-            onClick={resetToCredentials}
-            className="w-full h-11 rounded-lg text-sm font-medium text-white/50 border border-white/10 hover:bg-white/5 transition"
-          >
-            Back
-          </button>
+          {backButton(resetToCredentials)}
         </form>
       )}
 
       {/* Forced 2FA setup — QR code step */}
       {authStep === '2fa-setup' && (
         <div className="space-y-4">
-          {loading && <p className="text-sm text-white/50">Generating QR code…</p>}
+          {loading && <p className="text-sm text-[#A6ADBD]">Generating QR code…</p>}
           {!loading && setupData && (
             <>
               <div className="flex justify-center">
-                <img src={setupData.qrCodeUrl} alt="2FA QR code" className="h-44 w-44 rounded-lg bg-white p-2" />
+                <img src={setupData.qrCodeUrl} alt="2FA QR code" className="h-44 w-44 rounded-xl bg-white p-2" />
               </div>
-              <p className="text-xs text-white/35 text-center">
-                Can’t scan? Use code: <span className="font-mono text-white/60">{setupData.secret}</span>
+              <p className="text-center text-xs text-[#A6ADBD]">
+                Can’t scan? Use code: <span className="font-mono text-[#F3F1EC]">{setupData.secret}</span>
               </p>
-              {error && <p className="text-sm text-rose-400">{error}</p>}
+              {errorLine}
               <button
                 type="button"
                 onClick={() => { setAuthStep('2fa-setup-verify'); setTotpToken(''); setError(''); }}
-                className="w-full h-11 rounded-lg text-sm font-semibold text-white transition-opacity"
-                style={{ backgroundColor: `var(--primary)` }}
+                className={primaryButton}
+                style={primaryInk}
               >
                 I’ve scanned the code
               </button>
-              <button
-                type="button"
-                onClick={resetToCredentials}
-                className="w-full h-11 rounded-lg text-sm font-medium text-white/50 border border-white/10 hover:bg-white/5 transition"
-              >
-                Back
-              </button>
+              {backButton(resetToCredentials)}
             </>
           )}
         </div>
@@ -657,121 +721,63 @@ export default function LoginPage() {
       {/* Forced 2FA setup — verify step */}
       {authStep === '2fa-setup-verify' && (
         <form onSubmit={submitForcedSetupVerify} className="space-y-4">
-          <Field
+          <AuthField
+            id="totp-setup"
             label="Verification code"
             inputMode="numeric"
+            autoComplete="one-time-code"
             maxLength={6}
             pattern="[0-9]{6}"
             placeholder="123456"
             value={totpToken}
             onChange={(e) => setTotpToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
             required
+            autoFocus
+            inputClassName="text-center font-mono text-xl tracking-[0.4em]"
           />
-          {error && <p className="text-sm text-rose-400">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full h-11 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: `var(--primary)` }}
-          >
+          {errorLine}
+          <button type="submit" disabled={loading} className={primaryButton} style={primaryInk}>
             {loading ? 'Confirming…' : 'Confirm & Sign In'}
           </button>
-          <button
-            type="button"
-            onClick={() => setAuthStep('2fa-setup')}
-            className="w-full h-11 rounded-lg text-sm font-medium text-white/50 border border-white/10 hover:bg-white/5 transition"
-          >
-            Back to QR code
-          </button>
+          {backButton(() => setAuthStep('2fa-setup'), 'Back to QR code')}
         </form>
       )}
+    </>
+  );
 
-      <p className="text-xs text-white/20 text-center mt-8">
-        Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Realx8'}
+  const footer = (
+    <>
+      {authStep === 'credentials' && (
+        <p>
+          {greeting
+            ? <>Signing in somewhere else? <button type="button" onClick={notYou} className="font-bold text-[#E9D8C4] hover:underline">Use another account</button></>
+            : <>New{companyName ? ` to ${companyName}` : ' here'}? <Link to={registerHref} className="font-bold text-[#E9D8C4] hover:underline">Create an account</Link></>}
+        </p>
+      )}
+      <p className="text-xs text-[#7C8497]">
+        Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Realx8'} ·{' '}
+        <a href="mailto:support@realto.app" className="text-[#A6ADBD] hover:text-white">Get help</a>
       </p>
-    </div>
+    </>
   );
 
   return (
     <>
-      <div className="h-screen w-full flex overflow-hidden bg-[#07080c]">
-
-        {/* ══ MOBILE: full-screen carousel with splash buttons ══ */}
-        <div className="lg:hidden relative w-full h-full">
-          <PropertyCarousel className="absolute inset-0" />
-
-          {/* Splash state: logo + CTA buttons */}
-          {mobileState === 'splash' && (
-            <div className="absolute inset-0 z-10 flex flex-col">
-              {/* Brand — top right */}
-              <div className="flex justify-end px-6 pt-10">
-                <RealtoBrand light />
-              </div>
-
-              {/* Buttons — vertically centered */}
-              <div className="flex flex-1 flex-col items-center justify-center px-8 gap-3">
-                <button
-                  onClick={() => setMobileState('form')}
-                  className="w-full max-w-xs h-12 rounded-xl text-sm font-semibold text-white shadow-lg"
-                  style={{ backgroundColor: `var(--primary)` }}
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => navigate('/register')}
-                  className="w-full max-w-xs h-12 rounded-xl text-sm font-semibold text-white/80 border border-white/25 backdrop-blur-md bg-white/5"
-                >
-                  Create Account
-                </button>
-              </div>
-
-              {/* Spacer so carousel bottom text stays visible */}
-              <div className="h-28" />
-            </div>
-          )}
-
-          {/* Form state: full-screen form */}
-          {mobileState === 'form' && (
-            <div className="absolute inset-0 z-20 bg-[#07080c] overflow-y-auto flex flex-col">
-              <div className="px-6 pt-10 pb-4 flex items-center justify-between">
-                <button
-                  onClick={() => { setMobileState('splash'); setAuthStep('credentials'); setError(''); }}
-                  className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-sm transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back
-                </button>
-                <RealtoBrand light />
-              </div>
-              {formCard}
-            </div>
-          )}
-        </div>
-
-        {/* ══ DESKTOP: left form panel + right full-height carousel ══ */}
-        <div className="hidden lg:flex w-full h-full">
-
-          {/* Left: form panel — 1.5/4 = 37.5% */}
-          <div className="w-[37.5%] shrink-0 flex flex-col bg-[#07080c] overflow-y-auto">
-            <div className="px-10 pt-8 pb-4">
-              <RealtoBrand light />
-            </div>
-            <div className="flex-1 flex flex-col justify-center">
-              {formCard}
-            </div>
-            <div className="px-10 pb-6 text-xs text-white/20">
-              <a href="mailto:support@realto.app" className="hover:text-white/50 transition-colors">Get Help</a>
+      <AuthShell
+        brand={<AuthBrand company={company || (greeting?.company_name ? { name: greeting.company_name } : null)} />}
+        aside={<ShowcasePanel properties={properties} />}
+        mobileTop={(
+          <div className="relative h-64">
+            <ShowcasePanel properties={properties} compact />
+            <div className="absolute left-5 top-5 z-20 rounded-2xl bg-[rgba(14,18,32,0.7)] px-3 py-2">
+              <AuthBrand company={company || (greeting?.company_name ? { name: greeting.company_name } : null)} />
             </div>
           </div>
-
-          {/* Right: full-height image carousel — 2.5/4 = 62.5% */}
-          <div className="flex-1">
-            <PropertyCarousel />
-          </div>
-        </div>
-      </div>
+        )}
+        footer={footer}
+      >
+        {content}
+      </AuthShell>
 
       {/* ── Forgot password modal ── */}
       <Modal open={showForgotModal} onClose={closeForgotModal} title="Forgot password">

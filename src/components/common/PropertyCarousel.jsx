@@ -27,7 +27,8 @@ const SLIDES = [
   },
 ];
 
-export default function PropertyCarousel({ className = '' }) {
+/** `compact`: a short strip (the phone sign-in page) — no category tag, tighter padding. */
+export default function PropertyCarousel({ className = '', compact = false }) {
   const [active, setActive] = useState(0);
   const timerRef = useRef(null);
 
@@ -67,14 +68,14 @@ export default function PropertyCarousel({ className = '' }) {
       ))}
 
       {/* Text overlay */}
-      <div className="absolute bottom-0 left-0 right-0 p-8 z-10">
-        <span className="inline-block mb-3 px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.2em] uppercase text-white/60 border border-white/20 rounded-sm">
+      <div className={`absolute bottom-0 left-0 right-0 z-10 ${compact ? 'p-5' : 'p-8'}`}>
+        <span className={`mb-3 ${compact ? 'hidden' : 'inline-block'} px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.2em] uppercase text-white/60 border border-white/20 rounded-sm`}>
           {SLIDES[active].category}
         </span>
         <h2 className="text-3xl font-bold text-white leading-tight">{SLIDES[active].title}</h2>
         <p className="mt-1.5 text-sm text-white/55">{SLIDES[active].subtitle}</p>
 
-        <div className="flex items-center gap-2 mt-6">
+        <div className={`flex items-center gap-2 ${compact ? 'mt-3' : 'mt-6'}`}>
           {SLIDES.map((_, idx) => (
             <button
               key={idx}

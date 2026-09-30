@@ -240,6 +240,8 @@ export default function App() {
       <DismissKeyboardOnNavigate />
       <Routes>
         <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
+        {/* A company's own sign-in page — its logo, colours and listings. */}
+        <Route path="/login/:companyCode" element={<PublicOnly><LoginPage /></PublicOnly>} />
         <Route path="/register" element={<PublicOnly allowInvited><RegisterPage /></PublicOnly>} />
         <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
 

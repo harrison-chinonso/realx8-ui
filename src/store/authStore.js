@@ -5,6 +5,7 @@ import {
   logout as logoutApi,
 } from '../api/authApi';
 import { setSessionKey, clearSessionKey } from '../api/payloadCrypto';
+import { publishSessionAppearance } from '../lib/sessionAppearance';
 import { resetRefreshBudget } from '../api/refreshBudget';
 import { markFreshLogin } from '../lib/launcherGreeting';
 import { clearAdvertDismissals } from '../lib/advertDismissal';
@@ -93,6 +94,19 @@ const useAuthStore = create(
           // A new session means the promotion advert is owed another showing,
           // whatever the previous occupant of this tab dismissed.
           clearAdvertDismissals();
+        }
+
+        /*
+         * The company's branding, when the response carried it. Published
+         * AFTER the wipe above (which clears localStorage, remembered themes
+         * included) and BEFORE the token is committed, so the provider paints
+         * the new colours first and then sees a token it need not re-fetch for.
+         */
+        if (payload.appearance) {
+          publishSessionAppearance(payload.appearance, {
+            accessToken: payload.accessToken ?? null,
+            companyId: u?.company_id ?? null,
+          });
         }
 
         set({

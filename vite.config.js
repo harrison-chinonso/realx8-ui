@@ -1,5 +1,28 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+
+/**
+ * Fails the build when index.html's inline theme script no longer matches the
+ * hash vercel.json's CSP allows. Without this, editing the script silently
+ * gets it blocked in production — the page still works, it just goes back to
+ * flashing the default colours on every load, which nobody would trace here.
+ */
+const inlineScriptHashGuard = () => ({
+  name: 'inline-script-hash-guard',
+  apply: 'build',
+  transformIndexHtml(html) {
+    const csp = readFileSync(new URL('./vercel.json', import.meta.url), 'utf8');
+    for (const [, body] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+      const hash = createHash('sha256').update(body).digest('base64');
+      if (!csp.includes(`'sha256-${hash}'`)) {
+        throw new Error(`index.html inline script changed: add 'sha256-${hash}' to script-src in vercel.json`);
+      }
+    }
+    return html;
+  },
+});
 
 /**
  * In dev, Vite is the reverse proxy in front of Realx8-Core: the app calls the
@@ -18,7 +41,7 @@ export default defineConfig(({ mode }) => {
   const target = env.DEV_API_TARGET || 'http://localhost:3000';
 
   return {
-    plugins: [react()],
+    plugins: [react(), inlineScriptHashGuard()],
     server: {
       host: '0.0.0.0',
       port: 5173,

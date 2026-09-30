@@ -44,6 +44,10 @@ export default function ReferralCodeCard({ audience = 'clients' }) {
     ? `${window.location.origin}/register?ref=${encodeURIComponent(shareToken)}`
     : `${window.location.origin}/register?company_code=${encodeURIComponent(code)}`;
 
+  // The company's own sign-in page: its logo, colours and listings from the
+  // first paint. Plain code in the path — a company code is public by design.
+  const loginUrl = `${window.location.origin}/login/${encodeURIComponent(code)}`;
+
   const copy = async (value, which) => {
     try {
       await navigator.clipboard.writeText(value);
@@ -97,6 +101,14 @@ export default function ReferralCodeCard({ audience = 'clients' }) {
             className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
           >
             {copied === 'link' ? 'Link copied ✓' : 'Copy sign-up link'}
+          </button>
+          <button
+            type="button"
+            onClick={() => copy(loginUrl, 'login')}
+            title={loginUrl}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            {copied === 'login' ? 'Link copied ✓' : 'Copy sign-in link'}
           </button>
           <a
             href={`https://wa.me/?text=${share}`}

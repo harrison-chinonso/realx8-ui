@@ -2,6 +2,13 @@ import client from './client';
 
 export const login = async (payload) => (await client.post('/auth/login', payload)).data;
 export const register = async (payload) => (await client.post('/auth/register', payload)).data;
+/**
+ * Sign in with the 6-digit passcode. Only accepted within a few hours of the
+ * last password sign-in; outside that the server answers with a reason of
+ * `window_expired` and the password is needed again.
+ */
+export const passcodeLogin = async ({ identifier, passcode }) =>
+  (await client.post('/auth/passcode/login', { identifier, passcode })).data;
 
 /**
  * The second half of a sign-in for somebody who belongs to more than one

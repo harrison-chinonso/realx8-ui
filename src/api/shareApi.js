@@ -17,3 +17,18 @@ export const createShareToken = (params) =>
 /** Public — resolves a sealed token to company branding. No auth required. */
 export const resolveShareToken = (token) =>
   client.get(`/share/brand/${encodeURIComponent(token)}`).then((r) => r.data?.data);
+
+/**
+ * Public — a company code (the one typed at sign-up) → { company: { name, code },
+ * branding }. For the branded /login/<code> page and the sign-up code check.
+ * Rejects (404) for an unknown or suspended company.
+ */
+export const lookupCompanyCode = (code) =>
+  client.get(`/share/company/${encodeURIComponent(String(code).trim().toUpperCase())}`).then((r) => r.data?.data);
+
+/**
+ * Public — a few of a company's publicly shared listings and the offer on
+ * each, for the sign-in page's side panel. Cached server-side.
+ */
+export const companyShowcase = (code) =>
+  client.get(`/public/companies/${encodeURIComponent(String(code).trim().toUpperCase())}/showcase`).then((r) => r.data?.data);

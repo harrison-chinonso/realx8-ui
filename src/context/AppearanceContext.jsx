@@ -6,6 +6,8 @@ import { FONT_CATALOGUE, fontStack } from '../config/fonts';
 import { brightenForDark, readableOn, readableTextOn } from '../utils/colorUtils';
 import { AppearanceContext } from './appearanceContextRef';
 import useAuthStore from '../store/authStore';
+import { preferredCompanyId, readTheme, saveTheme } from '../lib/themeCache';
+import { appearanceCameWith, onSessionAppearance } from '../lib/sessionAppearance';
 
 const DEFAULTS = {
   app_name: '',
@@ -39,7 +41,7 @@ function hexToRgb(hex) {
 
 function loadFont(name, idSuffix) {
   const entry = FONT_CATALOGUE.find((f) => f.name === name);
-  if (!entry || !entry.url) return;
+  if (!entry || !entry.url) return null;
   const id = `dynamic-font-${idSuffix}`;
   let link = document.getElementById(id);
   if (!link) {
@@ -49,11 +51,19 @@ function loadFont(name, idSuffix) {
     document.head.appendChild(link);
   }
   if (link.href !== entry.url) link.href = entry.url;
+  return { id, url: entry.url };
 }
 
 function applyTheme({ primary_color, secondary_color, dark_primary_color, dark_secondary_color, font_heading, font_body, font_ui, font_family, dark_mode }) {
   const root = document.documentElement;
   const isDark = dark_mode === 'on';
+  /*
+   * Every variable written is also collected, so the result can be remembered
+   * (themeCache) and replayed by the inline script in index.html on the next
+   * load without any of the colour maths below.
+   */
+  const vars = {};
+  const setVar = (name, value) => { vars[name] = value; root.style.setProperty(name, value); };
 
   const effectivePrimary = isDark
     ? (dark_primary_color || brightenForDark(primary_color))
@@ -63,13 +73,16 @@ function applyTheme({ primary_color, secondary_color, dark_primary_color, dark_s
     : secondary_color;
 
   if (effectivePrimary) {
-    root.style.setProperty('--primary', effectivePrimary);
-    root.style.setProperty('--primary-rgb', hexToRgb(effectivePrimary));
+    setVar('--primary', effectivePrimary);
+    setVar('--primary-rgb', hexToRgb(effectivePrimary));
+    // Text that goes ON a primary fill — dark on a pale brand colour, white on
+    // a deep one — so a tenant's buttons stay legible whatever they pick.
+    setVar('--primary-ink', readableTextOn(effectivePrimary));
   }
 
   const sec = effectiveSecondary || '#0f172a';
-  root.style.setProperty('--secondary', sec);
-  root.style.setProperty('--secondary-rgb', hexToRgb(sec));
+  setVar('--secondary', sec);
+  setVar('--secondary-rgb', hexToRgb(sec));
 
   /*
    * Two derived forms, so the secondary colour can be used without every call
@@ -90,33 +103,49 @@ function applyTheme({ primary_color, secondary_color, dark_primary_color, dark_s
    * effect, rather than recomputed in each component.
    */
   const pageBg = isDark ? '#0b1220' : '#ffffff';
-  root.style.setProperty('--secondary-ink', readableTextOn(sec));
-  root.style.setProperty('--secondary-read', readableOn(sec, pageBg));
+  setVar('--secondary-ink', readableTextOn(sec));
+  setVar('--secondary-read', readableOn(sec, pageBg));
 
   const heading = font_heading || font_family || 'Tomato Grotesk';
   const body    = font_body    || font_family || 'Inter';
   const ui      = font_ui      || font_family || 'Inter';
 
-  root.style.setProperty('--font-heading', fontStack(heading));
-  root.style.setProperty('--font-body',    fontStack(body));
-  root.style.setProperty('--font-ui',      fontStack(ui));
+  setVar('--font-heading', fontStack(heading));
+  setVar('--font-body',    fontStack(body));
+  setVar('--font-ui',      fontStack(ui));
 
-  loadFont(heading, 'heading');
-  loadFont(body,    'body');
-  if (ui !== body) loadFont(ui, 'ui');
+  const fonts = [
+    loadFont(heading, 'heading'),
+    loadFont(body,    'body'),
+    ui !== body ? loadFont(ui, 'ui') : null,
+  ].filter(Boolean);
 
   if (dark_mode === 'on') {
     document.documentElement.classList.add('dark');
   } else {
     document.documentElement.classList.remove('dark');
   }
+  return { vars, fonts, dark: isDark };
 }
+
+/** The company whose appearance a request made NOW would return. */
+const scopeNow = () => {
+  const state = useAuthStore.getState();
+  return state.accessToken ? (state.user?.company_id ?? state.company_id ?? null) : null;
+};
 
 export function AppearanceProvider({ children }) {
   // nameLoaded: true once the lightweight platform-name call returns
   // fullyLoaded: true once the full appearance call returns
-  const [appearance, setAppearance] = useState(DEFAULTS);
-  const [nameLoaded, setNameLoaded] = useState(false);
+  /*
+   * Start from the theme this device last showed this company, when there is
+   * one — the inline script in index.html has already painted its colours, so
+   * React's first render agrees with them (name, logo, template) instead of
+   * starting from the platform defaults and repainting.
+   */
+  const [initialTheme] = useState(() => readTheme(preferredCompanyId()));
+  const [appearance, setAppearance] = useState(() => (initialTheme?.appearance ? { ...DEFAULTS, ...initialTheme.appearance } : DEFAULTS));
+  const [nameLoaded, setNameLoaded] = useState(Boolean(initialTheme?.appearance?.app_name));
 
   /**
    * Set once a shared link has branded the page for a specific company.
@@ -159,16 +188,22 @@ export function AppearanceProvider({ children }) {
    */
   const fullApplied = useRef(0);
 
-  const load = (data, { seq, force = false } = {}) => {
+  const load = (data, { seq, force = false, companyId, remember = true } = {}) => {
     // A response from a superseded request describes a state we have moved on
     // from. Dropping it is the whole point.
     if (seq !== undefined && seq !== loadSeq.current) return;
     if (brandLocked.current && !force) return;
     const merged = { ...DEFAULTS, ...data };
     setAppearance(merged);
-    applyTheme(merged);
+    const applied = applyTheme(merged);
     if (merged.app_name) document.title = merged.app_name;
     if (seq !== undefined) fullApplied.current = seq;
+    setNameLoaded(true);
+    if (remember && companyId !== undefined) {
+      saveTheme(companyId, {
+        vars: applied.vars, fonts: applied.fonts, dark: applied.dark, title: merged.app_name || '', appearance: data,
+      });
+    }
   };
 
   /**
@@ -189,9 +224,32 @@ export function AppearanceProvider({ children }) {
 
   useEffect(() => {
     const seq = (loadSeq.current += 1);
+    const companyId = scopeNow();
+    // The remembered theme, through the same path as a fresh one, so the
+    // derived state (fullApplied, the title) is set before any request returns.
+    if (initialTheme?.appearance) load(initialTheme.appearance, { seq, companyId, remember: false });
 
-    // 1️⃣ Fast call: just the name + logo — runs immediately, no auth needed
-    fetchPlatformName()
+    /*
+     * 1️⃣ Fast call: the PLATFORM's name, logo and colour, for a visitor with
+     * no session. Skipped when somebody is signed in: for them it could only
+     * ever paint the platform's colour over their company's for a moment
+     * before the full load corrected it — the flash this file exists to stop.
+     */
+    const signedOut = !useAuthStore.getState().accessToken;
+    /*
+     * Signed out, but painted in a remembered company's colours (the account
+     * this device keeps — see knownAccount.js). The platform defaults must not
+     * repaint over that; the sign-in page confirms the company's look itself,
+     * and "Not you?" asks for the platform's again.
+     */
+    if (signedOut && initialTheme && preferredCompanyId() !== null) {
+      setNameLoaded(true);
+      return;
+    }
+    const fastCall = companyId === null && signedOut
+      ? fetchPlatformName()
+      : Promise.resolve({});
+    fastCall
       .then(({ name, logo, primary_color }) => {
         if (seq !== loadSeq.current) { setNameLoaded(true); return; }
         if (brandLocked.current) { setNameLoaded(true); return; }
@@ -209,8 +267,9 @@ export function AppearanceProvider({ children }) {
 
     // 2️⃣ Full appearance load (fonts, colors, dark mode, etc.) — runs in parallel
     client.get('/settings/appearance')
-      .then((res) => load(res.data?.data || {}, { seq }))
-      .catch(() => { if (!brandLocked.current && seq === loadSeq.current) applyTheme(DEFAULTS); });
+      .then((res) => load(res.data?.data || {}, { seq, companyId }))
+      .catch(() => { if (!brandLocked.current && seq === loadSeq.current && !initialTheme) applyTheme(DEFAULTS); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -226,11 +285,38 @@ export function AppearanceProvider({ children }) {
    */
   const refresh = useCallback(() => {
     const seq = (loadSeq.current += 1);
-    brandLocked.current = false;
+    const companyId = scopeNow();
+    const signedIn = Boolean(useAuthStore.getState().accessToken);
+    if (signedIn) brandLocked.current = false;
+    // Paint what this device last saw for this company straight away; the
+    // request below confirms or corrects it.
+    const remembered = readTheme(companyId);
+    /*
+     * Forced only when somebody is signed in. Signed out, the answer is the
+     * platform's defaults, and a page that has since branded
+     * itself for a company — the sign-in page for a remembered account, or
+     * /login/<code> — must keep that brand rather than lose it to this reply.
+     */
+    const force = signedIn;
+    if (remembered?.appearance) load(remembered.appearance, { seq, force, companyId, remember: false });
     return client.get('/settings/appearance')
-      .then((res) => load(res.data?.data || {}, { seq, force: true }))
+      .then((res) => load(res.data?.data || {}, { seq, force, companyId }))
       .catch(() => {});
+     
   }, []);
+
+  /*
+   * Branding that arrived with the session itself — the login, registration,
+   * refresh or profile-switch response. Applied the moment the response is
+   * read, before the new token is even stored, so the first screen after
+   * sign-in is already in the company's colours.
+   */
+  useEffect(() => onSessionAppearance((data, companyId) => {
+    const seq = (loadSeq.current += 1);
+    brandLocked.current = false;
+    load(data, { seq, force: true, companyId });
+     
+  }), []);
 
   /**
    * Whoever is signed in decides what the application looks like — so the
@@ -254,6 +340,8 @@ export function AppearanceProvider({ children }) {
     // The mount-time load above already covers the first pass; refreshing again
     // here would be a second identical request on every page load.
     if (firstRun.current) { firstRun.current = false; return; }
+    // The session that brought this token also brought its appearance.
+    if (appearanceCameWith(accessToken)) return;
     refresh();
   }, [accessToken, companyId, refresh]);
 
