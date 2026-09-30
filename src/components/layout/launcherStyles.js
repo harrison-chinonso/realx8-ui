@@ -3,588 +3,356 @@
  *
  * ── Why CSS rather than utility classes ─────────────────────────────────────
  *
- * Almost everything here is a hover or focus state on a nested element — the
- * tile changing while the icon container inside it changes differently. Written
- * as utilities that is a thicket of `group-hover:` prefixes repeated on every
- * tile; written as eight rules it is legible, and the relationship between the
- * two surfaces is stated once.
+ * Almost everything here is a state on a nested element — the card lifting
+ * while its chevron moves and its icon tile shades — and the colours are all
+ * custom properties set per card. Written as utilities that is a thicket of
+ * arbitrary values repeated on every card; written as rules the relationships
+ * are stated once.
  *
- * ── One themeable token ─────────────────────────────────────────────────────
+ * ── Where colour comes from ─────────────────────────────────────────────────
  *
- * `--rx-accent` is the only value a tenant controls. It appears on the rule
- * across the top of the page, the focus ring, the icon container on hover, and
- * — at well under half strength — the tile and chip borders on hover.
- * Everything else is a fixed neutral ramp.
+ * Nothing here names a brand colour. Two sets of tokens arrive from JS:
  *
- * The rule that keeps this safe is not "use it twice", it is that the accent
- * never carries text on a page background and never distinguishes one tile
- * from another. Where it does sit under a glyph, the glyph colour is picked
- * from its luminance at runtime. Widening its use within that rule costs
- * nothing; stepping outside it is what has to be re-checked per tenant.
+ *   --rx-hero-*, --rx-banner*, --rx-badge-*, --rx-focus
+ *       the company's primary and secondary, set on the panel
+ *   --rx-card-*
+ *       one module's colour from the company's launcher palette, set on each
+ *       card (launcherPalette.accentStyle)
  *
- * That is not squeamishness about colour — it is what a white-label product
- * requires. A design that carries meaning in hue has to be re-checked against
- * every tenant palette, and the ones that break are found by customers. Tested
- * at both ends: #FF00AA and #CCCCCC. Neither can break contrast here, because
- * neither is ever asked to carry text on a page background or to distinguish
- * one tile from another.
+ * Every one arrives with the ink that reads on it, chosen by contrast rather
+ * than assumed, so a pale palette or a near-white primary stays legible. The
+ * neutrals below are the only fixed values.
  */
 export const LAUNCHER_CSS = `
 .rx-launcher {
-  --rx-accent: var(--primary, #2563eb);
-  /* The same colour as r, g, b, so it can be mixed at low opacity for the
-     tints and hairlines below. Set by AppearanceContext alongside --primary,
-     and already the idiom the rest of the app uses (see Alert.jsx). */
-  --rx-accent-rgb: var(--primary-rgb, 37, 99, 235);
-  --rx-surface: #FFFFFF;
-  --rx-surface-2: #F5F5F2;
-  --rx-surface-3: #EAEAE6;
-  --rx-ink: #16181A;
-  --rx-ink-2: #5A5F63;
-  --rx-ink-3: #8B9095;
-  --rx-rule: #E4E4E0;
-
-  /*
-   * Where the two brand colours land, and the ink each one carries.
-   *
-   *   --rx-fill-icon    the primary, on the icon chip — the only brand colour
-   *                     visible at rest
-   *   --rx-fill-hover   the secondary, on the whole tile under the pointer
-   *   --rx-focus        the primary, darkened if need be to hold 3:1 on the
-   *                     white panel the focus ring is drawn against
-   *
-   * Defaults only — ModuleLauncher overwrites all five when the launcher opens,
-   * having resolved the tenant's colours and worked out what is legible on
-   * each. Declared here so the stylesheet is readable on its own and nothing
-   * renders unstyled in the frame before that effect runs.
-   */
-  --rx-fill-icon: var(--primary, #2563eb);
-  --rx-on-icon: #fff;
-  --rx-fill-hover: var(--secondary, #0f172a);
-  --rx-on-fill-hover: #fff;
-  --rx-focus: var(--primary, #2563eb);
+  --rx-ink: #0f172a;
+  --rx-ink-2: #475569;
+  --rx-ink-3: #94a3b8;
+  --rx-rule: #e2e8f0;
+  --rx-page: #f8fafc;
+  /* Defaults until ModuleLauncher sets the real ones on the panel. */
+  --rx-hero-a: var(--primary, #1e3a8a);
+  --rx-hero-b: var(--secondary, #0f172a);
+  --rx-on-hero: #fff;
+  --rx-banner: var(--secondary, #0f172a);
+  --rx-banner-2: var(--primary, #1e3a8a);
+  --rx-on-banner: #fff;
+  --rx-badge-bg: var(--primary, #1e3a8a);
+  --rx-on-badge: #fff;
+  --rx-focus: var(--primary, #1e3a8a);
 }
 
-/* ── Panel: the whole viewport ──────────────────────────────────────────────
+/* ── Panel: the whole viewport, one scrolling page ───────────────────────────
  *
- * It was a 1060px card floating on a dimmed page — radius, drop shadow, a
- * margin all round. That reads as a dialog: something you have interrupted
- * your work with and will dismiss. The menu is not an interruption on this
- * template, it is the only way to navigate, and it is now the first thing seen
- * after signing in. So it takes the full screen and reads as a destination.
- *
- * Full bleed, but not full measure — see the content column below.
+ * The launcher is the only way to navigate on this template and the first
+ * thing seen after signing in, so it is a destination rather than a dialog.
+ * The header stays put; everything under it scrolls as one page, the way the
+ * design reads on a phone.
  */
 .rx-panel {
-  background: var(--rx-surface);
-  /* The one piece of brand on the page, and the only accent that is always
-     visible rather than waiting for a hover. Decoration carries no text, so
-     any tenant colour is safe here at any luminance. */
-  border-top: 3px solid var(--rx-accent);
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+  background: var(--rx-page);
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
   overflow: hidden;
 }
+.rx-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
 
-/*
- * The content column.
- *
- * Full bleed is right for the surface and wrong for the contents: at 2560px a
- * grid of 158px tiles becomes fifteen columns, and the eye has no line to come
- * back to. The padding grows to hold the content to a measure and centre it,
- * while the rules above and below it still run the width of the screen — which
- * is what makes it read as a page rather than a stretched card.
- *
- * 1060px is the width the panel itself used to be, chosen when the grid was
- * tuned. Keeping it means only the SURFACE became a page: the tiles sit at the
- * same size, in the same six columns, in the same relationship to each other
- * as before. Widening the measure to suit the new canvas was the obvious move
- * and the wrong one — at 1180px a group of three tiles sat in a seven-column
- * grid, and the extra column of nothing was the first thing the eye found.
- */
-.rx-search, .rx-recent, .rx-body {
-  padding-inline: max(18px, calc((100% - 1060px) / 2));
+/* The content column: full bleed surfaces, a readable measure inside them. */
+.rx-hero-row, .rx-search, .rx-content, .rx-footer {
+  width: 100%; max-width: 1240px; margin-inline: auto;
+  padding-inline: clamp(16px, 3vw, 32px);
+  box-sizing: border-box;
 }
 
-/* ── Search row ─────────────────────────────────────────────────────────── */
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.rx-hero {
+  position: relative; flex-shrink: 0; overflow: hidden;
+  background: linear-gradient(120deg, var(--rx-hero-a) 0%, var(--rx-hero-b) 100%);
+  color: var(--rx-on-hero);
+  padding: 14px 0 38px;
+}
+/* The sweep across the bottom edge: decoration in the ink at low strength,
+   so it follows whichever ink the brand colour carries. */
+.rx-hero::after {
+  content: ""; position: absolute; left: -10%; right: -10%; bottom: -60px; height: 110px;
+  border-radius: 50%;
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  pointer-events: none;
+}
+.rx-hero-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: relative; z-index: 1; }
+.rx-hero a { color: inherit; text-decoration: none; }
+
+.rx-brand { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
+.rx-brand-logo { height: 40px; width: 40px; object-fit: contain; border-radius: 10px; }
+.rx-brand-mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 40px; width: 40px; border-radius: 12px;
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  font: 800 20px/1 var(--font-heading, system-ui), sans-serif;
+}
+.rx-brand-name {
+  font: 800 clamp(20px, 2.4vw, 28px)/1 var(--font-heading, system-ui), sans-serif;
+  letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.rx-hero-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.rx-hero-btn {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  width: 42px; height: 42px; border-radius: 12px; color: inherit;
+}
+.rx-hero-btn svg { width: 24px; height: 24px; }
+.rx-hero-btn:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+.rx-hero-count {
+  position: absolute; top: 2px; right: 1px;
+  min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px;
+  background: #e11d48; color: #fff; font: 700 11px/19px system-ui, sans-serif; text-align: center;
+  box-shadow: 0 0 0 2px var(--rx-hero-a);
+}
+.rx-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; border-radius: 999px;
+  border: 2px solid color-mix(in srgb, currentColor 55%, transparent);
+  font: 700 15px/1 var(--font-ui, system-ui), sans-serif; letter-spacing: .02em;
+}
+.rx-avatar:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
+
+/* ── Search: a pill lifted over the bottom of the header ─────────────────── */
 .rx-search {
   display: flex; align-items: center; gap: 12px;
-  padding-block: 14px;
-  border-bottom: 1px solid var(--rx-rule);
-  transition: border-color .12s ease;
+  margin-top: -28px; position: relative; z-index: 2;
+  flex-shrink: 0;
 }
-/* Typing is the fastest route through this screen; the rule under the row
-   picks up the brand while it has the caret. Border only — an accent that
-   never carries text cannot fail a contrast check. */
-.rx-search:focus-within { border-bottom-color: var(--rx-accent); }
+.rx-search > * { flex-shrink: 0; }
+.rx-search::before {
+  /* The pill itself, drawn behind the row so the row keeps the column's
+     padding and the pill still reaches its edges. */
+  content: ""; position: absolute; inset: 0 clamp(16px, 3vw, 32px);
+  background: #fff; border-radius: 18px;
+  box-shadow: 0 10px 30px -12px rgba(15, 23, 42, .35), 0 0 0 1px rgba(15, 23, 42, .04);
+  z-index: -1;
+  transition: box-shadow .15s ease;
+}
+.rx-search:focus-within::before { box-shadow: 0 10px 30px -12px rgba(15, 23, 42, .35), 0 0 0 2px var(--rx-focus); }
+.rx-search-icon { color: var(--rx-ink-2); margin-left: 18px; }
+.rx-search-back { margin-left: 12px; color: var(--rx-ink-2); }
+.rx-search-back + .rx-search-icon { margin-left: 0; }
 .rx-search input {
-  flex: 1; min-width: 0; border: 0; outline: 0; background: transparent;
-  font-size: 16px; color: var(--rx-ink);
+  flex: 1 1 auto; min-width: 0; height: 60px; border: 0; outline: 0; background: transparent;
+  font: 400 17px/1 var(--font-ui, system-ui), sans-serif; color: var(--rx-ink);
 }
-.rx-search input::placeholder { color: var(--rx-ink-3); }
-
-/* Keycaps: texture, and a signal that the overlay is driven from the keyboard. */
-.rx-keys { display: flex; gap: 5px; }
+.rx-search input::placeholder { color: var(--rx-ink-2); }
+.rx-keys { display: flex; gap: 5px; margin-right: 16px; }
 .rx-key {
-  font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--rx-ink-3);
-  background: var(--rx-surface-2);
-  border: 1px solid var(--rx-rule);
-  border-bottom-width: 2px;
-  border-radius: 4px;
-  padding: 4px 5px;
-  white-space: nowrap;
+  font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--rx-ink-2); background: var(--rx-page);
+  border: 1px solid var(--rx-rule); border-radius: 8px; padding: 6px 7px;
 }
 
-/* ── Recent strip: gives the old dead space a job ───────────────────────── */
-.rx-recent {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  padding-block: 10px;
-  background: var(--rx-surface-2);
-  border-bottom: 1px solid var(--rx-rule);
+/* ── Content ─────────────────────────────────────────────────────────────── */
+.rx-content { flex: 1; padding-block: 22px 28px; display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Welcome banner ──────────────────────────────────────────────────────── */
+.rx-banner {
+  position: relative; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  min-height: 168px; border-radius: 20px;
+  background: linear-gradient(100deg, var(--rx-banner) 0%, var(--rx-banner) 42%, var(--rx-banner-2) 100%);
+  color: var(--rx-on-banner);
+  box-shadow: 0 14px 30px -18px rgba(15, 23, 42, .55);
 }
+.rx-banner-text { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 6px; padding: 26px 0 26px 30px; }
+.rx-banner-kicker { font: 600 12px/1 var(--font-ui, system-ui), sans-serif; letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
+.rx-banner-name { font: 800 clamp(24px, 3.1vw, 36px)/1.1 var(--font-heading, system-ui), sans-serif; letter-spacing: -.01em; }
+.rx-banner-lead { font: 400 clamp(14px, 1.2vw, 16px)/1.45 var(--font-body, system-ui), sans-serif; opacity: .92; max-width: 42ch; margin-top: 4px; }
+.rx-banner-art { position: relative; }
+/* The picture fades into the banner colour on its left, so the words beside
+   it always sit on the solid part — the part their ink was chosen against. */
+.rx-banner-art img, .rx-banner-art svg {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 38%);
+          mask-image: linear-gradient(to right, transparent 0%, #000 38%);
+}
+.rx-banner-art svg { object-fit: contain; opacity: .55; padding: 18px 18px 0; box-sizing: border-box; }
+.rx-banner-badge {
+  position: absolute; right: 16px; bottom: 14px; z-index: 1;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border-radius: 999px;
+  background: var(--rx-badge-bg); color: var(--rx-on-badge);
+  font: 600 13px/1 var(--font-ui, system-ui), sans-serif;
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, .5);
+}
+.rx-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 13px; }
+.rx-bars i { width: 3px; background: currentColor; border-radius: 1px; }
+.rx-bars i:nth-child(1) { height: 5px; } .rx-bars i:nth-child(2) { height: 9px; } .rx-bars i:nth-child(3) { height: 13px; }
+
+/* ── Recent ──────────────────────────────────────────────────────────────── */
+.rx-recent { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .rx-recent-label {
-  font: 500 10px/1 system-ui, sans-serif; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--rx-ink-3);
+  font: 600 11px/1 var(--font-ui, system-ui), sans-serif; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--rx-ink-2); margin-right: 2px;
 }
 .rx-chip {
   display: inline-flex; align-items: center; gap: 6px;
-  background: var(--rx-surface);
-  border: 1px solid var(--rx-rule);
-  border-radius: 999px;
-  padding: 4px 10px 4px 7px;
-  font: 500 12px/1 system-ui, sans-serif;
-  color: var(--rx-ink-2);
-  text-decoration: none;
+  background: #fff; border: 1px solid var(--rx-rule); border-radius: 999px;
+  padding: 6px 12px 6px 9px;
+  font: 500 13px/1 var(--font-ui, system-ui), sans-serif; color: var(--rx-ink-2); text-decoration: none;
 }
-.rx-chip:hover {
-  color: var(--rx-ink);
-  border-color: rgba(var(--rx-accent-rgb), .45);
-  background: rgba(var(--rx-accent-rgb), .06);
-}
+.rx-chip:hover { color: var(--rx-ink); border-color: var(--rx-focus); }
 
-/* ── Body ───────────────────────────────────────────────────────────────── */
-.rx-body { flex: 1; overflow-y: auto; padding-block: 18px 26px; }
-
-/* Group header: label, hairline filling the width, count. */
-/* Twelve rows now rather than four, so they need a little more air between
-   them than they did — the heading is the only thing separating one menu's
-   screens from the next one's. */
-.rx-group + .rx-group { margin-top: 26px; }
-.rx-group-head {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 9px;
-}
-.rx-group-head span:first-child {
-  font: 600 11px/1 system-ui, sans-serif; letter-spacing: .04em;
-  color: var(--rx-ink-2); white-space: nowrap;
-}
+/* ── Group heading inside a module or in search results ──────────────────── */
+.rx-group-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.rx-group-head span:first-child { font: 700 15px/1.2 var(--font-heading, system-ui), sans-serif; color: var(--rx-ink); }
 .rx-group-head i { flex: 1; height: 1px; background: var(--rx-rule); }
-.rx-group-head span:last-child {
-  font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--rx-ink-3);
-}
+.rx-group-head span:last-child { font: 500 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--rx-ink-2); }
 
-/*
- * The row grid — search results, and a client's flat list.
- *
- * 220px rather than 158: the tiles are the same size everywhere in the
- * launcher now, and a 158px track would have squeezed the larger icon and type
- * into a box built for the small ones.
- */
-.rx-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
-}
-
-/* ── The module grid: eight tiles, filling the page ──────────────────────────
- *
- * Four across the top and four across the bottom, each stretching to take its
- * share of both the width and the height. This is the first thing seen after
- * signing in and it is the whole of the navigation on this template, so it gets
- * the page rather than sitting in a strip across the top of it.
- *
- * Rows are 1fr rather than auto: the tiles divide whatever height is left
- * after the search row and the recent strip, so the grid is always exactly two
- * rows deep and never leaves a band of empty page beneath itself.
- */
-.rx-body-modules { display: flex; }
-.rx-body-modules > nav { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-/* A drill-in level wraps its grid in a heading block; that has to stretch too,
-   or the grid inside it sizes to its contents and leaves the page half empty. */
-.rx-body-modules .rx-group { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-/* Full width here, not the 1060px reading measure the other views use — eight
-   tiles at that width would be a strip down the middle of an empty page. */
-.rx-body-modules { padding-inline: max(18px, 3vw); }
-
-.rx-modules {
-  /**
-   * Grow, don't shrink, and size from content.
-   *
-   * This is the line that fixes the landscape bug, measured: with a basis of 0
-   * the box is pinned to the flex line's free space, so on an 844x390 phone
-   * the four rows had to share about 330px for tiles with a 116px minimum —
-   * adjacent tiles OVERLAPPED by 34px and the last row hung 50px outside the
-   * grid. With a basis of auto the box grows to what the rows need, and
-   * .rx-body scrolls — the right answer when eight tiles do not fit a
-   * 390px viewport.
-   */
-  flex: 1 0 auto;
+/* ── Module cards ─────────────────────────────────────────────────────────── */
+.rx-cards {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  /**
-   * Rows: minmax(min-content, 1fr), NOT minmax(0, 1fr).
-   *
-   * A backstop, not the fix — measured. The flex line above is what stops the
-   * landscape collapse; with it in place this floor never binds. It is kept
-   * because a zero minimum lets a row become shorter than the tile inside it,
-   * which is the mechanism that produced the overlap, and anything that
-   * re-pins this element's height in future would bring it straight back.
-   * On its own it removes the overlap but still leaves the box short.
-   *
-   * Columns keep the zero minimum on purpose: there the floor prevents a long
-   * module name from widening its column past the viewport.
-   */
-  grid-template-rows: repeat(2, minmax(min-content, 1fr));
-  /* A tenant with a ninth module gets a third row the same height as the
-     other two, rather than a short one tacked on the end. */
-  grid-auto-rows: minmax(min-content, 1fr);
-  /*
-   * Scales with the viewport, because the tiles do.
-   *
-   * A flat 14px was right when a tile was about 200px. On a 1680px screen the
-   * same eight tiles are nearly 500px tall and 14px between them is under 3%
-   * of their height — the identical complaint that was reported on phones,
-   * arriving from the other end. clamp keeps the small end where it was and
-   * gives the large end room.
-   */
-  gap: clamp(14px, 1.2vw, 22px);
-  /* A floor for short windows, so two rows never squeeze to nothing. The body
-     scrolls past it rather than the tiles collapsing. */
-  min-height: 330px;
+  gap: clamp(12px, 1.4vw, 20px);
 }
+@media (max-width: 1199px) { .rx-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 859px)  { .rx-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/*
- * Centred, unlike the tiles everywhere else.
- *
- * The anchor-to-top rule exists because a stack of variable height drags its
- * icon up and down the row. Here every tile holds the same three blocks and
- * every row is the same height by construction, so centring cannot produce
- * that drift — and a short stack pinned to the top of a 300px tile reads as a
- * mistake.
- */
-.rx-modules .rx-tile {
-  justify-content: center;
-  min-height: 0;
-  padding: 20px 14px;
-  gap: clamp(8px, 1vw, 14px);
-}
-
-
-
-/* ── Tile: filled at rest, outlined on hover ────────────────────────────── */
-.rx-tile {
+.rx-card {
   position: relative;
-  display: flex; flex-direction: column; align-items: center;
-  /*
-   * Anchored to the top, not centred.
-   *
-   * Centring a stack of variable height moves the icon: a tile whose name wraps
-   * to two lines, or whose description does, pulls its icon upward. Measured
-   * across one row that was 15px of drift — enough that the icons stopped
-   * reading as a line and started reading as a mistake. Anchoring puts every
-   * icon at the same height and lets the text below it vary, which is the only
-   * part that can afford to.
-   */
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 18px 10px 14px;
-  /*
-   * A floor, so every tile is the same height.
-   *
-   * Grid rows size themselves independently, so without this a row holding one
-   * two-line name is taller than a row that does not — and the pattern has
-   * exactly one rule it will not bend on: no tile heavier than another.
-   *
-   * 116px rather than 158px. The tile used to reserve two lines for a name and
-   * two more for a description; there is no description now, so forty-two
-   * pixels of it were empty. On a page showing sixty-one of them that is most
-   * of a screen of nothing.
-   */
-  min-height: 168px;
-  /*
-   * ── Quiet at rest, the whole tile on hover ───────────────────────────────
-   *
-   * The resting tile is the neutral surface it has always been. The brand
-   * appears at rest in exactly one place — the icon chip — so a grid of sixty
-   * tiles stays calm and the colour still says whose product this is. Under
-   * the pointer the tile itself becomes the secondary.
-   *
-   * What follows from that: on hover the name, description and slot key are
-   * sitting ON a colour this code has never seen. So none of them names one.
-   * They inherit 'currentColor' — the ink for whichever state the tile is in —
-   * and the surfaces among them are that same ink at low alpha. One value
-   * changes and the whole tile follows it, at any tenant colour, with no
-   * second set of rules for the light half of the range.
-   */
-  background: var(--rx-surface-2);
-  color: var(--rx-ink);
-  border: 1px solid transparent;
-  border-radius: 11px;
-  text-align: center;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background-color .16s ease, color .16s ease,
-              border-color .16s ease, transform .16s ease, box-shadow .16s ease;
+  display: flex; flex-direction: column; gap: 12px;
+  min-height: 176px; padding: 20px 20px 18px; box-sizing: border-box;
+  border-radius: 20px;
+  background: linear-gradient(160deg, #fff 0%, var(--rx-card-tint) 55%);
+  border: 1px solid var(--rx-card-edge);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
 }
-
-/*
- * The hover does three things at once, and the third is what sells it.
- *
- * The fill moves to the secondary and the ink moves with it; the tile lifts two
- * pixels; and a shadow appears UNDER it tinted from the fill rather than from
- * black, so a blue tile casts a blue shadow and the colour reads as belonging
- * to the object rather than painted on it.
- */
-.rx-tile:hover {
-  background: var(--rx-fill-hover);
-  color: var(--rx-on-fill-hover);
-  border-color: color-mix(in srgb, currentColor 22%, transparent);
+.rx-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--rx-fill-hover) 70%, transparent);
+  border-color: var(--rx-card-fill);
+  box-shadow: 0 14px 28px -18px var(--rx-card-fill);
 }
-.rx-tile:active { transform: translateY(0); transition-duration: .06s; }
+.rx-card:active { transform: translateY(0); transition-duration: .06s; }
 
-/*
- * The focus ring is the brand colour, darkened if it has to be.
- *
- * It is offset, so it lands on the white panel rather than on the tile — and a
- * pale brand on white is a ring a keyboard user cannot find. --rx-focus is the
- * primary taken down until it holds 3:1 there. This is the indicator the whole
- * launcher is navigated by, so it is the one that has to survive every palette.
- */
-.rx-tile:focus-visible {
-  outline: 2px solid var(--rx-focus);
-  outline-offset: 2px;
+/* The whole card is the main target: the ::after covers it. */
+.rx-card-main {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+  text-align: left; color: var(--rx-ink); text-decoration: none;
+  background: none; border: 0; padding: 0 44px 0 0; cursor: pointer; font: inherit;
+  outline: none;
 }
+.rx-card-main::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.rx-card:has(.rx-card-main:focus-visible) { outline: 3px solid var(--rx-focus); outline-offset: 3px; }
 
-/*
- * The icon container is LIGHTER than the tile it sits in — an inversion of the
- * usual relationship, and what stops twelve filled rectangles reading as one
- * grey mass. Its radius is 9px against the tile's 11px: two pixels tighter, so
- * the shapes read as nested rather than repeated.
- */
-/*
- * One tile size for the whole launcher.
- *
- * The clamps used to belong to the module grid alone, which left the screens
- * INSIDE a module rendered at half the size of the module that opened them —
- * the same tile, the same kind of destination, shrinking as you went deeper.
- * They grow the icon and the type with the window and stop before either
- * becomes a poster, so a tile feels filled at 1920 and stays legible at 820.
- */
 .rx-ic {
   display: flex; align-items: center; justify-content: center;
-  width: clamp(48px, 4.4vw, 72px);
-  height: clamp(48px, 4.4vw, 72px);
-  /*
-   * The one place the brand appears at rest.
-   *
-   * A single saturated chip inside a neutral tile, which is how an accent is
-   * supposed to work: it draws the eye to the thing you act on and leaves the
-   * other fifty-nine tiles alone. The glyph on it is derived from the chip's
-   * own colour, because a tenant's primary can be anything and a white glyph
-   * on a pale one is invisible.
-   */
-  background: var(--rx-fill-icon);
-  color: var(--rx-on-icon);
-  /*
-   * A hairline, for the brand that is nearly white.
-   *
-   * At any normal saturation it is invisible and does nothing. On a near-white
-   * primary it is the only thing separating the chip from the tile behind it,
-   * and without it the icon floats in a void.
-   */
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--rx-ink) 10%, transparent);
-  border-radius: 14px;
-  transition: background-color .16s ease, color .16s ease, box-shadow .16s ease;
+  width: 60px; height: 60px; border-radius: 17px; margin-bottom: 6px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--rx-card-fill) 82%, #fff), var(--rx-card-fill));
+  color: var(--rx-card-on-fill);
+  box-shadow: 0 8px 16px -10px var(--rx-card-fill);
 }
-.rx-ic svg { width: clamp(22px, 2vw, 32px); height: clamp(22px, 2vw, 32px); }
-/*
- * On hover the chip inverts OUT of the tile.
- *
- * It becomes the tile's own ink and the glyph punches through it in the
- * secondary — the one place in the tile where the figure/ground relationship
- * flips, which is what makes the hover read as a press rather than a tint. The
- * primary steps aside here: it has done its job at rest, and keeping it would
- * put two brand colours a few pixels apart with nothing to separate them.
- */
-.rx-tile:hover .rx-ic {
-  background: color-mix(in srgb, var(--rx-on-fill-hover) 92%, transparent);
-  color: var(--rx-fill-hover);
-  box-shadow: none;
-}
-
+.rx-ic svg { width: 30px; height: 30px; }
 .rx-name {
-  /* Inherits the tile's ink — see the note on .rx-tile. */
-  font: 600 clamp(14px, 1.15vw, 19px)/1.25 system-ui, sans-serif; color: inherit;
-  max-width: none;
-  /*
-   * Two lines, reserved whether or not they are used. "Commission Statements"
-   * wraps where "Invoices" does not, and a grid row sizes to its tallest
-   * member — so one long name made a whole row of tiles heavier than the rest.
-   * Reserving the space is what makes every tile the same height by
-   * construction, rather than by a floor that needs re-tuning whenever a label
-   * changes. Chasing that with min-height alone took three attempts and was
-   * still wrong for the one screen whose name wrapped.
-   */
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 2.5em;
+  font: 800 clamp(17px, 1.35vw, 20px)/1.2 var(--font-heading, system-ui), sans-serif;
+  letter-spacing: -.01em; color: var(--rx-ink);
 }
-
-/*
- * Grouped mode only: the tile names a MODULE, so it carries the two words
- * saying what that module holds, and reserves two lines for them whether they
- * are used or not. Both text blocks reserved is what makes every tile the same
- * height by construction rather than by a floor that needs re-tuning each time
- * a label changes.
- *
- * The flat tile names a screen and needs neither, which is why it is 116px and
- * this one is 158px rather than both compromising on one number.
- */
-.rx-panel-grouped .rx-tile { min-height: 168px; padding: 20px 12px; }
 .rx-desc {
-  /* The ink at 72%: the same hierarchy the neutral design had between name and
-     description, expressed as opacity so it survives either ink. */
-  font: 400 clamp(11px, .85vw, 14px)/1.3 system-ui, sans-serif;
-  color: color-mix(in srgb, currentColor 72%, transparent);
-  max-width: 22ch;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 2.6em;
+  font: 400 clamp(13px, 1vw, 15px)/1.4 var(--font-body, system-ui), sans-serif; color: var(--rx-ink-2);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.rx-chev {
+  position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 999px;
+  background: var(--rx-card-chev-bg); color: var(--rx-card-chev);
+  transition: transform .16s ease;
+}
+.rx-chev svg { width: 20px; height: 20px; }
+.rx-card:hover .rx-chev { transform: translate(3px, -50%); }
+
+/* The screens inside a module, one click from the launcher. Above the card's
+   cover so each is a target of its own. */
+.rx-card-links { position: relative; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: auto; }
+.rx-card-link {
+  /* A fixed-height box that centres its text both ways. Line-height 1 with
+     vertical padding left the words wherever the font's own ascent put them —
+     visibly high or low depending on the typeface a company picked. */
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 26px; padding: 0 10px; box-sizing: border-box;
+  /* The app gives every link a 36px touch-target floor. These chips are shown
+     only on wider screens, where that floor just makes a tall pill with the
+     words floating in it. */
+  min-height: 0;
+  font: 600 12px/1 var(--font-ui, system-ui), sans-serif;
+  white-space: nowrap;
+  color: var(--rx-card-link); text-decoration: none;
+  background: rgba(255, 255, 255, .8); border: 1px solid var(--rx-card-edge);
+  border-radius: 999px;
+}
+.rx-card-link:hover { background: #fff; border-color: var(--rx-card-link); }
+.rx-card-link:focus-visible { outline: 2px solid var(--rx-focus); outline-offset: 2px; }
+.rx-card-more {
+  display: inline-flex; align-items: center; height: 26px; padding: 0 2px;
+  font: 500 12px/1 var(--font-ui, system-ui), sans-serif; color: var(--rx-ink-2);
 }
 
-/*
- * The count of work waiting inside, on the tile that opens it.
- *
- * Absolutely positioned: the tile is a centred column, and a badge in that
- * flow would shove the icon off centre on the one tile that has work waiting —
- * which is the tile you least want looking different by accident.
- *
- * ml-auto comes from NavBadge, where the badge sits at the end of a nav ROW.
- * Here it would push against a flex column and do nothing useful, so it goes.
- */
-.rx-badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  margin-left: 0;
-  /*
-   * A ring in the tile's own fill.
-   *
-   * The badge is semantic red on white and stays that way — a count of work
-   * waiting is not themeable. But red on a red-ish brand fill loses its edge,
-   * so the tile's colour is drawn around it as a 2px ring, which separates the
-   * two without changing either.
-   */
-  box-shadow: 0 0 0 2px var(--rx-surface-2);
-  transition: box-shadow .16s ease;
-}
-.rx-tile:hover .rx-badge { box-shadow: 0 0 0 2px var(--rx-fill-hover); }
+/* The count of work waiting inside. Absolutely placed so it never moves the
+   icon on the one card that has something waiting. */
+.rx-badge { position: absolute; top: 14px; right: 14px; margin-left: 0; z-index: 1; box-shadow: 0 0 0 2px #fff; }
 
-/* The slot key, on hover only — texture when wanted, silence when not. It sits
-   on the LEFT so it never lands on top of a badge, which is always there. */
+/* The slot key, on hover only. */
 .rx-slot {
-  position: absolute; top: 7px; left: 8px;
-  font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: color-mix(in srgb, currentColor 60%, transparent);
-  opacity: 0;
-  transition: opacity .12s ease;
+  position: absolute; top: 12px; right: 16px;
+  font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--rx-ink-3);
+  opacity: 0; transition: opacity .12s ease;
 }
-.rx-tile:hover .rx-slot, .rx-tile:focus-visible .rx-slot { opacity: 1; }
+.rx-card:hover .rx-slot, .rx-card-main:focus-visible .rx-slot { opacity: 1; }
+.rx-card:has(.rx-badge) .rx-slot { display: none; }
 
-.rx-empty { padding: 42px 0; text-align: center; font-size: 13px; color: var(--rx-ink-3); }
+.rx-empty { padding: 42px 0; text-align: center; font-size: 14px; color: var(--rx-ink-2); }
 
-/* ── Phone: full-bleed, tighter, and the second tier of type goes ───────── */
-/*
- * The phone treatment stops at 520px, not 640px.
- *
- * Two columns have to fill whatever width they are given, and between 520 and
- * 640 that produced tiles 304px wide and 112 tall — a letterbox, not a tile.
- * Above 520 there is room for the three-column desktop grid at its proper
- * proportions, so that is where the switch belongs.
- */
-/*
- * Two per row on a smaller screen.
- *
- * Four columns stop working well before the phone breakpoint: at 900px each
- * module tile is about 200px wide, which is narrower than the two-line names
- * it has to hold. Two columns and four rows keeps every tile wide enough to
- * read, and the grid still fills the page because the rows stay 1fr.
- */
-@media (max-width: 900px) {
-  .rx-modules {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    /* min-content, for the reason given on the base rule: four rows in a
-       landscape viewport is exactly where a zero floor collapses them. */
-    grid-template-rows: repeat(4, minmax(min-content, 1fr));
-    min-height: 520px;
-    /* Two columns means taller tiles — measured at 203px here — so the gutter
-       grows with them rather than staying at the four-column value. */
-    gap: 16px;
-  }
-  .rx-grid { gap: 14px; }
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.rx-footer {
+  display: flex; align-items: center; gap: 16px;
+  max-width: none; margin-top: auto; padding-block: 16px;
+  background: linear-gradient(120deg, var(--rx-hero-a), var(--rx-hero-b));
+  color: var(--rx-on-hero);
+}
+.rx-brand-sm .rx-brand-logo, .rx-brand-sm .rx-brand-mark { height: 28px; width: 28px; font-size: 15px; border-radius: 8px; }
+.rx-brand-sm .rx-brand-name { font-size: 18px; }
+.rx-footer-tag {
+  font: 500 13px/1.3 var(--font-ui, system-ui), sans-serif; opacity: .9;
+  padding-left: 16px; border-left: 1px solid color-mix(in srgb, currentColor 40%, transparent);
 }
 
+/* ── Smaller screens ─────────────────────────────────────────────────────── */
+@media (max-width: 859px) {
+  .rx-keys { display: none; }
+  .rx-banner { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); min-height: 150px; }
+  .rx-banner-text { padding: 20px 0 46px 20px; }
+}
 @media (max-width: 519px) {
-  /*
-   * Two columns, stated rather than derived.
-   *
-   * auto-fill with a 112px minimum gave three on a 390px phone and two on a
-   * 360px one — so the layout changed between two handsets of the same size,
-   * which is the sort of inconsistency nobody can report but everybody notices.
-   * Two is the floor the pattern specifies, so two is what it says, at every
-   * width below the breakpoint.
-   */
-  /*
-   * ── Gutters, measured rather than guessed ─────────────────────────────────
-   *
-   * These were 7px between sub-menu tiles and 9px between module tiles, and
-   * both were tuned when a tile was about 116px tall. The module grid fills
-   * the page now, so on a 390px phone a tile renders 211px tall — and a 9px
-   * gutter against a 211px tile is 4% of its height, which reads as tiles
-   * stuck together rather than as a grid. The sub-menu's 7px was worse.
-   *
-   * Measured at 320, 360, 390, 414 and 430: two columns throughout, so the
-   * widest tile at the tightest width is (320 - 32 - 12) / 2 = 138px. There is
-   * room for a real gutter, and nothing overflows.
-   *
-   * One scale, so the eye reads a consistent rhythm: 12px between tiles, 16px
-   * from the screen edge. Inner gutters smaller than the outer margin is what
-   * makes a grid look like a group rather than a list.
-   */
-  .rx-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .rx-ic { width: 44px; height: 44px; }
-  .rx-ic svg { width: 20px; height: 20px; }
-  .rx-tile { min-height: 116px; padding: 14px 8px 11px; }
-  /* A description is a luxury at this width; the name is not. Stated for the
-     grouped tile too, whose two-class selector would otherwise outrank this. */
-  .rx-panel-grouped .rx-tile { min-height: 116px; padding: 14px 10px; }
-  .rx-modules { gap: 12px; min-height: 420px; }
-  .rx-name { font-size: 13px; }
-  .rx-body-modules { padding-inline: 16px; }
-  .rx-desc, .rx-keys { display: none; }
-  .rx-body { padding: 12px 16px 18px; }
-  .rx-search, .rx-recent { padding-left: 16px; padding-right: 16px; }
+  .rx-hero { padding-bottom: 34px; }
+  .rx-brand-logo, .rx-brand-mark { height: 34px; width: 34px; }
+  .rx-avatar { width: 40px; height: 40px; font-size: 13px; }
+  .rx-hero-btn { width: 36px; height: 36px; }
+  .rx-search input { height: 54px; font-size: 16px; }
+  .rx-content { padding-block: 16px 20px; gap: 16px; }
+  .rx-cards { gap: 12px; }
+  .rx-card { min-height: 164px; padding: 16px 14px 14px; border-radius: 18px; }
+  .rx-card-main { padding-right: 34px; }
+  .rx-ic { width: 50px; height: 50px; border-radius: 14px; }
+  .rx-ic svg { width: 25px; height: 25px; }
+  .rx-name { font-size: 16px; }
+  .rx-desc { font-size: 13px; }
+  .rx-chev { width: 32px; height: 32px; right: 12px; }
+  .rx-chev svg { width: 17px; height: 17px; }
+  /* The design on a phone is name and summary only; the shortcuts are for
+     screens with room to spare. */
+  .rx-card-links { display: none; }
+  .rx-banner-badge { right: 10px; bottom: 10px; padding: 7px 11px; font-size: 11px; }
+  .rx-footer-tag { font-size: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rx-tile, .rx-ic, .rx-search, .rx-slot, .rx-badge { transition: none; }
-  /* The colour change stays — it is the state. The movement is what goes. */
-  .rx-tile:hover, .rx-tile:active { transform: none; }
+  .rx-card, .rx-chev, .rx-slot, .rx-search::before { transition: none; }
+  .rx-card:hover, .rx-card:active { transform: none; }
+  .rx-card:hover .rx-chev { transform: translateY(-50%); }
 }
 `;

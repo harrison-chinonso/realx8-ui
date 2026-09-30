@@ -154,7 +154,7 @@ export function readableOn(color, background = '#ffffff', min = 4.5) {
 }
 
 /** Blend two hex colours. `t` is how much of `b` to take: 0 → a, 1 → b. */
-function mixHex(a, b, t) {
+export function mixHex(a, b, t) {
   const [ca, cb] = [toRgb(a), toRgb(b)];
   if (!ca || !cb) return a;
   const channel = (i) => Math.round(ca[i] + (cb[i] - ca[i]) * t);
