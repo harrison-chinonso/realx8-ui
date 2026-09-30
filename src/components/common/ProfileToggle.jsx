@@ -4,6 +4,7 @@ import Modal from './Modal';
 import Button from '../ui/Button';
 import useAuthStore from '../../store/authStore';
 import { useOnPrimary } from '../../context/useAppearance';
+import { landOnDashboard } from '../../lib/sessionSwitch';
 
 const PAIR = ['realtor', 'client'];
 const TITLE = { realtor: 'Realtor', client: 'Client' };
@@ -94,8 +95,9 @@ export default function ProfileToggle({ className = '' }) {
       // enableProfile also switches into the new profile, so both paths land
       // the user in `other`.
       await (otherRole ? switchRole(otherRole.id) : enableProfile(other));
-      // Full reload so every cached view re-fetches under the new profile.
-      window.location.reload();
+      // To the dashboard, fully reloaded: the page just left belongs to the
+      // other profile, and every cached view re-fetches under the new one.
+      landOnDashboard();
     } catch (err) {
       setError(err?.response?.data?.message || err?.userMessage || 'Could not change profile.');
       setBusy(false);
@@ -159,7 +161,7 @@ export default function ProfileToggle({ className = '' }) {
           </p>
           <p>{DESCRIPTION[other]}</p>
           <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-            You will be switched into the new profile straight away, and the page will reload.
+            You will be switched into the new profile straight away and taken to its dashboard.
           </p>
           <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
             <Button type="button" variant="secondary" onClick={() => setConfirming(false)} disabled={busy}>

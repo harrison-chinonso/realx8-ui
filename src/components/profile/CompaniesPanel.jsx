@@ -5,6 +5,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import useAuthStore from '../../store/authStore';
+import { landOnDashboard } from '../../lib/sessionSwitch';
 
 /**
  * The companies this person deals with, and the way to add another.
@@ -65,7 +66,7 @@ export default function CompaniesPanel() {
     setError('');
     try {
       await switchCompany(entry.company_id);
-      window.location.reload();
+      landOnDashboard();
     } catch (err) {
       const reason = err?.response?.data?.reason;
       setError(reason === 'password_required' || reason === 'password_incorrect'

@@ -1,32 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, Home, UserCheck } from 'lucide-react';
 import { register } from '../../api/authApi';
 import { listRoles } from '../../api/rolesApi';
 import useAuthStore from '../../store/authStore';
 import useSharedBrand from '../../hooks/useSharedBrand';
+import useCompanyCode from '../../hooks/useCompanyCode';
 import {
   resolveReferralAttribution,
   saveReferralAttribution,
   clearReferralAttribution,
 } from '../../utils/referralAttribution';
-import PropertyCarousel from '../../components/common/PropertyCarousel';
 import { useAppearance } from '../../context/useAppearance';
-import Select from '../../components/ui/Select';
-import { apiUrl } from '../../api/apiBase';
 import { googleAuthUrl } from '../../utils/googleAuthUrl';
-import FieldMark from '../../components/ui/FieldMark';
 import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '../../constants/password';
+import {
+  AsidePanel, AuthBrand, AuthField, AuthShell, PasswordField, PasswordStrength, ghostButton, primaryButton, primaryInk,
+} from '../../components/auth/AuthKit';
 
 /**
- * A full-page redirect, not an XHR, so it has to be a URL the BROWSER can
- * follow — derived from the API base rather than hardcoded, for the reason
- * LoginPage gives: a pinned localhost:3000 broke Google in every deployment
- * but a local one.
- */
-/*
- * Built per render rather than once at module load, because it has to carry the
- * company and realtor codes from THIS visit — a constant computed at import
- * time would be the same for everybody who ever opened the page.
+ * Creating an account, in two steps: which company and what for, then who you
+ * are.
+ *
+ * The company is settled first because everything else depends on it. From an
+ * invite link it is already known (and locked — a visitor must never be able
+ * to type over the company or realtor a link established); without one, the
+ * code is checked as it is typed and the company's name and logo come back to
+ * confirm it, instead of a five-character field the server rejects only after
+ * the whole form has been filled in.
  */
 
 /* ── Google icon — matched to the one on the sign-in page ── */
@@ -43,127 +44,46 @@ function GoogleIcon() {
 
 const PUBLIC_ROLE_NAMES = ['client', 'realtor'];
 
-/* ── Brand ── */
-function RealtoBrand() {
-  const { app_name, app_logo, nameLoaded } = useAppearance();
+/** What each public profile is for, in the words of somebody choosing one. */
+const ROLE_COPY = {
+  client: {
+    title: "I'm buying",
+    body: 'Browse listings, buy outright or in installments, and keep your receipts and documents in one place.',
+    icon: Home,
+    aside: {
+      kicker: 'For buyers',
+      title: 'Own a home on terms that suit you.',
+      points: ['Pay outright or over a monthly plan', 'Your unit is secured once you pay', 'Receipts and title documents, always to hand'],
+    },
+  },
+  realtor: {
+    title: "I'm a realtor",
+    body: 'Share listings with your own link, refer clients and track the commission you earn.',
+    note: 'You will verify your identity before you can refer clients.',
+    icon: UserCheck,
+    aside: {
+      kicker: 'For realtors',
+      title: 'Your listings, your link, your commission.',
+      points: ['A personal share link for every property', 'See how often your links are opened', 'Request payouts when commission is due'],
+    },
+  },
+};
 
-  if (!nameLoaded) {
-    return (
-      <span
-        className="inline-block h-6 w-32 rounded animate-pulse"
-        style={{ background: 'rgba(255,255,255,0.15)' }}
-      />
-    );
-  }
+const NEXT_STEPS = [
+  ['You are signed in straight away', 'In your company’s colours, on its listings.'],
+  ['Pick a unit and a way to pay', 'Outright, or a monthly plan where one is offered.'],
+  ['Pay and upload your proof', 'Receipts and documents land in My Properties.'],
+];
 
-  if (app_logo) {
-    return (
-      <div
-        className="inline-flex items-center justify-center rounded-lg px-2 py-1"
-        style={{ background: 'rgba(255,255,255,0.08)', maxWidth: 200 }}
-      >
-        <img
-          src={app_logo}
-          alt={app_name || 'Platform'}
-          className="object-contain"
-          style={{ height: 40, maxWidth: 180 }}
-        />
-      </div>
-    );
-  }
-  const name = app_name || 'Platform';
-  const lastSpace = name.lastIndexOf(' ');
-  const head = lastSpace > 0 ? name.slice(0, lastSpace + 1) : '';
-  const tail = lastSpace > 0 ? name.slice(lastSpace + 1) : name;
-  return (
-    <span className="text-xl font-bold tracking-tight" style={{ color: 'rgba(255,255,255,0.9)' }}>
-      {head}<span style={{ color: 'var(--primary)' }}>{tail}</span>
-    </span>
-  );
-}
-
-/* ── Eye icon ── */
-function EyeIcon({ open }) {
-  return open ? (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-    </svg>
-  ) : (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.97 9.97 0 012.178-3.416M6.53 6.53A9.97 9.97 0 0112 5c4.477 0 8.268 2.943 9.542 7a10.003 10.003 0 01-4.132 5.411M3 3l18 18" />
-    </svg>
-  );
-}
-
-/* ── Dark-theme field ── */
-function Field({ label, type = 'text', value, onChange, placeholder, required, readOnly }) {
-  const [showPwd, setShowPwd] = useState(false);
-  const isPassword = type === 'password';
-  const inputType = isPassword ? (showPwd ? 'text' : 'password') : type;
-
-  return (
-    <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{label}<FieldMark required={Boolean(required)} /></label>
-      <div className={`flex items-center h-11 w-full rounded-lg border border-white/10 pr-3 overflow-hidden transition-all focus-within:border-white/30 ${readOnly ? 'bg-white/[0.03]' : 'bg-white/5'}`}>
-        <input
-          type={inputType}
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          required={required}
-          readOnly={readOnly}
-          /*
-           * Merely styling this as "locked" was not enough on its own: this
-           * component used to receive a `readOnly` prop for the company-code
-           * field but never forwarded it to the input, so it stayed editable
-           * regardless — a visitor could type over a code the link had
-           * already established. Forwarding it here is what actually
-           * enforces the lock this page now depends on.
-           */
-          className={`flex-1 h-full px-3.5 bg-transparent text-sm text-white placeholder:text-white/20 focus:outline-none ${readOnly ? 'cursor-not-allowed text-white/60' : ''}`}
-        />
-        {isPassword && (
-          <button type="button" tabIndex={-1} onClick={() => setShowPwd(v => !v)} className="text-white/30 hover:text-white/60 transition-colors">
-            <EyeIcon open={showPwd} />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ── Dark-theme select ── */
-function DarkSelect({ label, value, onChange, options }) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold uppercase tracking-widest text-white/40">{label}<FieldMark /></label>
-      <div className="h-11 w-full rounded-lg border border-white/10 bg-white/5 overflow-hidden transition-all focus-within:border-white/30">
-        <Select
-          value={value}
-          onChange={onChange}
-          className="w-full h-full px-3.5 bg-transparent text-sm focus:outline-none appearance-none cursor-pointer"
-          /*
-           * This page is near-black, and Select draws the chosen label in
-           * whatever colour the control carries. Named here rather than as a
-           * `text-white` class because the control sets its own colour inline,
-           * and an inline style is not something a class can win against.
-           *
-           * The border goes with it: the field's border is the wrapper's, and
-           * the control's own would be a second one in the light theme's grey.
-           */
-          style={{ WebkitAppearance: 'none', color: '#fff', borderColor: 'transparent' }}
-        >
-          {options.map(opt => (
-            <option key={opt.value} value={opt.value} className="bg-[#07080c] text-white">
-              {opt.label}
-            </option>
-          ))}
-        </Select>
-      </div>
-    </div>
-  );
-}
+/** Waits for typing to pause before a code is looked up — one request per code, not per key. */
+const useDebounced = (value, ms = 400) => {
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(value), ms);
+    return () => clearTimeout(timer);
+  }, [value, ms]);
+  return settled;
+};
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -172,8 +92,7 @@ export default function RegisterPage() {
   const redirectTo = searchParams.get('redirect');
   // Arriving from a shared link. A sealed `?ref=` token also brands this page
   // for the company that shared it; the hook still honours the older plain
-  // `company_code` / `code` / `realtor_code` parameters, which cannot brand
-  // but must keep working for links already in circulation.
+  // `company_code` / `code` / `realtor_code` parameters.
   const {
     company: sharedCompanyName,
     companyCode: presetCompanyCode,
@@ -209,8 +128,9 @@ export default function RegisterPage() {
   const signedInName = useAuthStore((state) => state.accessToken) ? (signedInAs?.name || signedInAs?.email || null) : null;
   const { app_name, refresh: refreshAppearance } = useAppearance();
   const [roles, setRoles] = useState([]);
+  const [step, setStep] = useState('company'); // 'company' | 'details'
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', password: '',
+    name: '', email: '', phone: '', password: '', confirm: '',
     role: 'client',
     company_code: (() => {
       const q = new URLSearchParams(window.location.search);
@@ -220,21 +140,6 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  /**
-   * The mobile splash ("Create Account" / "Sign In" buttons over the carousel)
-   * is a fine front door for someone who typed the URL themselves, but a
-   * referral link is an explicit request to sign up — showing that visitor a
-   * screen they must tap through reads exactly like the link failed and
-   * dropped them on the landing page. So an invite param in the URL, OR
-   * attribution already resolved from storage (a refresh with no query string
-   * left), skips straight to the form; INVITE_PARAMS matches App.jsx's own
-   * list of what counts as an invitation.
-   */
-  const [mobileState, setMobileState] = useState(() => {
-    const q = new URLSearchParams(window.location.search);
-    const invited = ['ref', 'company_code', 'code', 'realtor_code'].some((key) => q.get(key));
-    return (invited || referralCompanyCode || referralRealtorCode) ? 'form' : 'splash';
-  }); // 'splash' | 'form'
 
   useEffect(() => {
     listRoles().then((response) => setRoles(response.data || [])).catch(() => setRoles([]));
@@ -257,13 +162,39 @@ export default function RegisterPage() {
     });
   }, [presetCompanyCode, sharedCompanyName, referringRealtorCode, referringRealtorName]);
 
+  /*
+   * The company behind the code, checked as it is typed (or once, for a code
+   * the link supplied) — its name and logo confirm it, and the page takes on
+   * its colours. Five characters is the shortest code there is, so nothing
+   * shorter is sent.
+   */
+  const typedCode = useDebounced(form.company_code.trim());
+  const lookupCode = isCompanyCodeLocked ? form.company_code : (typedCode.length >= 5 ? typedCode : '');
+  const lookup = useCompanyCode(lookupCode, { brand: !hasSealedLink });
+  const companyName = lookup.company?.name || referralCompanyName || null;
+  const companyConfirmed = isCompanyCodeLocked || lookup.status === 'found';
+
   const roleOptions = useMemo(
     () => roles
       .filter((role) => PUBLIC_ROLE_NAMES.includes(role.name))
+      // Buyers first: most people signing up are buying.
+      .sort((a, b) => PUBLIC_ROLE_NAMES.indexOf(a.name) - PUBLIC_ROLE_NAMES.indexOf(b.name))
       .map((role) => ({ value: role.name, label: role.display_name || role.name })),
     [roles]
   );
   const resolvedRoleOptions = roleOptions.length ? roleOptions : [{ value: 'client', label: 'Client' }];
+  const roleCopy = ROLE_COPY[form.role] || ROLE_COPY.client;
+
+  const waitingForInvite = hasSealedLink && resolvingSealedLink && !referralRealtorCode && !referralCompanyCode;
+  const mismatch = Boolean(form.confirm) && form.confirm !== form.password;
+
+  const continueToDetails = (event) => {
+    event.preventDefault();
+    if (!form.company_code.trim()) { setError('Enter your company code to continue.'); return; }
+    if (!companyConfirmed && lookup.status === 'missing') { setError('No company uses that code. Check it, or ask for an invite link.'); return; }
+    setError('');
+    setStep('details');
+  };
 
   const submit = async (event) => {
     event.preventDefault();
@@ -277,16 +208,21 @@ export default function RegisterPage() {
      * token at all: it exists solely to confirm branding at this point, and
      * attribution is already secured.
      */
-    if (hasSealedLink && resolvingSealedLink && !referralRealtorCode && !referralCompanyCode) {
+    if (waitingForInvite) {
       setError('Still preparing your invite — please try again in a moment.');
+      return;
+    }
+    if (mismatch) {
+      setError('The two passwords do not match.');
       return;
     }
     setLoading(true);
     setError('');
     try {
       const realtorCode = referringRealtorCode || referralRealtorCode;
+      const { confirm: _confirm, ...fields } = form;
       const response = await register({
-        ...form,
+        ...fields,
         type: form.role,
         role: form.role,
         ...(realtorCode ? { realtor_code: realtorCode } : {}),
@@ -296,7 +232,8 @@ export default function RegisterPage() {
       // server-side. Clearing storage stops it from being replayed onto a
       // second, unrelated sign-up later on the same browser.
       clearReferralAttribution();
-      await refreshAppearance();
+      // The session carries its company's look; only an older server needs the read.
+      if (!response.appearance) await refreshAppearance();
       navigate(redirectTo || '/');
     } catch (err) {
       /*
@@ -310,230 +247,253 @@ export default function RegisterPage() {
     }
   };
 
-  /* ── Shared form content ── */
-  const formContent = (
-    <div className="flex flex-col justify-center flex-1 px-8 py-10 max-w-sm mx-auto w-full lg:max-w-none lg:mx-0 lg:px-10 lg:py-0">
-      <div className="mb-6">
-        <p className="text-xl font-semibold text-white">Create account</p>
-        <p className="text-sm text-white/40 mt-1">Join {app_name || 'the platform'} to manage properties &amp; deals.</p>
-      </div>
+  const linkClass = 'font-bold text-[#E9D8C4] hover:underline';
+  const errorLine = error && <p className="rounded-xl bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-200 ring-1 ring-rose-400/30" role="alert">{error}</p>;
 
-      {signedInName && (
-        <div className="mb-5 rounded-lg bg-amber-500/10 px-4 py-3 text-xs text-amber-200 ring-1 ring-amber-400/30">
-          You are signed in as <span className="font-semibold">{signedInName}</span>. Creating an account
-          here will sign you out of that one.
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="ml-1 font-semibold underline underline-offset-2"
-          >
-            Go back instead
+  const progress = (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3 text-[13px] text-[#A6ADBD]">
+        {step === 'details' ? (
+          <button type="button" onClick={() => { setStep('company'); setError(''); }} className="-ml-1 flex items-center gap-1.5 py-2 font-semibold text-[#E9D8C4]">
+            <ArrowLeft size={16} aria-hidden="true" /> Back
           </button>
-        </div>
-      )}
-
-      <form onSubmit={submit} className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field
-            label="Full name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            placeholder="Jane Doe"
-            required
-          />
-          <Field
-            label="Phone"
-            value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            placeholder="+234 800 000 0000"
-          />
-          <Field
-            label="Email"
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            placeholder="you@example.com"
-            required
-          />
-          <DarkSelect
-            label="Role"
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-            options={resolvedRoleOptions}
-          />
-          <div className="sm:col-span-2">
-            <Field
-              label="Company Code"
-              value={form.company_code}
-              onChange={(e) => setForm({ ...form, company_code: e.target.value.toUpperCase() })}
-              placeholder="e.g. AB12C"
-              required
-              readOnly={isCompanyCodeLocked}
-            />
-            {isCompanyCodeLocked && (
-              <p className="mt-1 text-xs text-slate-500">
-                Your account will be linked to {referralCompanyName || 'the company that shared this link'}.
-              </p>
-            )}
-          </div>
-          {isRealtorLinked && (
-            <div className="sm:col-span-2">
-              <Field
-                label="Referred by"
-                value={referralRealtorName || referringRealtorCode || referralRealtorCode || ''}
-                readOnly
-                onChange={() => {}}
-              />
-              <p className="mt-1 text-xs text-slate-500">
-                You were invited by this realtor and will be added to their downline.
-              </p>
-            </div>
-          )}
-          <div className="sm:col-span-2">
-            <Field
-              label="Password"
-              type="password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder="••••••••"
-              minLength={MIN_PASSWORD_LENGTH}
-              required
-            />
-            <p className="mt-1 text-xs text-white/50">{PASSWORD_HINT}</p>
-          </div>
-        </div>
-
-        {error && <p className="text-sm text-rose-400">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading || (hasSealedLink && resolvingSealedLink && !referralRealtorCode && !referralCompanyCode)}
-          className="w-full h-11 rounded-lg text-sm font-semibold text-white transition-opacity disabled:opacity-50"
-          style={{ backgroundColor: `var(--primary)` }}
-        >
-          {loading
-            ? 'Creating account…'
-            : (hasSealedLink && resolvingSealedLink && !referralRealtorCode && !referralCompanyCode
-              ? 'Preparing your invite…'
-              : 'Create Account')}
-        </button>
-
-        <div className="flex items-center gap-3 text-xs text-white/25">
-          <span className="h-px flex-1 bg-white/10" />
-          or continue with
-          <span className="h-px flex-1 bg-white/10" />
-        </div>
-
-        {/*
-          Same control as the sign-in page, and the same endpoint: /auth/google
-          creates the account on first use, so one route serves both. An <a>
-          rather than a button because this is a full-page redirect the browser
-          must follow, not something fetch can do.
-        */}
-        <a
-          href={googleAuthUrl({
-            companyCode: form.company_code || presetCompanyCode || referralCompanyCode,
-            realtorCode: referringRealtorCode || referralRealtorCode,
-            redirect: redirectTo,
-          })}
-          className="flex w-full items-center justify-center gap-2 h-11 rounded-lg border border-white/10 bg-white/5 text-sm font-medium text-white/70 hover:bg-white/10 transition"
-        >
-          <GoogleIcon />
-          Sign up with Google
-        </a>
-
-        <p className="text-sm text-white/35 text-center">
-          Already have an account?{' '}
-          <Link to="/login" className="text-white/70 hover:text-white font-medium transition-colors">
-            Sign in
-          </Link>
-        </p>
-      </form>
-
-      <p className="text-xs text-white/20 text-center mt-8">
-        Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Platform'}
-      </p>
+        ) : <span>Create your account</span>}
+        <span>Step {step === 'company' ? 1 : 2} of 2{step === 'details' && companyName ? ` · ${form.role === 'realtor' ? 'Selling' : 'Buying'} with ${companyName}` : ''}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-1.5" aria-hidden="true">
+        <span className="h-1 rounded-full bg-primary" />
+        <span className={`h-1 rounded-full ${step === 'details' ? 'bg-primary' : 'bg-[#262D44]'}`} />
+      </div>
     </div>
   );
 
-  return (
-    <div className="h-screen w-full flex overflow-hidden bg-[#07080c]">
-
-      {/* ══ MOBILE: full-screen carousel with splash buttons ══ */}
-      <div className="lg:hidden relative w-full h-full">
-        <PropertyCarousel className="absolute inset-0" />
-
-        {/* Splash state */}
-        {mobileState === 'splash' && (
-          <div className="absolute inset-0 z-10 flex flex-col">
-            {/* Brand — top right */}
-            <div className="flex justify-end px-6 pt-10">
-              <RealtoBrand />
-            </div>
-
-            {/* Buttons — vertically centered */}
-            <div className="flex flex-1 flex-col items-center justify-center px-8 gap-3">
-              <button
-                onClick={() => setMobileState('form')}
-                className="w-full max-w-xs h-12 rounded-xl text-sm font-semibold text-white shadow-lg"
-                style={{ backgroundColor: `var(--primary)` }}
-              >
-                Create Account
-              </button>
-              <button
-                onClick={() => navigate('/login')}
-                className="w-full max-w-xs h-12 rounded-xl text-sm font-semibold text-white/80 border border-white/25 backdrop-blur-md bg-white/5"
-              >
-                Sign In
-              </button>
-            </div>
-
-            {/* Spacer so carousel bottom text stays visible */}
-            <div className="h-28" />
-          </div>
-        )}
-
-        {/* Form state */}
-        {mobileState === 'form' && (
-          <div className="absolute inset-0 z-20 bg-[#07080c] overflow-y-auto flex flex-col">
-            <div className="px-6 pt-10 pb-4 flex items-center justify-between">
-              <button
-                onClick={() => { setMobileState('splash'); setError(''); }}
-                className="flex items-center gap-1.5 text-white/40 hover:text-white/70 text-sm transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-                Back
-              </button>
-              <RealtoBrand />
-            </div>
-            {formContent}
-          </div>
-        )}
-      </div>
-
-      {/* ══ DESKTOP: left form panel (2/4) + right carousel (2/4) ══ */}
-      <div className="hidden lg:flex w-full h-full">
-
-        {/* Left: form panel — 2/4 = 50% */}
-        <div className="w-1/2 shrink-0 flex flex-col bg-[#07080c] overflow-y-auto">
-          <div className="px-10 pt-8 pb-4">
-            <RealtoBrand />
-          </div>
-          <div className="flex-1 flex flex-col justify-center">
-            {formContent}
-          </div>
-          <div className="px-10 pb-6 text-xs text-white/20">
-            <a href="mailto:support@realto.app" className="hover:text-white/50 transition-colors">Get Help</a>
-          </div>
-        </div>
-
-        {/* Right: full-height carousel — 2/4 = 50% */}
-        <div className="w-1/2">
-          <PropertyCarousel />
-        </div>
-      </div>
+  const signedInNotice = signedInName && (
+    <div className="rounded-xl bg-amber-500/10 px-4 py-3 text-xs text-amber-200 ring-1 ring-amber-400/30">
+      You are signed in as <span className="font-semibold">{signedInName}</span>. Creating an account
+      here will sign you out of that one.
+      <button type="button" onClick={() => navigate('/')} className="ml-1 font-semibold underline underline-offset-2">
+        Go back instead
+      </button>
     </div>
+  );
+
+  const companyStep = (
+    <form onSubmit={continueToDetails} className="space-y-6">
+      {isCompanyCodeLocked ? (
+        <div className="flex items-start gap-3 rounded-2xl bg-emerald-500/10 px-4 py-3.5 ring-1 ring-emerald-400/40">
+          <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-emerald-300" aria-hidden="true" />
+          <p className="text-sm text-[#D5D9E2]">
+            You&apos;re joining <strong className="text-[#F3F1EC]">{companyName || 'the company that shared this link'}</strong>
+            {isRealtorLinked && (
+              <>, invited by <strong className="text-[#F3F1EC]">{referralRealtorName || referringRealtorCode || referralRealtorCode}</strong></>
+            )}
+            . No company code needed.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <AuthField
+            id="company-code"
+            label="Company code"
+            value={form.company_code}
+            onChange={(e) => setForm({ ...form, company_code: e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, '') })}
+            placeholder="e.g. AB12C"
+            required
+            autoComplete="off"
+            autoCapitalize="characters"
+            inputClassName="font-semibold tracking-[0.12em]"
+            aria-describedby="company-code-status"
+          />
+          <div id="company-code-status" aria-live="polite">
+            {lookup.status === 'found' && lookup.company && (
+              <div className="flex items-center gap-3 rounded-2xl bg-emerald-500/10 p-3.5 ring-1 ring-emerald-400/40">
+                <AuthBrand company={lookup.company} />
+                <CheckCircle2 size={20} className="ml-auto shrink-0 text-emerald-300" aria-hidden="true" />
+              </div>
+            )}
+            {lookup.status === 'missing' && (
+              <p className="rounded-2xl bg-rose-500/10 p-3.5 text-sm text-rose-200 ring-1 ring-rose-400/30">
+                No company uses <strong>{lookupCode}</strong>. Check the code, or ask your realtor for their invite link, which fills this in for you.
+              </p>
+            )}
+            {lookup.status === 'loading' && <p className="text-[13px] text-[#A6ADBD]">Checking the code…</p>}
+            {lookup.status === 'idle' && (
+              <p className="text-[13px] text-[#A6ADBD]">No code? Ask your company or realtor for an invite link — it fills this in for you.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-2">
+        <h1 className="font-heading text-[28px] font-extrabold leading-tight tracking-tight sm:text-[32px]">
+          How will you use {companyName || app_name || 'your account'}?
+        </h1>
+        <p className="text-[15px] text-[#A6ADBD]">You can add the other profile later from your account.</p>
+      </div>
+
+      <div role="radiogroup" aria-label="Account type" className="space-y-3">
+        {resolvedRoleOptions.map((option) => {
+          const copy = ROLE_COPY[option.value] || { title: option.label, body: '', icon: Home };
+          const selected = form.role === option.value;
+          const Icon = copy.icon;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => setForm({ ...form, role: option.value })}
+              className={`flex w-full items-start gap-3.5 rounded-2xl border-2 p-4 text-left transition ${selected ? 'border-[color:var(--primary)] bg-[#161B2C]' : 'border-[#2B3350] hover:border-[#3B4566]'}`}
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#262D44]">
+                <Icon size={20} aria-hidden="true" />
+              </span>
+              <span className="flex flex-1 flex-col gap-1">
+                <span className="font-heading text-base font-bold">{copy.title}</span>
+                {copy.body && <span className="text-sm leading-relaxed text-[#A6ADBD]">{copy.body}</span>}
+                {selected && copy.note && <span className="mt-1 text-[13px] text-amber-300">{copy.note}</span>}
+              </span>
+              <span className={`mt-1 h-5 w-5 shrink-0 rounded-full ${selected ? 'border-[6px] border-[color:var(--primary)]' : 'border-2 border-[#56607A]'}`} aria-hidden="true" />
+            </button>
+          );
+        })}
+      </div>
+
+      {errorLine}
+      <button type="submit" className={primaryButton} style={primaryInk} disabled={!isCompanyCodeLocked && lookup.status !== 'found'}>
+        Continue
+      </button>
+    </form>
+  );
+
+  const detailsStep = (
+    <form onSubmit={submit} className="space-y-4">
+      <h1 className="font-heading text-[28px] font-extrabold leading-tight tracking-tight sm:text-[30px]">Create your account</h1>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <AuthField
+          id="reg-name"
+          label="Full name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          placeholder="Jane Doe"
+          required
+          autoComplete="name"
+        />
+        <AuthField
+          id="reg-phone"
+          label="Phone"
+          note="(for payment reminders)"
+          type="tel"
+          value={form.phone}
+          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          placeholder="+234 800 000 0000"
+          autoComplete="tel"
+        />
+      </div>
+      <AuthField
+        id="reg-email"
+        label="Email"
+        type="email"
+        value={form.email}
+        onChange={(e) => setForm({ ...form, email: e.target.value })}
+        placeholder="you@example.com"
+        required
+        autoComplete="email"
+      />
+      <PasswordField
+        id="reg-password"
+        label="Password"
+        value={form.password}
+        onChange={(e) => setForm({ ...form, password: e.target.value })}
+        placeholder={PASSWORD_HINT}
+        minLength={MIN_PASSWORD_LENGTH}
+        required
+        autoComplete="new-password"
+        hint={<PasswordStrength password={form.password} />}
+      />
+      <PasswordField
+        id="reg-confirm"
+        label="Confirm password"
+        value={form.confirm}
+        onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+        required
+        autoComplete="new-password"
+        invalid={mismatch}
+        hint={mismatch
+          ? <p className="text-xs text-rose-300">The two passwords don&apos;t match yet.</p>
+          : (form.confirm && <p className="text-xs text-emerald-300">Passwords match.</p>)}
+      />
+
+      {errorLine}
+
+      <button type="submit" disabled={loading || waitingForInvite || mismatch} className={primaryButton} style={primaryInk}>
+        {loading ? 'Creating account…' : (waitingForInvite ? 'Preparing your invite…' : 'Create account')}
+      </button>
+
+      {/*
+        Same control as the sign-in page, and the same endpoint: /auth/google
+        creates the account on first use, so one route serves both. An <a>
+        rather than a button because this is a full-page redirect the browser
+        must follow, not something fetch can do.
+      */}
+      <a
+        href={googleAuthUrl({
+          companyCode: form.company_code || presetCompanyCode || referralCompanyCode,
+          realtorCode: referringRealtorCode || referralRealtorCode,
+          redirect: redirectTo,
+        })}
+        className={ghostButton}
+      >
+        <GoogleIcon />
+        Sign up with Google instead
+      </a>
+    </form>
+  );
+
+  const aside = step === 'company' ? (
+    <AsidePanel kicker={roleCopy.aside.kicker} title={roleCopy.aside.title}>
+      <ul className="space-y-3">
+        {roleCopy.aside.points.map((point) => (
+          <li key={point} className="flex items-center gap-3 rounded-2xl bg-[rgba(14,18,32,0.7)] px-4 py-3.5 text-[15px] text-[#D5D9E2]">
+            <CheckCircle2 size={18} className="shrink-0 text-[color:var(--primary)]" aria-hidden="true" /> {point}
+          </li>
+        ))}
+      </ul>
+    </AsidePanel>
+  ) : (
+    <AsidePanel kicker="What happens next">
+      <ol className="space-y-3">
+        {NEXT_STEPS.map(([title, body], index) => (
+          <li key={title} className="flex gap-3.5 rounded-2xl bg-[rgba(14,18,32,0.7)] p-4">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-heading text-sm font-extrabold" style={primaryInk}>{index + 1}</span>
+            <span className="flex flex-col gap-1">
+              <strong className="text-[15px]">{title}</strong>
+              <span className="text-sm text-[#A6ADBD]">{body}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </AsidePanel>
+  );
+
+  return (
+    <AuthShell
+      wide
+      brand={<AuthBrand company={lookup.company || (companyName ? { name: companyName } : null)} />}
+      aside={aside}
+      footer={(
+        <>
+          <p>Already have an account? <Link to={form.company_code && companyConfirmed ? `/login/${encodeURIComponent(form.company_code)}` : '/login'} className={linkClass}>Sign in</Link></p>
+          <p className="text-xs text-[#7C8497]">
+            Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Platform'} ·{' '}
+            <a href="mailto:support@realto.app" className="text-[#A6ADBD] hover:text-white">Get help</a>
+          </p>
+        </>
+      )}
+    >
+      {signedInNotice}
+      {progress}
+      {step === 'company' ? companyStep : detailsStep}
+    </AuthShell>
   );
 }

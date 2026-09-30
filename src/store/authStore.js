@@ -5,6 +5,9 @@ import {
   logout as logoutApi,
 } from '../api/authApi';
 import { setSessionKey, clearSessionKey } from '../api/payloadCrypto';
+import { publishSessionAppearance } from '../lib/sessionAppearance';
+import { readKnownAccount, rememberAccount } from '../lib/knownAccount';
+import { followSessionAcrossTabs } from '../lib/sessionSwitch';
 import { resetRefreshBudget } from '../api/refreshBudget';
 import { markFreshLogin } from '../lib/launcherGreeting';
 import { clearAdvertDismissals } from '../lib/advertDismissal';
@@ -80,7 +83,22 @@ const useAuthStore = create(
          * yet, which is what distinguishes it from the other five callers
          * without any of them having to say so.
          */
-        if (!get().user && u) {
+        /*
+         * A move to a DIFFERENT account without signing out first: switching
+         * company (each company is its own account), or signing in to another
+         * company over a session that was still open. Same treatment as a
+         * sign-in, minus the greeting — whatever the previous account left in
+         * this browser (dismissed adverts, a remembered company's theme,
+         * cached lists) belongs to the company being left. A profile switch
+         * (realtor ⇄ client) and a token refresh keep the same account and
+         * are not this.
+         */
+        const previous = get().user;
+        const switchedAccount = Boolean(previous && u)
+          && (Number(previous.id) !== Number(u.id)
+            || (previous.company_id ?? null) !== (u.company_id ?? null));
+
+        if (!previous && u) {
           /*
            * Order matters. The wipe goes FIRST, so that everything written
            * after it — the greeting flag just below, and this store's own
@@ -93,6 +111,26 @@ const useAuthStore = create(
           // A new session means the promotion advert is owed another showing,
           // whatever the previous occupant of this tab dismissed.
           clearAdvertDismissals();
+        } else if (switchedAccount) {
+          // A device told to remember its owner keeps doing so — as the
+          // account they have just moved to.
+          const remembered = readKnownAccount();
+          clearBrowserState();
+          clearAdvertDismissals();
+          if (remembered) rememberAccount(payload);
+        }
+
+        /*
+         * The company's branding, when the response carried it. Published
+         * AFTER the wipe above (which clears localStorage, remembered themes
+         * included) and BEFORE the token is committed, so the provider paints
+         * the new colours first and then sees a token it need not re-fetch for.
+         */
+        if (payload.appearance) {
+          publishSessionAppearance(payload.appearance, {
+            accessToken: payload.accessToken ?? null,
+            companyId: u?.company_id ?? null,
+          });
         }
 
         set({
@@ -222,5 +260,8 @@ const useAuthStore = create(
     { name: 'realto-auth' }
   )
 );
+
+// Another tab switching company or signing out moves this one too.
+followSessionAcrossTabs(() => useAuthStore.getState());
 
 export default useAuthStore;

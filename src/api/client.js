@@ -239,6 +239,9 @@ client.interceptors.response.use(
           roles: response.data.roles,
           activeRole: response.data.activeRole,
           activeRoleId: response.data.activeRoleId,
+          // The refreshed session carries its branding too, so a token
+          // rotation costs no /settings/appearance round trip.
+          appearance: response.data.appearance,
         });
         processQueue(null, nextToken);
         originalRequest.headers.Authorization = `Bearer ${nextToken}`;

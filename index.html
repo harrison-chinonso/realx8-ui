@@ -5,6 +5,42 @@
     <link rel="icon" href="data:," />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RealX8</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+    <!--
+      Paint the company's remembered theme before the bundle loads, so a reload
+      never flashes the platform default first. Written by src/lib/themeCache.js;
+      keep the key and shape in step with it. Any failure leaves the defaults.
+      The CSP allows it by hash (vercel.json); the build fails if they drift.
+    -->
+    <script>
+      (function () {
+        try {
+          var auth = JSON.parse(localStorage.getItem('realto-auth') || 'null');
+          var state = auth && auth.state;
+          var company = state && state.accessToken
+            ? (state.company_id != null ? state.company_id : (state.user && state.user.company_id != null ? state.user.company_id : null))
+            : null;
+          if (company == null) {
+            var known = JSON.parse(localStorage.getItem('rx-known-account') || 'null');
+            if (known && known.company_id != null) company = known.company_id;
+          }
+          var theme = JSON.parse(localStorage.getItem('rx-theme:' + (company == null ? 'platform' : company)) || 'null');
+          if (!theme || theme.v !== 1) return;
+          var root = document.documentElement;
+          for (var name in theme.vars || {}) root.style.setProperty(name, theme.vars[name]);
+          if (theme.dark) root.classList.add('dark');
+          if (theme.title) document.title = theme.title;
+          (theme.fonts || []).forEach(function (font) {
+            if (!font || !font.id || !font.url || document.getElementById(font.id)) return;
+            var link = document.createElement('link');
+            link.id = font.id; link.rel = 'stylesheet'; link.href = font.url;
+            document.head.appendChild(link);
+          });
+        } catch (e) { /* no storage, or bad JSON — the app's defaults apply */ }
+      })();
+    </script>
   </head>
   <body class="bg-slate-50">
     <div id="root"></div>

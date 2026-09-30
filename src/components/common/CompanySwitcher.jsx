@@ -6,6 +6,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import useAuthStore from '../../store/authStore';
 import { autoFocusProps } from '../../utils/softKeyboard';
+import { landOnDashboard } from '../../lib/sessionSwitch';
 
 /**
  * Move between the companies one person holds accounts with.
@@ -27,9 +28,10 @@ import { autoFocusProps } from '../../utils/softKeyboard';
  * A switch is not a filter. It signs in as a DIFFERENT account, with its own
  * permissions, its own realtor level, its own invoices and its own branding —
  * so every list, count and badge already on screen belongs to the company being
- * left. Reloading is the honest way to get rid of them; leaving them would show
+ * left. A full load is the honest way to get rid of them; leaving them would show
  * one company's figures under another company's name, which is the one mistake
- * a switcher must never make.
+ * a switcher must never make. And it loads the DASHBOARD, not the page it was
+ * on: that page may be a record of the company just left (landOnDashboard).
  *
  * ProfileToggle beside it reloads for the same reason, and the two read as one
  * kind of action because they are.
@@ -91,7 +93,7 @@ export default function CompanySwitcher({ className = '' }) {
     setChallengeError('');
     try {
       await switchCompany(entry.company_id, password);
-      window.location.reload();
+      landOnDashboard();
     } catch (err) {
       const reason = err?.response?.data?.reason;
       const message = err?.response?.data?.message || err?.userMessage || 'Could not switch company.';
