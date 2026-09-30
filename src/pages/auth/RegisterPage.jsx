@@ -90,6 +90,14 @@ export default function RegisterPage() {
   // Set when the visitor arrived from a shared property while trying to buy.
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get('redirect');
+  /*
+   * A buyer mid-purchase: they pressed Purchase on a shared property. The
+   * company is known from the link and the reason is buying, so the first
+   * step has nothing to ask — they go straight to their details, as a client,
+   * and the new account lands on the purchase screen (`redirect`). Purchase,
+   * Create account, choose the unit: three clicks.
+   */
+  const buyingNow = searchParams.get('intent') === 'purchase';
   // Arriving from a shared link. A sealed `?ref=` token also brands this page
   // for the company that shared it; the hook still honours the older plain
   // `company_code` / `code` / `realtor_code` parameters.
@@ -128,10 +136,11 @@ export default function RegisterPage() {
   const signedInName = useAuthStore((state) => state.accessToken) ? (signedInAs?.name || signedInAs?.email || null) : null;
   const { app_name, refresh: refreshAppearance } = useAppearance();
   const [roles, setRoles] = useState([]);
-  const [step, setStep] = useState('company'); // 'company' | 'details'
+  // Skipped straight to details for a buyer whose company the link already settled.
+  const [step, setStep] = useState(() => (buyingNow && isCompanyCodeLocked ? 'details' : 'company')); // 'company' | 'details'
   const [form, setForm] = useState({
     name: '', email: '', phone: '', password: '', confirm: '',
-    role: 'client',
+    role: 'client', // and always client for a buyer mid-purchase (buyingNow): see the role step
     company_code: (() => {
       const q = new URLSearchParams(window.location.search);
       const fromUrl = (q.get('company_code') || q.get('code') || '').toUpperCase();
@@ -332,7 +341,7 @@ export default function RegisterPage() {
       </div>
 
       <div role="radiogroup" aria-label="Account type" className="space-y-3">
-        {resolvedRoleOptions.map((option) => {
+        {resolvedRoleOptions.filter((option) => !buyingNow || option.value === 'client').map((option) => {
           const copy = ROLE_COPY[option.value] || { title: option.label, body: '', icon: Home };
           const selected = form.role === option.value;
           const Icon = copy.icon;
@@ -368,7 +377,15 @@ export default function RegisterPage() {
 
   const detailsStep = (
     <form onSubmit={submit} className="space-y-4">
-      <h1 className="font-heading text-[28px] font-extrabold leading-tight tracking-tight sm:text-[30px]">Create your account</h1>
+      <div className="space-y-2">
+        <h1 className="font-heading text-[28px] font-extrabold leading-tight tracking-tight sm:text-[30px]">Create your account</h1>
+        {buyingNow && (
+          <p className="text-[15px] text-[#A6ADBD]">
+            You&apos;ll be signed in straight away and taken back to choose your unit
+            {companyName ? ` with ${companyName}` : ''}.
+          </p>
+        )}
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <AuthField
           id="reg-name"
@@ -427,7 +444,7 @@ export default function RegisterPage() {
       {errorLine}
 
       <button type="submit" disabled={loading || waitingForInvite || mismatch} className={primaryButton} style={primaryInk}>
-        {loading ? 'Creating account…' : (waitingForInvite ? 'Preparing your invite…' : 'Create account')}
+        {loading ? 'Creating account…' : (waitingForInvite ? 'Preparing your invite…' : (buyingNow ? 'Create account and continue' : 'Create account'))}
       </button>
 
       {/*
@@ -483,7 +500,15 @@ export default function RegisterPage() {
       aside={aside}
       footer={(
         <>
-          <p>Already have an account? <Link to={form.company_code && companyConfirmed ? `/login/${encodeURIComponent(form.company_code)}` : '/login'} className={linkClass}>Sign in</Link></p>
+          <p>
+            Already have an account?{' '}
+            <Link
+              to={`${form.company_code && companyConfirmed ? `/login/${encodeURIComponent(form.company_code)}` : '/login'}${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+              className={linkClass}
+            >
+              Sign in{buyingNow ? ' to buy' : ''}
+            </Link>
+          </p>
           <p className="text-xs text-[#7C8497]">
             Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Platform'} ·{' '}
             <a href="mailto:support@realto.app" className="text-[#A6ADBD] hover:text-white">Get help</a>

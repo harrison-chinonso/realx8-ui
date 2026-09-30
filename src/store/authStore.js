@@ -21,6 +21,8 @@ const useAuthStore = create(
       refreshToken: null,
       permissions: [],
       company_id: null,
+      /** The session's company by name and code ({ id, name, code }); null for platform staff. */
+      company: null,
       isSuperiorAdmin: false,
       roles: [],        // all roles/profiles this user has
       activeRole: null, // { id, name, display_name } — currently active profile
@@ -139,6 +141,11 @@ const useAuthStore = create(
           refreshToken: payload.refreshToken ?? null,
           permissions: Array.isArray(perms) ? perms : [],
           company_id: u?.company_id ?? null,
+          // Kept across a token refresh (which does not resend it); dropped on
+          // a move to another account, whose company it would misname.
+          company: payload.company !== undefined
+            ? (payload.company || null)
+            : (switchedAccount ? null : get().company),
           isSuperiorAdmin: u?.type === 'superior_admin' || u?.isSuperiorAdmin === true,
           roles: Array.isArray(payload.roles) ? payload.roles : get().roles,
           activeRole: payload.activeRole !== undefined ? payload.activeRole : get().activeRole,
@@ -180,6 +187,7 @@ const useAuthStore = create(
         refreshToken: null,
         permissions: [],
         company_id: null,
+        company: null,
         isSuperiorAdmin: false,
         roles: [],
         activeRole: null,
