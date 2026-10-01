@@ -9,6 +9,10 @@ import IdleWarningModal from './components/common/IdleWarningModal';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import HelpPage from './pages/help/HelpPage';
+import TermsPage from './pages/legal/TermsPage';
+import TermsGate from './components/legal/TermsGate';
+import LegalDocumentPage from './pages/superior/LegalDocumentPage';
+import TermsAcceptancesPage from './pages/superior/TermsAcceptancesPage';
 import GoogleCallbackPage from './pages/auth/GoogleCallbackPage';
 import PublicPropertyPage from './pages/public/PublicPropertyPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -130,6 +134,8 @@ function ProtectedShell() {
         secondsLeft={WARNING_SECONDS}
         onStayLoggedIn={dismissWarning}
       />
+      {/* Realtors and clients agree to the current Terms before going on. */}
+      <TermsGate />
     </AppLayout>
   );
 }
@@ -246,6 +252,8 @@ export default function App() {
         <Route path="/register" element={<PublicOnly allowInvited><RegisterPage /></PublicOnly>} />
         {/* Help & FAQ: open to everyone, signed in or not — see HelpPage. */}
         <Route path="/help" element={<HelpPage />} />
+        {/* The current Terms of Use and Privacy Policy, readable by anyone. */}
+        <Route path="/legal/terms" element={<TermsPage />} />
         <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
 
         {/* Shareable property view — no auth, works signed in or out */}
@@ -258,6 +266,8 @@ export default function App() {
           <Route path="/superior/companies/new" element={<CompaniesPage />} />
           <Route path="/superior/companies/:id/settings" element={<CompanySettingsPage />} />
           <Route path="/superior/users" element={<UsersPage />} />
+          <Route path="/superior/legal" element={<LegalDocumentPage />} />
+          <Route path="/superior/legal/acceptances" element={<TermsAcceptancesPage />} />
           {/*
             The same Settings page every administrator gets, with a company
             picker on top.
