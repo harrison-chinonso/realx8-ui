@@ -32,3 +32,11 @@ export const lookupCompanyCode = (code) =>
  */
 export const companyShowcase = (code) =>
   client.get(`/public/companies/${encodeURIComponent(String(code).trim().toUpperCase())}/showcase`).then((r) => r.data?.data);
+
+/**
+ * Who to contact for help: { email, phone, whatsapp, hours, company }. Public —
+ * the signed-in user's company when there is one, else the company the page
+ * was opened for (`code`), else the platform's own.
+ */
+export const getSupportContacts = (code) =>
+  client.get('/settings/support', { params: code ? { c: String(code).trim().toUpperCase() } : {} }).then((r) => r.data?.data || {});

@@ -511,7 +511,7 @@ export default function RegisterPage() {
           </p>
           <p className="text-xs text-[#7C8497]">
             Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Platform'} ·{' '}
-            <a href="mailto:support@realto.app" className="text-[#A6ADBD] hover:text-white">Get help</a>
+            <Link to={form.company_code && companyConfirmed ? `/help?c=${encodeURIComponent(form.company_code)}` : '/help'} className="text-[#A6ADBD] hover:text-white">Get help</Link>
           </p>
         </>
       )}
