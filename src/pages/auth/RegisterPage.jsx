@@ -14,6 +14,10 @@ import {
 import { useAppearance } from '../../context/useAppearance';
 import { googleAuthUrl } from '../../utils/googleAuthUrl';
 import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '../../constants/password';
+import { getTerms } from '../../api/legalApi';
+import TermsConsent, { EMPTY_CONSENT, consentComplete } from '../../components/legal/TermsConsent';
+import TermsModal from '../../components/legal/TermsModal';
+import { rememberPendingConsent } from '../../components/legal/TermsGate';
 import {
   AsidePanel, AuthBrand, AuthField, AuthShell, PasswordField, PasswordStrength, ghostButton, primaryButton, primaryInk,
 } from '../../components/auth/AuthKit';
@@ -149,6 +153,17 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  /*
+   * The Terms of Use and Privacy Policy, agreed to before the account exists.
+   * null when nothing is published yet — then there is nothing to agree to and
+   * the form works as before. `reading` is the part open in the reading pane.
+   */
+  const [terms, setTerms] = useState(null);
+  const [consent, setConsent] = useState(EMPTY_CONSENT);
+  const [reading, setReading] = useState(null);
+  const loadTerms = () => getTerms().then(setTerms).catch(() => setTerms(null));
+  useEffect(() => { loadTerms(); }, []);
+  const termsAgreed = !terms || consentComplete(consent);
 
   useEffect(() => {
     listRoles().then((response) => setRoles(response.data || [])).catch(() => setRoles([]));
@@ -225,6 +240,10 @@ export default function RegisterPage() {
       setError('The two passwords do not match.');
       return;
     }
+    if (!termsAgreed) {
+      setError('Please confirm that you agree to the Terms of Use and the Privacy Policy.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -235,6 +254,14 @@ export default function RegisterPage() {
         type: form.role,
         role: form.role,
         ...(realtorCode ? { realtor_code: realtorCode } : {}),
+        ...(terms ? {
+          terms: {
+            version_id: terms.id,
+            accept_terms: consent.terms,
+            accept_privacy: consent.privacy,
+            marketing_opt_in: consent.marketing,
+          },
+        } : {}),
       });
       setSession(response);
       // The referral has done its job — an account now exists carrying it
@@ -250,7 +277,12 @@ export default function RegisterPage() {
        * whose top-level message is the word "Validation failed" and whose
        * useful sentence is in errors[0]. extractError knows to prefer it.
        */
-      setError(err.userMessage || 'Unable to register');
+      // Updated while the form was open: show the new version and ask again.
+      if (err?.response?.data?.code === 'TERMS_CHANGED') {
+        await loadTerms();
+        setConsent(EMPTY_CONSENT);
+      }
+      setError(err?.response?.data?.message || err.userMessage || 'Unable to register');
     } finally {
       setLoading(false);
     }
@@ -441,9 +473,15 @@ export default function RegisterPage() {
           : (form.confirm && <p className="text-xs text-emerald-300">Passwords match.</p>)}
       />
 
+      {terms && (
+        <div className="rounded-2xl border border-[#2B3350] bg-[#161B2C] p-4">
+          <TermsConsent value={consent} onChange={setConsent} onRead={setReading} tone="dark" disabled={loading} />
+        </div>
+      )}
+
       {errorLine}
 
-      <button type="submit" disabled={loading || waitingForInvite || mismatch} className={primaryButton} style={primaryInk}>
+      <button type="submit" disabled={loading || waitingForInvite || mismatch || !termsAgreed} className={primaryButton} style={primaryInk}>
         {loading ? 'Creating account…' : (waitingForInvite ? 'Preparing your invite…' : (buyingNow ? 'Create account and continue' : 'Create account'))}
       </button>
 
@@ -459,7 +497,17 @@ export default function RegisterPage() {
           realtorCode: referringRealtorCode || referralRealtorCode,
           redirect: redirectTo,
         })}
-        className={ghostButton}
+        /*
+         * The account is created on Google's return, so the boxes ticked here
+         * travel with the redirect and are recorded on arrival (TermsGate).
+         * Not offered until they are ticked — Google is not a way round them.
+         */
+        onClick={(event) => {
+          if (!termsAgreed) { event.preventDefault(); setError('Please confirm that you agree to the Terms of Use and the Privacy Policy first.'); return; }
+          if (terms) rememberPendingConsent(terms.id, consent);
+        }}
+        aria-disabled={!termsAgreed}
+        className={`${ghostButton} ${termsAgreed ? '' : 'opacity-50'}`}
       >
         <GoogleIcon />
         Sign up with Google instead
@@ -512,6 +560,7 @@ export default function RegisterPage() {
           <p className="text-xs text-[#7C8497]">
             Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Platform'} ·{' '}
             <Link to={form.company_code && companyConfirmed ? `/help?c=${encodeURIComponent(form.company_code)}` : '/help'} className="text-[#A6ADBD] hover:text-white">Get help</Link>
+            {' '}· <Link to="/legal/terms" className="text-[#A6ADBD] hover:text-white">Terms &amp; Privacy</Link>
           </p>
         </>
       )}
@@ -519,6 +568,7 @@ export default function RegisterPage() {
       {signedInNotice}
       {progress}
       {step === 'company' ? companyStep : detailsStep}
+      <TermsModal open={Boolean(reading)} terms={terms} section={reading} onClose={() => setReading(null)} />
     </AuthShell>
   );
 }

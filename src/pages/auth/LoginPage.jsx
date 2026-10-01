@@ -785,6 +785,7 @@ export default function LoginPage() {
       <p className="text-xs text-[#7C8497]">
         Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Realx8'} ·{' '}
         <Link to={company?.code || linkCode ? `/help?c=${encodeURIComponent(company?.code || linkCode)}` : '/help'} className="text-[#A6ADBD] hover:text-white">Get help</Link>
+        {' '}· <Link to="/legal/terms" className="text-[#A6ADBD] hover:text-white">Terms &amp; Privacy</Link>
       </p>
     </>
   );

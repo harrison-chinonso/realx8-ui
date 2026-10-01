@@ -33,6 +33,8 @@ export const SUPERIOR_ADMIN_NAV = [
       { to: '/superior/dashboard', label: 'Platform Dashboard', icon: Globe,    permission: null, superiorAdminOnly: true },
       { to: '/superior/companies', label: 'Companies',          icon: Building, permission: null, superiorAdminOnly: true },
       { to: '/superior/users',     label: 'All Users',          icon: Users,    permission: null, superiorAdminOnly: true },
+      { to: '/superior/legal',     label: 'Terms & Privacy',    icon: ScrollText, permission: null, superiorAdminOnly: true },
+      { to: '/superior/legal/acceptances', label: 'Terms Acceptances', icon: FileEdit, permission: null, superiorAdminOnly: true },
     ],
   },
 ];
