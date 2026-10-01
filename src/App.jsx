@@ -8,6 +8,7 @@ import useIdleTimeout from './hooks/useIdleTimeout';
 import IdleWarningModal from './components/common/IdleWarningModal';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import HelpPage from './pages/help/HelpPage';
 import GoogleCallbackPage from './pages/auth/GoogleCallbackPage';
 import PublicPropertyPage from './pages/public/PublicPropertyPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -243,6 +244,8 @@ export default function App() {
         {/* A company's own sign-in page — its logo, colours and listings. */}
         <Route path="/login/:companyCode" element={<PublicOnly><LoginPage /></PublicOnly>} />
         <Route path="/register" element={<PublicOnly allowInvited><RegisterPage /></PublicOnly>} />
+        {/* Help & FAQ: open to everyone, signed in or not — see HelpPage. */}
+        <Route path="/help" element={<HelpPage />} />
         <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
 
         {/* Shareable property view — no auth, works signed in or out */}

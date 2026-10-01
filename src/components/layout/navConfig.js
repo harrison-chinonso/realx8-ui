@@ -438,6 +438,8 @@ export const NAV = [
       { to: '/realtor/recruitment',    label: 'Recruitment',               icon: Megaphone,     permission: 'realtors.recruitment.view', hideForTypes: ['realtor'] },
       { to: '/front-desk',             label: 'Visitor Log & Attendance',  icon: UserRound,     permission: 'frontdesk.visitors.manage' },
       { to: '/support',                label: 'Support Centre',            icon: HelpCircle,    permission: 'support.view' },
+      // Everyone's: the FAQ and how to reach a person (pages/help/HelpPage).
+      { to: '/help',                   label: 'Help & FAQ',                icon: HelpCircle,    permission: null },
       { to: '/care',                   label: 'VIP Clients',               icon: ThumbsUp,      permission: 'care.view' },
       { to: '/care/communications',    label: 'Messaging',                 icon: MessageSquare, permission: 'care.view' },
       { to: '/care/alerts',            label: 'Scheduled Alerts',          icon: Calendar,      permission: 'care.view' },

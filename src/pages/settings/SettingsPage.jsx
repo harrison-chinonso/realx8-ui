@@ -113,6 +113,21 @@ const SETTING_GROUPS = [
     ],
   },
   {
+    /*
+     * How people reach a person from the Help page (pages/help/HelpPage).
+     * Saved without a company it is the platform's default; a company's own
+     * values replace it field by field, and a blank field keeps the default.
+     */
+    group: 'support',
+    label: 'Help & support',
+    fields: [
+      { key: 'support_email', label: 'Support email', type: 'email', placeholder: 'support@yourcompany.com — blank uses the platform’s' },
+      { key: 'support_phone', label: 'Support phone (for calls)', type: 'text', placeholder: '+234 800 000 0000 — blank uses the platform’s' },
+      { key: 'support_whatsapp', label: 'WhatsApp number', type: 'text', placeholder: '+234 800 000 0000 — blank uses the platform’s' },
+      { key: 'support_hours', label: 'Support hours', type: 'text', placeholder: 'Mon–Fri, 9am–5pm WAT' },
+    ],
+  },
+  {
     group: 'email',
     label: 'Email',
     fields: [
@@ -1665,10 +1680,12 @@ export default function SettingsPage() {
         getSettings(null, { group: 'invoicing' }),
         getSettings(null, { group: 'inventory' }),
         getSettings(null, { group: 'assistant' }),
+        // Own rows only: blank means the platform's default applies.
+        getSettings(null, { group: 'support' }),
         // Effective, not own rows: posting follows the platform row when the
         // company has none, and this should show what actually applies.
         getSettings(null, { effective: true, group: 'accounting' }),
-      ]).then(([gen, email, payment, invoicing, inventory, aiAssistant, accounting]) => {
+      ]).then(([gen, email, payment, invoicing, inventory, aiAssistant, support, accounting]) => {
         setValues({
           ...(gen.data || {}),
           ...(email.data || {}),
@@ -1676,6 +1693,7 @@ export default function SettingsPage() {
           ...(invoicing.data || {}),
           ...(inventory.data || {}),
           ...(aiAssistant.data || {}),
+          ...(support.data || {}),
           ...(accounting.data || {}),
         });
       });

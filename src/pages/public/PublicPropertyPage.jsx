@@ -521,7 +521,10 @@ export default function PublicPropertyPage() {
         )}
 
         <p className="pb-4 text-center text-xs text-slate-400">
-          Shared property listing — details are subject to change.
+          Shared property listing — details are subject to change. ·{' '}
+          <Link to={property.company_code ? `/help?c=${encodeURIComponent(property.company_code)}` : '/help'} className="font-semibold hover:underline">
+            Help &amp; FAQ
+          </Link>
         </p>
       </div>
     </div>

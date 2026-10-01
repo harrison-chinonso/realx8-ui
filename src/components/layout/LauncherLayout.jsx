@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { Bell, ChevronDown, Grid3x3, LogOut, User } from 'lucide-react';
+import { Bell, ChevronDown, Grid3x3, HelpCircle, LogOut, User } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
 import useNavBadgeStore from '../../store/navBadgeStore';
@@ -197,6 +197,9 @@ export default function LauncherLayout({ children }) {
                   <User aria-hidden="true" className="h-4 w-4" /> Profile
                 </NavLink>
               )}
+              <NavLink to="/help" role="menuitem" onClick={() => setMenuOpen(false)} className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                <HelpCircle aria-hidden="true" className="h-4 w-4" /> Help &amp; FAQ
+              </NavLink>
               <button
                 type="button"
                 role="menuitem"
