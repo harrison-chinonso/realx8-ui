@@ -19,7 +19,7 @@ import TermsConsent, { EMPTY_CONSENT, consentComplete } from '../../components/l
 import TermsModal from '../../components/legal/TermsModal';
 import { rememberPendingConsent } from '../../components/legal/TermsGate';
 import {
-  AsidePanel, AuthBrand, AuthField, AuthShell, PasswordField, PasswordStrength, ghostButton, primaryButton, primaryInk,
+  AsidePanel, AuthBrand, AuthField, AuthHeaderLinks, AuthShell, PasswordField, PasswordStrength, ghostButton, primaryButton, primaryInk,
 } from '../../components/auth/AuthKit';
 
 /**
@@ -545,6 +545,7 @@ export default function RegisterPage() {
     <AuthShell
       wide
       brand={<AuthBrand company={lookup.company || (companyName ? { name: companyName } : null)} />}
+      headerAction={<AuthHeaderLinks helpTo={form.company_code && companyConfirmed ? `/help?c=${encodeURIComponent(form.company_code)}` : '/help'} />}
       aside={aside}
       footer={(
         <>
@@ -557,10 +558,8 @@ export default function RegisterPage() {
               Sign in{buyingNow ? ' to buy' : ''}
             </Link>
           </p>
-          <p className="text-xs text-[#7C8497]">
-            Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Platform'} ·{' '}
-            <Link to={form.company_code && companyConfirmed ? `/help?c=${encodeURIComponent(form.company_code)}` : '/help'} className="text-[#A6ADBD] hover:text-white">Get help</Link>
-            {' '}· <Link to="/legal/terms" className="text-[#A6ADBD] hover:text-white">Terms &amp; Privacy</Link>
+          <p className="text-center text-xs text-[#7C8497]">
+            Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Platform'}
           </p>
         </>
       )}
