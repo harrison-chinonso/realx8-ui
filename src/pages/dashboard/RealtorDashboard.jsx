@@ -215,16 +215,16 @@ export default function RealtorDashboard() {
           <Panel className="xl:col-span-9">
             <dl className="grid gap-4 sm:grid-cols-3">
               <div className="min-w-0">
-                <dt className="text-[13px] font-semibold text-slate-600">Total commission</dt>
-                <dd className="mt-1 break-words font-heading text-2xl font-extrabold tabular-nums text-slate-900">{fmt(commission.total ?? 0)}</dd>
+                <dt className="text-xs font-semibold text-slate-600">Total commission</dt>
+                <dd className="mt-1 break-words text-2xl font-bold tabular-nums text-slate-900">{fmt(commission.total ?? 0)}</dd>
               </div>
               <div className="min-w-0">
-                <dt className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-600"><span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" aria-hidden="true" /> Paid commission</dt>
-                <dd className="mt-1 break-words font-heading text-2xl font-extrabold tabular-nums text-slate-900">{fmt(commission.paid ?? 0)}</dd>
+                <dt className="flex items-center gap-1.5 text-xs font-semibold text-slate-600"><span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" aria-hidden="true" /> Paid commission</dt>
+                <dd className="mt-1 break-words text-2xl font-bold tabular-nums text-slate-900">{fmt(commission.paid ?? 0)}</dd>
               </div>
               <div className="min-w-0">
-                <dt className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-600"><span className="h-2.5 w-2.5 rounded-sm bg-amber-500" aria-hidden="true" /> Unpaid commission</dt>
-                <dd className="mt-1 break-words font-heading text-2xl font-extrabold tabular-nums text-slate-900">{fmt(commission.unpaid ?? 0)}</dd>
+                <dt className="flex items-center gap-1.5 text-xs font-semibold text-slate-600"><span className="h-2.5 w-2.5 rounded-sm bg-amber-500" aria-hidden="true" /> Unpaid commission</dt>
+                <dd className="mt-1 break-words text-2xl font-bold tabular-nums text-slate-900">{fmt(commission.unpaid ?? 0)}</dd>
                 <dd className="text-xs text-slate-600">Pending or approved</dd>
               </div>
             </dl>
@@ -246,7 +246,7 @@ export default function RealtorDashboard() {
               {data.level ? <LevelBadge level={data.level} size="lg" /> : <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">No level yet</span>}
               {data.level?.commission_percentage != null && (
                 <span className="text-sm text-slate-700">
-                  <strong className="font-heading text-lg font-extrabold">{Number(data.level.commission_percentage)}%</strong> direct rate
+                  <strong className="text-lg font-bold">{Number(data.level.commission_percentage)}%</strong> direct rate
                   {data.level.rate_in_force === false && <span className="text-slate-500"> · not applied by your company&apos;s plan</span>}
                 </span>
               )}
@@ -254,7 +254,7 @@ export default function RealtorDashboard() {
             {growth.nextLevel ? (
               <div className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-200">
                 <p className="text-xs font-bold uppercase tracking-wide text-amber-900">Next level</p>
-                <p className="mt-1 font-heading text-lg font-extrabold text-slate-900">{growth.nextLevel.name}</p>
+                <p className="mt-1 text-lg font-bold text-slate-900">{growth.nextLevel.name}</p>
                 <p className="text-sm text-slate-700">
                   {growth.nextLevel.commission_percentage != null && <>{Number(growth.nextLevel.commission_percentage)}% direct rate</>}
                   {growth.nextLevel.levelup_fee > 0 && <> · level-up fee {fmt(growth.nextLevel.levelup_fee)}</>}
@@ -267,12 +267,12 @@ export default function RealtorDashboard() {
 
           <Panel className="lg:col-span-3" title="Conversion">
             <div>
-              <p className="font-heading text-3xl font-extrabold tabular-nums text-slate-900">{ratio(data.deals ?? 0, data.leads ?? 0)}</p>
-              <p className="text-[13px] text-slate-600">Leads that became deals</p>
+              <p className="text-2xl font-bold tabular-nums text-slate-900">{ratio(data.deals ?? 0, data.leads ?? 0)}</p>
+              <p className="text-xs text-slate-600">Leads that became deals</p>
             </div>
             <div className="border-t border-slate-100 pt-3">
-              <p className="font-heading text-2xl font-extrabold tabular-nums text-slate-900">{ratio(data.clientPurchases?.count ?? 0, data.referrals?.clients ?? 0)}</p>
-              <p className="text-[13px] text-slate-600">Referred clients who bought</p>
+              <p className="text-2xl font-bold tabular-nums text-slate-900">{ratio(data.clientPurchases?.count ?? 0, data.referrals?.clients ?? 0)}</p>
+              <p className="text-xs text-slate-600">Referred clients who bought</p>
             </div>
           </Panel>
 
@@ -282,7 +282,7 @@ export default function RealtorDashboard() {
             subtitle="This month"
             action={<TrendChip current={growth.commissionThisMonth} previous={growth.commissionLastMonth} />}
           >
-            <p className="font-heading text-3xl font-extrabold tabular-nums text-slate-900">{fmt(growth.commissionThisMonth ?? 0)}</p>
+            <p className="text-2xl font-bold tabular-nums text-slate-900">{fmt(growth.commissionThisMonth ?? 0)}</p>
             <div className="flex h-24 items-end gap-2" role="img" aria-label={`Commission by month: ${series.map((m) => `${m.month} ${fmt(m.amount)}`).join(', ')}`}>
               {series.map((m, index) => (
                 <div key={m.month} className="flex flex-1 flex-col items-center gap-1">
@@ -309,8 +309,8 @@ export default function RealtorDashboard() {
                   return (
                     <li key={visit.id} className="flex items-center gap-4 py-3">
                       <span style={accentStyle(accentFor('Properties'))} className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-[color:var(--rx-card-tint)] text-[color:var(--rx-card-link)]">
-                        <span className="text-[11px] font-extrabold uppercase tracking-wide">{when.toLocaleString('en-US', { month: 'short' })}</span>
-                        <span className="font-heading text-xl font-extrabold leading-none">{when.getDate()}</span>
+                        <span className="text-[11px] font-bold uppercase tracking-wide">{when.toLocaleString('en-US', { month: 'short' })}</span>
+                        <span className="text-xl font-bold leading-none">{when.getDate()}</span>
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-bold text-slate-900">{[visit.client, visit.property].filter(Boolean).join(' · ') || 'Site visit'}</span>

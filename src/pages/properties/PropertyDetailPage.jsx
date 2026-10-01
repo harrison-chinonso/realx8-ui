@@ -507,7 +507,7 @@ export default function PropertyDetailPage() {
               <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{property.branch.name} branch</span>
             )}
           </div>
-          <h1 className="break-words font-heading text-2xl font-extrabold tracking-tight text-slate-900 sm:text-[32px]">{property.name}</h1>
+          <h1 className="break-words text-2xl font-bold text-slate-900">{property.name}</h1>
           {property.type && <p className="text-sm font-bold" style={{ color: 'var(--secondary-read, var(--primary))' }}>{property.type}</p>}
           <p className="text-sm text-slate-600">
             {[property.address, property.city, property.state, property.country].filter(Boolean).join(', ') || 'No address provided.'}
@@ -566,7 +566,7 @@ export default function PropertyDetailPage() {
       {coords && (
         <div className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="font-heading text-lg font-extrabold text-slate-900">Location</h2>
+            <h2 className="text-lg font-bold text-slate-900">Location</h2>
             <span className="font-mono text-xs text-slate-600">{coords[0].toFixed(6)}, {coords[1].toFixed(6)}</span>
           </div>
           <PropertyMap latitude={property.latitude} longitude={property.longitude} label={property.name} height={220} />
@@ -598,7 +598,7 @@ export default function PropertyDetailPage() {
       {insights?.share_views?.links > 0 && (
         <div className="rounded-[22px] bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-heading text-lg font-extrabold text-slate-900">Share activity</h2>
+            <h2 className="text-lg font-bold text-slate-900">Share activity</h2>
             <p className="text-sm text-slate-600">
               <strong className="text-slate-900">{insights.share_views.views.toLocaleString()}</strong> opens across{' '}
               {insights.share_views.links} link{insights.share_views.links === 1 ? '' : 's'}

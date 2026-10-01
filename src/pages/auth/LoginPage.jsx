@@ -519,23 +519,23 @@ export default function LoginPage() {
   const content = (
     <>
       <div className="space-y-2">
-        <h1 className="font-heading text-[30px] font-extrabold leading-tight tracking-tight sm:text-[34px]">{heading}</h1>
-        <p className="text-[15px] text-[#A6ADBD]">{subheading}</p>
+        <h1 className="text-xl font-semibold leading-tight">{heading}</h1>
+        <p className="text-sm text-[#A6ADBD]">{subheading}</p>
       </div>
 
       {/* The remembered account — who, which company, and a way out. */}
       {greeting && (authStep === 'credentials' || authStep === 'passcode') && (
         <div className="flex items-center gap-3.5 rounded-2xl border border-[#2B3350] bg-[#161B2C] p-4">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#262D44] font-heading font-bold" aria-hidden="true">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#262D44] font-bold" aria-hidden="true">
             {initialsOf(greeting.name)}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[15px] font-semibold">{greeting.name || greeting.email}</p>
-            <p className="truncate text-[13px] text-[#A6ADBD]">
+            <p className="truncate text-sm font-semibold">{greeting.name || greeting.email}</p>
+            <p className="truncate text-xs text-[#A6ADBD]">
               {maskEmail(greeting.email)}{greeting.type ? ` · ${enumLabel(greeting.type)}` : ''}
             </p>
           </div>
-          <button type="button" onClick={notYou} className="shrink-0 px-1 py-3 text-[13px] font-bold text-[#E9D8C4] hover:underline">
+          <button type="button" onClick={notYou} className="shrink-0 px-1 py-3 text-xs font-bold text-[#E9D8C4] hover:underline">
             Not you?
           </button>
         </div>
@@ -594,7 +594,7 @@ export default function LoginPage() {
             autoComplete="current-password"
             autoFocus={Boolean(greeting)}
             action={(
-              <button type="button" onClick={() => setShowForgotModal(true)} className="text-[13px] font-semibold text-[#E9D8C4] hover:underline">
+              <button type="button" onClick={() => setShowForgotModal(true)} className="text-xs font-semibold text-[#E9D8C4] hover:underline">
                 Forgot password?
               </button>
             )}
@@ -683,8 +683,8 @@ export default function LoginPage() {
                 onClick={() => chooseCompany(entry.company_id)}
                 className="w-full rounded-2xl border border-[#2B3350] bg-[#161B2C] px-4 py-3.5 text-left transition hover:border-[color:var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <span className="block text-[15px] font-semibold">{entry.company_name}</span>
-                <span className="mt-0.5 block text-[13px] text-[#A6ADBD]">
+                <span className="block text-sm font-semibold">{entry.company_name}</span>
+                <span className="mt-0.5 block text-xs text-[#A6ADBD]">
                   {blocked || `Signed in as ${entry.type}`}
                 </span>
               </button>

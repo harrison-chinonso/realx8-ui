@@ -228,7 +228,7 @@ export default function PublicPropertyPage() {
                 className="h-9 w-9 shrink-0 rounded-xl bg-white object-contain p-0.5 ring-1 ring-slate-200"
               />
             ) : companyName && (
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary font-heading text-sm font-extrabold text-white" aria-hidden="true">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white" aria-hidden="true">
                 {companyName.trim().charAt(0).toUpperCase()}
               </span>
             )}
@@ -273,8 +273,8 @@ export default function PublicPropertyPage() {
           <section key={promo.id} className="flex flex-col gap-1 rounded-2xl bg-pink-50 px-5 py-4 ring-1 ring-pink-200 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-pink-700 px-2.5 py-0.5 text-xs font-extrabold text-white">{promo.benefit_label || 'Offer'}</span>
-                <span className="font-heading text-base font-extrabold text-slate-900">{promo.name}</span>
+                <span className="rounded-full bg-pink-700 px-2.5 py-0.5 text-xs font-bold text-white">{promo.benefit_label || 'Offer'}</span>
+                <span className="text-base font-bold text-slate-900">{promo.name}</span>
               </p>
               {promo.customer_message && <p className="mt-1 text-sm text-slate-700">{promo.customer_message}</p>}
               {promo.terms && <p className="mt-1 text-xs text-slate-500">{promo.terms}</p>}
@@ -318,7 +318,7 @@ export default function PublicPropertyPage() {
               {facts.map((f) => (
                 <div key={f.label} className="rounded-xl bg-slate-50 px-3 py-2 ring-1 ring-slate-100">
                   <dt className="text-[11px] font-semibold text-slate-500">{f.label}</dt>
-                  <dd className="font-heading text-base font-extrabold tabular-nums text-slate-900">{f.value}</dd>
+                  <dd className="text-base font-bold tabular-nums text-slate-900">{f.value}</dd>
                 </div>
               ))}
             </dl>
@@ -511,7 +511,7 @@ export default function PublicPropertyPage() {
                 ['Pay and upload proof', 'Your payment is reviewed, and your receipt and documents appear in your account.'],
               ].map(([title, body], index) => (
                 <li key={title} className="rounded-xl bg-slate-50 p-4 ring-1 ring-slate-100">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-extrabold text-white">{index + 1}</span>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">{index + 1}</span>
                   <p className="mt-2 text-sm font-bold text-slate-900">{title}</p>
                   <p className="mt-0.5 text-xs text-slate-600">{body}</p>
                 </li>

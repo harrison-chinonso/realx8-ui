@@ -67,7 +67,7 @@ export default function PhotoGallery({
             <div key={i} className="relative">
               <Tile tile={tile} index={i + 1} className="block h-20 w-full rounded-2xl sm:h-24" />
               {hidden > 0 && i === rest.length - 1 && (
-                <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-2xl bg-slate-900/55 font-heading text-sm font-extrabold text-white">
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-2xl bg-slate-900/55 text-sm font-bold text-white">
                   +{hidden} more
                 </span>
               )}

@@ -85,7 +85,7 @@ export default function PropertyCard({
           {showApproval && property.approval_status && <Badge value={property.approval_status} />}
         </span>
         {promo && (
-          <span className="absolute right-3 top-3 max-w-[60%] truncate rounded-full bg-pink-700 px-2.5 py-1 text-xs font-extrabold text-white" title={promo}>
+          <span className="absolute right-3 top-3 max-w-[60%] truncate rounded-full bg-pink-700 px-2.5 py-1 text-xs font-bold text-white" title={promo}>
             {promo}
           </span>
         )}
@@ -99,7 +99,7 @@ export default function PropertyCard({
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="min-w-0">
           <button type="button" onClick={onOpen} className="block min-w-0 max-w-full text-left">
-            <h3 className="truncate font-heading text-lg font-extrabold text-slate-900 hover:underline">{property.name}</h3>
+            <h3 className="truncate text-lg font-bold text-slate-900 hover:underline">{property.name}</h3>
           </button>
           {property.type && <p className="truncate text-xs font-bold" style={{ color: 'var(--secondary-read, var(--primary))' }}>{property.type}</p>}
           {location && (
@@ -127,13 +127,13 @@ export default function PropertyCard({
             {range && (
               <span className="rounded-xl bg-slate-50 px-3 py-2">
                 <span className="block text-[11px] font-semibold text-slate-600">From</span>
-                <strong className="font-heading text-base tabular-nums text-slate-900" title={fmt(range.min)}>{shortMoney(currencySymbol, range.min)}</strong>
+                <strong className="text-base tabular-nums text-slate-900" title={fmt(range.min)}>{shortMoney(currencySymbol, range.min)}</strong>
               </span>
             )}
             {plans && (
               <span className="rounded-xl bg-slate-50 px-3 py-2">
                 <span className="block text-[11px] font-semibold text-slate-600">Installments</span>
-                <strong className="font-heading text-base tabular-nums text-slate-900">
+                <strong className="text-base tabular-nums text-slate-900">
                   {plans.min_monthly ? `${shortMoney(currencySymbol, plans.min_monthly)} / mo` : 'Outright only'}
                 </strong>
               </span>

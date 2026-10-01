@@ -261,7 +261,7 @@ export default function RegisterPage() {
 
   const progress = (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3 text-[13px] text-[#A6ADBD]">
+      <div className="flex items-center justify-between gap-3 text-xs text-[#A6ADBD]">
         {step === 'details' ? (
           <button type="button" onClick={() => { setStep('company'); setError(''); }} className="-ml-1 flex items-center gap-1.5 py-2 font-semibold text-[#E9D8C4]">
             <ArrowLeft size={16} aria-hidden="true" /> Back
@@ -325,19 +325,19 @@ export default function RegisterPage() {
                 No company uses <strong>{lookupCode}</strong>. Check the code, or ask your realtor for their invite link, which fills this in for you.
               </p>
             )}
-            {lookup.status === 'loading' && <p className="text-[13px] text-[#A6ADBD]">Checking the code…</p>}
+            {lookup.status === 'loading' && <p className="text-xs text-[#A6ADBD]">Checking the code…</p>}
             {lookup.status === 'idle' && (
-              <p className="text-[13px] text-[#A6ADBD]">No code? Ask your company or realtor for an invite link — it fills this in for you.</p>
+              <p className="text-xs text-[#A6ADBD]">No code? Ask your company or realtor for an invite link — it fills this in for you.</p>
             )}
           </div>
         </div>
       )}
 
       <div className="space-y-2">
-        <h1 className="font-heading text-[28px] font-extrabold leading-tight tracking-tight sm:text-[32px]">
+        <h1 className="text-xl font-semibold leading-tight">
           How will you use {companyName || app_name || 'your account'}?
         </h1>
-        <p className="text-[15px] text-[#A6ADBD]">You can add the other profile later from your account.</p>
+        <p className="text-sm text-[#A6ADBD]">You can add the other profile later from your account.</p>
       </div>
 
       <div role="radiogroup" aria-label="Account type" className="space-y-3">
@@ -358,9 +358,9 @@ export default function RegisterPage() {
                 <Icon size={20} aria-hidden="true" />
               </span>
               <span className="flex flex-1 flex-col gap-1">
-                <span className="font-heading text-base font-bold">{copy.title}</span>
+                <span className="text-base font-bold">{copy.title}</span>
                 {copy.body && <span className="text-sm leading-relaxed text-[#A6ADBD]">{copy.body}</span>}
-                {selected && copy.note && <span className="mt-1 text-[13px] text-amber-300">{copy.note}</span>}
+                {selected && copy.note && <span className="mt-1 text-xs text-amber-300">{copy.note}</span>}
               </span>
               <span className={`mt-1 h-5 w-5 shrink-0 rounded-full ${selected ? 'border-[6px] border-[color:var(--primary)]' : 'border-2 border-[#56607A]'}`} aria-hidden="true" />
             </button>
@@ -378,9 +378,9 @@ export default function RegisterPage() {
   const detailsStep = (
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-2">
-        <h1 className="font-heading text-[28px] font-extrabold leading-tight tracking-tight sm:text-[30px]">Create your account</h1>
+        <h1 className="text-xl font-semibold leading-tight">Create your account</h1>
         {buyingNow && (
-          <p className="text-[15px] text-[#A6ADBD]">
+          <p className="text-sm text-[#A6ADBD]">
             You&apos;ll be signed in straight away and taken back to choose your unit
             {companyName ? ` with ${companyName}` : ''}.
           </p>
@@ -471,7 +471,7 @@ export default function RegisterPage() {
     <AsidePanel kicker={roleCopy.aside.kicker} title={roleCopy.aside.title}>
       <ul className="space-y-3">
         {roleCopy.aside.points.map((point) => (
-          <li key={point} className="flex items-center gap-3 rounded-2xl bg-[rgba(14,18,32,0.7)] px-4 py-3.5 text-[15px] text-[#D5D9E2]">
+          <li key={point} className="flex items-center gap-3 rounded-2xl bg-[rgba(14,18,32,0.7)] px-4 py-3.5 text-sm text-[#D5D9E2]">
             <CheckCircle2 size={18} className="shrink-0 text-[color:var(--primary)]" aria-hidden="true" /> {point}
           </li>
         ))}
@@ -482,9 +482,9 @@ export default function RegisterPage() {
       <ol className="space-y-3">
         {NEXT_STEPS.map(([title, body], index) => (
           <li key={title} className="flex gap-3.5 rounded-2xl bg-[rgba(14,18,32,0.7)] p-4">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary font-heading text-sm font-extrabold" style={primaryInk}>{index + 1}</span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold" style={primaryInk}>{index + 1}</span>
             <span className="flex flex-col gap-1">
-              <strong className="text-[15px]">{title}</strong>
+              <strong className="text-sm">{title}</strong>
               <span className="text-sm text-[#A6ADBD]">{body}</span>
             </span>
           </li>

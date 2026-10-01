@@ -166,7 +166,7 @@ export default function ListedPropertyDetailPage() {
       <PhotoGallery
         images={images}
         name={property.name}
-        badge={promo ? <span className="rounded-full bg-pink-700 px-3 py-1 text-xs font-extrabold text-white">{promo}</span> : null}
+        badge={promo ? <span className="rounded-full bg-pink-700 px-3 py-1 text-xs font-bold text-white">{promo}</span> : null}
       />
 
       <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">

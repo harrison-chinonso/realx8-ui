@@ -357,7 +357,7 @@ function StaffDashboard() {
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-600">Invoiced to date · {preset}</p>
-                <p className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-heading text-3xl font-extrabold tabular-nums tracking-tight text-slate-900 sm:text-[42px]" title={fmt(totalInvoiceAmount)}>
+                <p className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-2xl font-bold tabular-nums tracking-tight text-slate-900 sm:text-3xl" title={fmt(totalInvoiceAmount)}>
                   {abbreviate(totalInvoiceAmount, currencySymbol)}
                   <span className="font-sans text-sm font-normal text-slate-600">across {totalInvoices.toLocaleString()} invoice{totalInvoices === 1 ? '' : 's'}</span>
                 </p>
@@ -376,13 +376,13 @@ function StaffDashboard() {
             {/* Text equivalent for the bar above — kept visible, not a tooltip. */}
             <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div className="min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                <dt className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-600"><span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" aria-hidden="true" /> Collected</dt>
-                <dd className="mt-1 font-heading text-xl font-extrabold tabular-nums text-slate-900" title={fmt(collected)}>{abbreviate(collected, currencySymbol)}</dd>
+                <dt className="flex items-center gap-1.5 text-xs font-semibold text-slate-600"><span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" aria-hidden="true" /> Collected</dt>
+                <dd className="mt-1 text-xl font-bold tabular-nums text-slate-900" title={fmt(collected)}>{abbreviate(collected, currencySymbol)}</dd>
                 <dd className="text-xs font-semibold text-emerald-800">{totalInvoiceAmount > 0 ? collectedPct.toFixed(1) : '0.0'}% of invoiced</dd>
               </div>
               <div className="min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                <dt className="flex items-center gap-1.5 text-[13px] font-semibold text-slate-600"><span className="h-2.5 w-2.5 rounded-sm bg-amber-500" aria-hidden="true" /> Outstanding</dt>
-                <dd className="mt-1 font-heading text-xl font-extrabold tabular-nums">
+                <dt className="flex items-center gap-1.5 text-xs font-semibold text-slate-600"><span className="h-2.5 w-2.5 rounded-sm bg-amber-500" aria-hidden="true" /> Outstanding</dt>
+                <dd className="mt-1 text-xl font-bold tabular-nums">
                   <Link
                     to="/finance/invoices?status=unpaid&sort=oldest"
                     title={fmt(outstanding)}
@@ -394,13 +394,13 @@ function StaffDashboard() {
                 <dd className="text-xs font-semibold text-slate-600">{totalInvoiceAmount > 0 ? outstandingPct.toFixed(1) : '0.0'}% still to collect</dd>
               </div>
               <div className="min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                <dt className="text-[13px] font-semibold text-slate-600">Collection rate</dt>
-                <dd className="mt-1 font-heading text-xl font-extrabold tabular-nums text-slate-900">{collectionRateBand == null ? '—' : `${collectionRateBand.toFixed(0)}%`}</dd>
+                <dt className="text-xs font-semibold text-slate-600">Collection rate</dt>
+                <dd className="mt-1 text-xl font-bold tabular-nums text-slate-900">{collectionRateBand == null ? '—' : `${collectionRateBand.toFixed(0)}%`}</dd>
                 <dd className="text-xs font-semibold text-slate-600">Of everything invoiced</dd>
               </div>
               <div className="min-w-0 rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-                <dt className="text-[13px] font-semibold text-slate-600">Avg. days to settle</dt>
-                <dd className="mt-1 font-heading text-xl font-extrabold tabular-nums text-slate-900">{avgDaysToSettle == null ? '—' : `${avgDaysToSettle} day${avgDaysToSettle === 1 ? '' : 's'}`}</dd>
+                <dt className="text-xs font-semibold text-slate-600">Avg. days to settle</dt>
+                <dd className="mt-1 text-xl font-bold tabular-nums text-slate-900">{avgDaysToSettle == null ? '—' : `${avgDaysToSettle} day${avgDaysToSettle === 1 ? '' : 's'}`}</dd>
                 <dd className="text-xs font-semibold text-slate-600">Raised to fully paid</dd>
               </div>
             </dl>
@@ -434,16 +434,16 @@ function StaffDashboard() {
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="font-heading text-lg font-extrabold text-slate-900">Revenue</h2>
-                <p className="text-[13px] text-slate-600">Money actually received, {preset.toLowerCase()}</p>
+                <h2 className="text-lg font-bold text-slate-900">Revenue</h2>
+                <p className="text-xs text-slate-600">Money actually received, {preset.toLowerCase()}</p>
               </div>
               <Link to="/finance/reports" className="flex shrink-0 items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs font-bold text-slate-800 ring-1 ring-slate-200 hover:bg-slate-50">
                 <ArrowUpRight size={12} /> View report
               </Link>
             </div>
             <div className="min-w-0">
-              <p className="text-[13px] font-semibold text-slate-600">Period revenue · {preset}</p>
-              <p className="mt-1 break-words font-heading text-3xl font-extrabold tabular-nums tracking-tight text-slate-900" title={fmt(rangedRevenue)}>{fmt(rangedRevenue)}</p>
+              <p className="text-xs font-semibold text-slate-600">Period revenue · {preset}</p>
+              <p className="mt-1 break-words text-2xl font-bold tabular-nums tracking-tight text-slate-900" title={fmt(rangedRevenue)}>{fmt(rangedRevenue)}</p>
               {/* Value and delta are both computed over the SAME window
                   (rangedRevenue vs the prior period of equal length), so this
                   can never contradict the figure it sits next to. */}
@@ -459,13 +459,13 @@ function StaffDashboard() {
             <dl className="mt-auto space-y-2 border-t border-[color:var(--rx-card-edge)] pt-4 text-sm">
               <div className="flex items-baseline justify-between gap-3">
                 <dt className="font-semibold text-slate-600">Payments received</dt>
-                <dd className="font-heading font-extrabold tabular-nums text-slate-900">
+                <dd className="font-bold tabular-nums text-slate-900">
                   {paymentsInRange.toLocaleString()}{averagePayment != null && <span className="font-sans text-xs font-semibold text-slate-600"> · avg {abbreviate(averagePayment, currencySymbol)}</span>}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-3">
                 <dt className="font-semibold text-slate-600">Year to date</dt>
-                <dd className="font-heading text-lg font-extrabold tabular-nums text-slate-900" title={fmt(ytdRevenue)}>{fmt(ytdRevenue)}</dd>
+                <dd className="text-lg font-bold tabular-nums text-slate-900" title={fmt(ytdRevenue)}>{fmt(ytdRevenue)}</dd>
               </div>
             </dl>
           </section>
@@ -507,7 +507,7 @@ function StaffDashboard() {
                   <span className="block text-sm font-bold text-slate-900">{queue.label}</span>
                   <span className="block text-xs text-slate-600">{queue.sub}</span>
                 </span>
-                <span className={`min-w-[2rem] rounded-full px-2.5 py-1 text-center font-heading text-sm font-extrabold tabular-nums ${badgeCounts[queue.key] > 0 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <span className={`min-w-[2rem] rounded-full px-2.5 py-1 text-center text-sm font-bold tabular-nums ${badgeCounts[queue.key] > 0 ? 'bg-rose-600 text-white' : 'bg-slate-100 text-slate-600'}`}>
                   {badgeCounts[queue.key]}
                 </span>
               </Link>
@@ -623,7 +623,7 @@ function StaffDashboard() {
                     <span className="block text-sm font-bold text-slate-900">{step.label}</span>
                     <span className="block truncate text-xs text-slate-600">{step.note}</span>
                   </span>
-                  <strong className={`font-heading text-2xl font-extrabold tabular-nums ${step.value === 0 ? 'text-slate-400' : 'text-slate-900'}`}>{step.value}</strong>
+                  <strong className={`text-2xl font-bold tabular-nums ${step.value === 0 ? 'text-slate-400' : 'text-slate-900'}`}>{step.value}</strong>
                 </div>
               ))}
             </div>
