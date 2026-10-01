@@ -59,7 +59,7 @@ export const LAUNCHER_CSS = `
 
 /* The content column: full bleed surfaces, a readable measure inside them. */
 .rx-hero-row, .rx-search, .rx-content, .rx-footer {
-  width: 100%; max-width: 1240px; margin-inline: auto;
+  width: 100%; max-width: 1120px; margin-inline: auto;
   padding-inline: clamp(16px, 3vw, 32px);
   box-sizing: border-box;
 }
@@ -69,7 +69,7 @@ export const LAUNCHER_CSS = `
   position: relative; flex-shrink: 0; overflow: hidden;
   background: linear-gradient(120deg, var(--rx-hero-a) 0%, var(--rx-hero-b) 100%);
   color: var(--rx-on-hero);
-  padding: 14px 0 38px;
+  padding: 10px 0 30px;
 }
 /* The sweep across the bottom edge: decoration in the ink at low strength,
    so it follows whichever ink the brand colour carries. */
@@ -83,43 +83,43 @@ export const LAUNCHER_CSS = `
 .rx-hero a { color: inherit; text-decoration: none; }
 
 .rx-brand { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
-.rx-brand-logo { height: 40px; width: 40px; object-fit: contain; border-radius: 10px; }
+.rx-brand-logo { height: 34px; width: 34px; object-fit: contain; border-radius: 9px; }
 .rx-brand-mark {
   display: inline-flex; align-items: center; justify-content: center;
-  height: 40px; width: 40px; border-radius: 12px;
+  height: 34px; width: 34px; border-radius: 10px;
   background: color-mix(in srgb, currentColor 18%, transparent);
-  font: 800 20px/1 var(--font-heading, system-ui), sans-serif;
+  font: 700 15px/1 var(--font-heading, system-ui), sans-serif;
 }
 .rx-brand-name {
-  font: 800 clamp(20px, 2.4vw, 28px)/1 var(--font-heading, system-ui), sans-serif;
+  font: 700 clamp(16px, 1.4vw, 19px)/1 var(--font-heading, system-ui), sans-serif;
   letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 .rx-hero-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .rx-hero-btn {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
-  width: 42px; height: 42px; border-radius: 12px; color: inherit;
+  width: 36px; height: 36px; border-radius: 10px; color: inherit;
 }
-.rx-hero-btn svg { width: 24px; height: 24px; }
+.rx-hero-btn svg { width: 20px; height: 20px; }
 .rx-hero-btn:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
 .rx-hero-count {
   position: absolute; top: 2px; right: 1px;
-  min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px;
-  background: #e11d48; color: #fff; font: 700 11px/19px system-ui, sans-serif; text-align: center;
+  min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px;
+  background: #e11d48; color: #fff; font: 700 10px/17px system-ui, sans-serif; text-align: center;
   box-shadow: 0 0 0 2px var(--rx-hero-a);
 }
 .rx-avatar {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 46px; height: 46px; border-radius: 999px;
+  width: 36px; height: 36px; border-radius: 999px;
   border: 2px solid color-mix(in srgb, currentColor 55%, transparent);
-  font: 700 15px/1 var(--font-ui, system-ui), sans-serif; letter-spacing: .02em;
+  font: 600 12px/1 var(--font-ui, system-ui), sans-serif; letter-spacing: .02em;
 }
 .rx-avatar:hover { background: color-mix(in srgb, currentColor 12%, transparent); }
 
 /* ── Search: a pill lifted over the bottom of the header ─────────────────── */
 .rx-search {
   display: flex; align-items: center; gap: 12px;
-  margin-top: -28px; position: relative; z-index: 2;
+  margin-top: -22px; position: relative; z-index: 2;
   flex-shrink: 0;
 }
 .rx-search > * { flex-shrink: 0; }
@@ -127,25 +127,25 @@ export const LAUNCHER_CSS = `
   /* The pill itself, drawn behind the row so the row keeps the column's
      padding and the pill still reaches its edges. */
   content: ""; position: absolute; inset: 0 clamp(16px, 3vw, 32px);
-  background: #fff; border-radius: 18px;
+  background: #fff; border-radius: 14px;
   box-shadow: 0 10px 30px -12px rgba(15, 23, 42, .35), 0 0 0 1px rgba(15, 23, 42, .04);
   z-index: -1;
   transition: box-shadow .15s ease;
 }
 .rx-search:focus-within::before { box-shadow: 0 10px 30px -12px rgba(15, 23, 42, .35), 0 0 0 2px var(--rx-focus); }
-.rx-search-icon { color: var(--rx-ink-2); margin-left: 18px; }
+.rx-search-icon { color: var(--rx-ink-2); margin-left: 16px; }
 .rx-search-back { margin-left: 12px; color: var(--rx-ink-2); }
 .rx-search-back + .rx-search-icon { margin-left: 0; }
 .rx-search input {
-  flex: 1 1 auto; min-width: 0; height: 60px; border: 0; outline: 0; background: transparent;
-  font: 400 17px/1 var(--font-ui, system-ui), sans-serif; color: var(--rx-ink);
+  flex: 1 1 auto; min-width: 0; height: 48px; border: 0; outline: 0; background: transparent;
+  font: 400 14px/1 var(--font-ui, system-ui), sans-serif; color: var(--rx-ink);
 }
 .rx-search input::placeholder { color: var(--rx-ink-2); }
-.rx-keys { display: flex; gap: 5px; margin-right: 16px; }
+.rx-keys { display: flex; gap: 4px; margin-right: 14px; }
 .rx-key {
-  font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  font: 500 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   color: var(--rx-ink-2); background: var(--rx-page);
-  border: 1px solid var(--rx-rule); border-radius: 8px; padding: 6px 7px;
+  border: 1px solid var(--rx-rule); border-radius: 6px; padding: 4px 6px;
 }
 
 /* ── Content ─────────────────────────────────────────────────────────────── */
@@ -162,8 +162,7 @@ export const LAUNCHER_CSS = `
 }
 .rx-banner-text { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 6px; padding: 26px 0 26px 30px; }
 .rx-banner-kicker { font: 600 12px/1 var(--font-ui, system-ui), sans-serif; letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
-.rx-banner-name { font: 800 clamp(24px, 3.1vw, 36px)/1.1 var(--font-heading, system-ui), sans-serif; letter-spacing: -.01em; }
-.rx-banner-lead { font: 400 clamp(14px, 1.2vw, 16px)/1.45 var(--font-body, system-ui), sans-serif; opacity: .92; max-width: 42ch; margin-top: 4px; }
+.rx-banner-name { font: 700 clamp(20px, 2.3vw, 28px)/1.15 var(--font-heading, system-ui), sans-serif; letter-spacing: -.01em; }
 .rx-banner-art { position: relative; }
 /* The picture fades into the banner colour on its left, so the words beside
    it always sit on the solid part — the part their ink was chosen against. */
@@ -201,7 +200,7 @@ export const LAUNCHER_CSS = `
 
 /* ── Group heading inside a module or in search results ──────────────────── */
 .rx-group-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.rx-group-head span:first-child { font: 700 15px/1.2 var(--font-heading, system-ui), sans-serif; color: var(--rx-ink); }
+.rx-group-head span:first-child { font: 600 14px/1.2 var(--font-heading, system-ui), sans-serif; color: var(--rx-ink); }
 .rx-group-head i { flex: 1; height: 1px; background: var(--rx-rule); }
 .rx-group-head span:last-child { font: 500 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--rx-ink-2); }
 
@@ -249,11 +248,11 @@ export const LAUNCHER_CSS = `
 }
 .rx-ic svg { width: 30px; height: 30px; }
 .rx-name {
-  font: 800 clamp(17px, 1.35vw, 20px)/1.2 var(--font-heading, system-ui), sans-serif;
+  font: 600 clamp(15px, 1.1vw, 17px)/1.25 var(--font-heading, system-ui), sans-serif;
   letter-spacing: -.01em; color: var(--rx-ink);
 }
 .rx-desc {
-  font: 400 clamp(13px, 1vw, 15px)/1.4 var(--font-body, system-ui), sans-serif; color: var(--rx-ink-2);
+  font: 400 clamp(12px, .9vw, 14px)/1.4 var(--font-body, system-ui), sans-serif; color: var(--rx-ink-2);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .rx-chev {
@@ -316,6 +315,8 @@ export const LAUNCHER_CSS = `
 }
 .rx-brand-sm .rx-brand-logo, .rx-brand-sm .rx-brand-mark { height: 28px; width: 28px; font-size: 15px; border-radius: 8px; }
 .rx-brand-sm .rx-brand-name { font-size: 18px; }
+.rx-footer-centered { justify-content: center; text-align: center; }
+.rx-footer-copy { font: 500 13px/1.3 var(--font-ui, system-ui), sans-serif; opacity: .9; }
 .rx-footer-tag {
   font: 500 13px/1.3 var(--font-ui, system-ui), sans-serif; opacity: .9;
   padding-left: 16px; border-left: 1px solid color-mix(in srgb, currentColor 40%, transparent);
@@ -328,26 +329,26 @@ export const LAUNCHER_CSS = `
   .rx-banner-text { padding: 20px 0 46px 20px; }
 }
 @media (max-width: 519px) {
-  .rx-hero { padding-bottom: 34px; }
-  .rx-brand-logo, .rx-brand-mark { height: 34px; width: 34px; }
-  .rx-avatar { width: 40px; height: 40px; font-size: 13px; }
-  .rx-hero-btn { width: 36px; height: 36px; }
-  .rx-search input { height: 54px; font-size: 16px; }
+  .rx-hero { padding-bottom: 28px; }
+  .rx-brand-logo, .rx-brand-mark { height: 30px; width: 30px; }
+  .rx-avatar { width: 34px; height: 34px; font-size: 12px; }
+  .rx-hero-btn { width: 34px; height: 34px; }
+  .rx-search input { height: 48px; font-size: 16px; }
   .rx-content { padding-block: 16px 20px; gap: 16px; }
   .rx-cards { gap: 12px; }
   .rx-card { min-height: 164px; padding: 16px 14px 14px; border-radius: 18px; }
   .rx-card-main { padding-right: 34px; }
   .rx-ic { width: 50px; height: 50px; border-radius: 14px; }
   .rx-ic svg { width: 25px; height: 25px; }
-  .rx-name { font-size: 16px; }
-  .rx-desc { font-size: 13px; }
+  .rx-name { font-size: 15px; }
+  .rx-desc { font-size: 12px; }
   .rx-chev { width: 32px; height: 32px; right: 12px; }
   .rx-chev svg { width: 17px; height: 17px; }
   /* The design on a phone is name and summary only; the shortcuts are for
      screens with room to spare. */
   .rx-card-links { display: none; }
   .rx-banner-badge { right: 10px; bottom: 10px; padding: 7px 11px; font-size: 11px; }
-  .rx-footer-tag { font-size: 12px; }
+  .rx-footer-tag, .rx-footer-copy { font-size: 12px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
