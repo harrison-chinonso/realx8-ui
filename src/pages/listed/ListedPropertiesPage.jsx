@@ -134,7 +134,7 @@ export default function ListedPropertiesPage() {
             type="button"
             aria-pressed={chip.on}
             onClick={chip.pick}
-            className={`h-9 rounded-full px-3.5 text-[13px] font-bold transition-colors ${chip.on ? 'bg-slate-900 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50'}`}
+            className={`h-9 rounded-full px-3.5 text-xs font-bold transition-colors ${chip.on ? 'bg-slate-900 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50'}`}
           >
             {chip.label}
           </button>

@@ -9,6 +9,7 @@ import VerificationPanel from '../../components/profile/VerificationPanel';
 import LevelPanel from '../../components/profile/LevelPanel';
 import CompaniesPanel from '../../components/profile/CompaniesPanel';
 import DeleteAccountPanel from '../../components/profile/DeleteAccountPanel';
+import PasscodePanel from '../../components/profile/PasscodePanel';
 import ProfileToggle from '../../components/common/ProfileToggle';
 import FieldMark from '../../components/ui/FieldMark';
 
@@ -142,6 +143,9 @@ function SecurityTab() {
       </div>
       <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Change password'}</Button>
       </form>
+
+      {/* The quick way back in, for two hours after a password sign-in. */}
+      <PasscodePanel />
 
       {/* Last thing on the tab, and visibly separated — it is the one action
           here that cannot be undone. Realtors and clients only. */}

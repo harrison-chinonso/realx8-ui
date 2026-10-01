@@ -192,8 +192,8 @@ export default function PropertiesPage() {
     <div className="space-y-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-slate-600">Property listing</p>
-          <h1 className="font-heading text-2xl font-extrabold text-slate-900 sm:text-3xl">All properties</h1>
+          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-600">Property listing</p>
+          <h1 className="text-xl font-bold text-slate-900">All properties</h1>
           <p className="text-sm text-slate-600">Every estate your company sells, its stock, and where each one is in approval.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -233,7 +233,7 @@ export default function PropertiesPage() {
                 type="button"
                 aria-pressed={on}
                 onClick={() => { setQuick(chip.key); setPage(1); }}
-                className={`h-9 rounded-full px-3.5 text-[13px] font-bold transition-colors ${on ? 'bg-slate-900 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50'}`}
+                className={`h-9 rounded-full px-3.5 text-xs font-bold transition-colors ${on ? 'bg-slate-900 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-50'}`}
               >
                 {chip.label}{count != null ? ` · ${Number(count).toLocaleString()}` : ''}
               </button>

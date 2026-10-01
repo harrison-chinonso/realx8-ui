@@ -173,7 +173,7 @@ export default function ClientDashboard() {
                     <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-600">
                       {plan.paymentType === 'installment' ? 'Your payment plan' : 'Your purchase'}
                     </p>
-                    <p className="font-heading text-lg font-extrabold text-slate-900">{plan.title}</p>
+                    <p className="text-lg font-bold text-slate-900">{plan.title}</p>
                     <p className="text-sm text-slate-600">
                       {plan.planName ? `${plan.planName} · ` : ''}
                       {settled ? 'Paid in full' : `${plan.paidSchedules} of ${plan.schedules} ${plan.schedules === 1 ? 'payment' : 'installments'} paid`}
@@ -219,8 +219,8 @@ export default function ClientDashboard() {
                       style={accentStyle(row.overdue ? accentFor('Sales & CRM') : accentFor('Dashboard'))}
                       className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-[color:var(--rx-card-tint)] text-[color:var(--rx-card-link)]"
                     >
-                      <span className="text-[11px] font-extrabold uppercase tracking-wide">{date.toLocaleString('en-US', { month: 'short' })}</span>
-                      <span className="font-heading text-xl font-extrabold leading-none">{date.getDate()}</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wide">{date.toLocaleString('en-US', { month: 'short' })}</span>
+                      <span className="text-xl font-bold leading-none">{date.getDate()}</span>
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-bold text-slate-900">{row.title}</span>
@@ -228,7 +228,7 @@ export default function ClientDashboard() {
                         {daysUntil(row.dueDate)}{index === 0 && !row.overdue ? ' · next' : ''}
                       </span>
                     </span>
-                    <strong className="font-heading text-base font-extrabold tabular-nums text-slate-900">{fmt(row.amount)}</strong>
+                    <strong className="text-base font-bold tabular-nums text-slate-900">{fmt(row.amount)}</strong>
                   </li>
                 );
               })}

@@ -74,9 +74,9 @@ export function DashboardHero({
           {kicker && (
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[color:var(--sf-ink-subtle)]">{kicker}</p>
           )}
-          <h1 className="font-heading text-2xl font-extrabold tracking-tight sm:text-[34px] sm:leading-tight">{title}</h1>
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl sm:leading-tight">{title}</h1>
           {badges && <div className="flex flex-wrap items-center gap-2">{badges}</div>}
-          {subtitle && <p className="text-sm text-[color:var(--sf-ink-muted)] sm:text-[15px]">{subtitle}</p>}
+          {subtitle && <p className="text-sm text-[color:var(--sf-ink-muted)] sm:text-sm">{subtitle}</p>}
           {children && <div className="flex flex-wrap items-center gap-2 pt-2">{children}</div>}
         </div>
         {aside && (
@@ -93,8 +93,8 @@ export function DashboardHero({
 export function HeroFigure({ label, value, title }) {
   return (
     <>
-      <p className="text-[13px] font-semibold text-[color:var(--sf-ink-subtle)]">{label}</p>
-      <p className="font-heading text-3xl font-extrabold tabular-nums tracking-tight" title={title}>{value}</p>
+      <p className="text-xs font-semibold text-[color:var(--sf-ink-subtle)]">{label}</p>
+      <p className="text-2xl font-bold tabular-nums tracking-tight" title={title}>{value}</p>
     </>
   );
 }
@@ -124,9 +124,9 @@ export function TintCard({
         )}
       </div>
       <div className="min-w-0 space-y-0.5">
-        <p className="break-words font-heading text-2xl font-extrabold tabular-nums tracking-tight text-slate-900 sm:text-[28px]" title={title}>{value}</p>
-        <p className="text-[15px] font-bold text-slate-800">{label}</p>
-        {sub && <p className="break-words text-[13px] text-slate-600">{sub}</p>}
+        <p className="break-words text-2xl font-bold tabular-nums tracking-tight text-slate-900" title={title}>{value}</p>
+        <p className="text-sm font-bold text-slate-800">{label}</p>
+        {sub && <p className="break-words text-xs text-slate-600">{sub}</p>}
       </div>
       {children}
     </>
@@ -168,8 +168,8 @@ export function Panel({
       {(title || action) && (
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
           <div className="min-w-0">
-            {title && <h2 className="font-heading text-lg font-extrabold text-slate-900">{title}</h2>}
-            {subtitle && <p className="mt-0.5 text-[13px] text-slate-600">{subtitle}</p>}
+            {title && <h2 className="text-lg font-semibold text-slate-900">{title}</h2>}
+            {subtitle && <p className="mt-0.5 text-xs text-slate-600">{subtitle}</p>}
           </div>
           {action}
         </div>
@@ -194,8 +194,8 @@ export function MiniStat({
 }) {
   return (
     <div style={accentStyle(accent)} className="min-w-0 rounded-2xl bg-[color:var(--rx-card-tint)] px-4 py-3">
-      <p className="break-words font-heading text-xl font-extrabold tabular-nums text-slate-900" title={title}>{value}</p>
-      <p className="text-[13px] font-semibold text-slate-600">{label}</p>
+      <p className="break-words text-lg font-bold tabular-nums text-slate-900" title={title}>{value}</p>
+      <p className="text-xs font-semibold text-slate-600">{label}</p>
       {note && <p className="mt-0.5 text-xs font-semibold text-slate-700">{note}</p>}
     </div>
   );
@@ -205,7 +205,7 @@ export function MiniStat({
 export function SectionHeading({ children, action }) {
   return (
     <div className="flex items-end justify-between gap-3">
-      <h2 className="font-heading text-lg font-extrabold text-slate-900">{children}</h2>
+      <h2 className="text-lg font-semibold text-slate-900">{children}</h2>
       {action}
     </div>
   );

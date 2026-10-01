@@ -155,7 +155,7 @@ export default function PlatformDashboardPage() {
                   {c.logo_url
                     ? <img src={c.logo_url} alt="" className="h-10 w-10 shrink-0 rounded-xl object-contain" />
                     : (
-                      <span style={accentStyle(nth(index))} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--rx-card-tint)] font-heading text-base font-extrabold text-[color:var(--rx-card-link)]">
+                      <span style={accentStyle(nth(index))} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--rx-card-tint)] text-base font-bold text-[color:var(--rx-card-link)]">
                         {(c.name || '?').charAt(0)}
                       </span>
                     )}
@@ -187,7 +187,7 @@ export default function PlatformDashboardPage() {
                 <span className="h-3 w-3 rounded" style={{ backgroundColor: colour }} aria-hidden="true" />
                 <span className="flex-1 font-semibold text-slate-800">{label}</span>
                 <span className="text-slate-500">{share(n)}</span>
-                <span className="min-w-[4rem] text-right font-heading font-extrabold tabular-nums">{number(n)}</span>
+                <span className="min-w-[4rem] text-right font-bold tabular-nums">{number(n)}</span>
               </li>
             ))}
           </ul>
@@ -216,7 +216,7 @@ export default function PlatformDashboardPage() {
               <li key={label} className="flex items-center gap-3 py-2.5">
                 <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} aria-hidden="true" />
                 <span className="flex-1 text-sm font-semibold text-slate-800">{label}</span>
-                <strong className="font-heading text-lg font-extrabold tabular-nums">{number(value)}</strong>
+                <strong className="text-lg font-bold tabular-nums">{number(value)}</strong>
                 <Link to={to} className="text-xs font-bold text-blue-700 hover:underline">Review</Link>
               </li>
             ))}
@@ -236,8 +236,8 @@ export default function PlatformDashboardPage() {
               <a.icon size={26} aria-hidden="true" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block font-heading text-base font-extrabold text-slate-900">{a.label}</span>
-              <span className="block text-[13px] text-slate-600">{a.desc}</span>
+              <span className="block text-base font-bold text-slate-900">{a.label}</span>
+              <span className="block text-xs text-slate-600">{a.desc}</span>
             </span>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[color:var(--rx-card-chev-bg)] text-[color:var(--rx-card-chev)]" aria-hidden="true">
               <ChevronRight size={18} strokeWidth={2.4} />

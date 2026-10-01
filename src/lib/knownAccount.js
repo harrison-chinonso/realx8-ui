@@ -21,11 +21,26 @@ export const readKnownAccount = () => {
   }
 };
 
-export const rememberAccount = (session) => {
+/**
+ * How long after a full sign-in the passcode is accepted. Mirrors the server's
+ * PASSCODE_WINDOW_HOURS (passcodeController.js), which is the authority — this
+ * copy only decides which form to show first.
+ */
+export const PASSCODE_WINDOW_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * `passwordAt` — when this device last signed in IN FULL (password, two-factor,
+ * Google). A passcode sign-in passes the previous value through untouched, the
+ * same way the server leaves its own clock alone for one, so the device and
+ * the server agree on when the window closes.
+ */
+export const rememberAccount = (session, { passwordAt = Date.now() } = {}) => {
   const user = session?.user;
   if (!user?.email) return;
   try {
     localStorage.setItem(KEY, JSON.stringify({
+      passcode_set: Boolean(user.passcode_set),
+      password_at: passwordAt || null,
       name: user.name || '',
       email: user.email,
       type: user.effectiveType || user.type || '',
@@ -35,6 +50,21 @@ export const rememberAccount = (session) => {
     }));
   } catch { /* storage unavailable — the page simply will not greet them */ }
 };
+
+/** Update the remembered account in place — after setting or removing a passcode. */
+export const updateKnownAccount = (email, patch) => {
+  const known = readKnownAccount();
+  if (!known || String(known.email).toLowerCase() !== String(email || '').toLowerCase()) return;
+  try { localStorage.setItem(KEY, JSON.stringify({ ...known, ...patch })); } catch { /* storage unavailable */ }
+};
+
+/**
+ * Whether to open the sign-in page on the passcode: the account has one, and
+ * this device signed in in full within the window. The server still decides —
+ * if it says the window has closed, the password form comes back.
+ */
+export const passcodeLikelyOpen = (known) => Boolean(known?.passcode_set && known?.password_at)
+  && Date.now() - Number(known.password_at) < PASSCODE_WINDOW_MS;
 
 export const forgetAccount = () => {
   try { localStorage.removeItem(KEY); } catch { /* nothing to forget */ }

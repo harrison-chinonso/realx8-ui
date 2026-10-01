@@ -17,17 +17,17 @@ import { MIN_PASSWORD_LENGTH } from '../../constants/password';
  * on cream.
  */
 
-export const primaryButton = 'flex h-12 w-full items-center justify-center rounded-xl bg-primary px-4 font-heading text-[15px] font-bold transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50';
+export const primaryButton = 'flex h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50';
 export const primaryInk = { color: 'var(--primary-ink, #fff)' };
-export const ghostButton = 'flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#2B3350] px-4 text-sm font-semibold text-[#F3F1EC] transition hover:bg-white/5 disabled:opacity-50';
-const inputClass = 'h-12 w-full rounded-xl border border-[#2B3350] bg-[#161B2C] px-3.5 text-[15px] text-[#F3F1EC] placeholder:text-[#7C8497] transition focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--primary-rgb),0.35)] read-only:cursor-not-allowed read-only:text-[#A6ADBD]';
+export const ghostButton = 'flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#2B3350] px-4 text-sm font-semibold text-[#F3F1EC] transition hover:bg-white/5 disabled:opacity-50';
+const inputClass = 'h-11 w-full rounded-xl border border-[#2B3350] bg-[#161B2C] px-3.5 text-sm text-[#F3F1EC] placeholder:text-[#7C8497] transition focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--primary-rgb),0.35)] read-only:cursor-not-allowed read-only:text-[#A6ADBD]';
 
 export function AuthField({
   id, label, hint, note, className = '', inputClassName = '', ...input
 }) {
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <label htmlFor={id} className="block text-[13px] font-semibold text-[#D5D9E2]">
+      <label htmlFor={id} className="block text-xs font-semibold text-[#D5D9E2]">
         {label}{note && <span className="font-normal text-[#A6ADBD]"> {note}</span>}
       </label>
       <input id={id} className={`${inputClass} ${inputClassName}`} {...input} />
@@ -51,7 +51,7 @@ export function PasswordField({
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="text-[13px] font-semibold text-[#D5D9E2]">{label}</label>
+        <label htmlFor={id} className="text-xs font-semibold text-[#D5D9E2]">{label}</label>
         {action}
       </div>
       <div className="relative">
@@ -70,7 +70,7 @@ export function PasswordField({
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? 'Hide password' : 'Show password'}
           aria-pressed={visible}
-          className="absolute right-1 top-1 flex h-10 w-10 items-center justify-center rounded-lg text-[#A6ADBD] hover:text-white"
+          className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-lg text-[#A6ADBD] hover:text-white"
         >
           {visible ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
         </button>
@@ -81,6 +81,55 @@ export function PasswordField({
         </p>
       )}
       {hint}
+    </div>
+  );
+}
+
+/**
+ * Six boxes for a 6-digit code. One real input lies over them — so paste,
+ * the phone's one-time-code suggestion and screen readers all work as on any
+ * field — and the boxes only draw what it holds: a dot per digit, and a ring
+ * on the next one while it has focus.
+ */
+export function PasscodeInput({
+  id, label, value, onChange, autoFocus = false, disabled = false,
+}) {
+  const [focused, setFocused] = useState(false);
+  const digits = String(value || '').slice(0, 6);
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="block text-xs font-semibold text-[#D5D9E2]">{label}</label>
+      <div className="relative">
+        <div className="grid grid-cols-6 gap-2" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, i) => {
+            const filled = i < digits.length;
+            const next = focused && i === Math.min(digits.length, 5);
+            return (
+              <span
+                key={i}
+                className={`flex h-12 items-center justify-center rounded-xl border bg-[#161B2C] transition ${next ? 'border-[color:var(--primary)] ring-2 ring-[rgba(var(--primary-rgb),0.35)]' : 'border-[#2B3350]'}`}
+              >
+                {filled && <span className="h-3 w-3 rounded-full bg-[#F3F1EC]" />}
+              </span>
+            );
+          })}
+        </div>
+        <input
+          id={id}
+          type="password"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="[0-9]{6}"
+          maxLength={6}
+          value={digits}
+          onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          autoFocus={autoFocus}
+          disabled={disabled}
+          className="absolute inset-0 h-full w-full cursor-text opacity-0"
+        />
+      </div>
     </div>
   );
 }
@@ -112,7 +161,7 @@ export function PasswordStrength({ password }) {
           <span key={i} className={`h-1.5 rounded-full ${i < score ? level.bar : 'bg-[#262D44]'}`} />
         ))}
       </div>
-      <p className={`text-[13px] ${level.text}`} aria-live="polite">{password ? `Password strength: ${level.label}` : level.label}</p>
+      <p className={`text-xs ${level.text}`} aria-live="polite">{password ? `Password strength: ${level.label}` : level.label}</p>
       <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
         {checks.map((check) => (
           <li key={check.text} className={`flex items-center gap-1.5 text-xs ${check.ok ? 'text-emerald-300' : 'text-[#7C8497]'}`}>
@@ -149,12 +198,12 @@ export function AuthBrand({ company }) {
           className="h-11 w-11 shrink-0 rounded-xl bg-white object-contain p-1"
         />
       ) : (
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary font-heading text-xl font-extrabold" style={primaryInk} aria-hidden="true">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-xl font-bold" style={primaryInk} aria-hidden="true">
           {name.trim().charAt(0).toUpperCase()}
         </span>
       )}
       <div className="min-w-0">
-        <p className="truncate font-heading text-[17px] font-bold text-[#F3F1EC]">{name}</p>
+        <p className="truncate text-base font-bold text-[#F3F1EC]">{name}</p>
         {company && app_name && app_name !== company.name && (
           <p className="truncate text-xs text-[#A6ADBD]">Powered by {app_name}</p>
         )}
@@ -215,7 +264,7 @@ export function ShowcasePanel({ properties = [], compact = false }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" aria-hidden="true" />
       <div className={`absolute inset-x-0 bottom-0 flex flex-col gap-3 ${compact ? 'p-5' : 'p-8'}`}>
         {slide.promotion && !compact && (
-          <span className="self-start rounded-full bg-pink-700 px-3 py-1 text-[13px] font-bold text-white">
+          <span className="self-start rounded-full bg-pink-700 px-3 py-1 text-xs font-bold text-white">
             {[slide.promotion.name, slide.promotion.benefit_label].filter(Boolean).join(' · ')}
           </span>
         )}
@@ -226,8 +275,8 @@ export function ShowcasePanel({ properties = [], compact = false }) {
             </span>
           )}
           {place && !compact && <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#A6ADBD]">Now selling · {place}</p>}
-          <p className={`mt-1 font-heading font-extrabold tracking-tight ${compact ? 'text-xl' : 'text-3xl'}`}>{slide.name}{compact && place ? <span className="text-sm font-semibold text-[#D5D9E2]"> · {place}</span> : null}</p>
-          {facts && <p className="mt-1 text-[15px] text-[#D5D9E2]">{facts}</p>}
+          <p className={`mt-1 font-bold tracking-tight ${compact ? 'text-xl' : 'text-2xl'}`}>{slide.name}{compact && place ? <span className="text-sm font-semibold text-[#D5D9E2]"> · {place}</span> : null}</p>
+          {facts && <p className="mt-1 text-sm text-[#D5D9E2]">{facts}</p>}
         </div>
         {slides.length > 1 && !compact && (
           <div className="flex gap-2">
@@ -256,7 +305,7 @@ export function AsidePanel({ kicker, title, children }) {
     <div className="flex h-full flex-col justify-end gap-5 rounded-[28px] bg-[#1C2438] p-12 text-[#F3F1EC]">
       <Home size={28} className="text-[#56607A]" aria-hidden="true" />
       {kicker && <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#A6ADBD]">{kicker}</p>}
-      {title && <p className="max-w-lg font-heading text-[34px] font-extrabold leading-tight tracking-tight">{title}</p>}
+      {title && <p className="max-w-lg text-2xl font-bold leading-tight tracking-tight">{title}</p>}
       {children}
     </div>
   );
