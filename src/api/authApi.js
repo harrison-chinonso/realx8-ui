@@ -82,3 +82,9 @@ export const accountDeletionCheckApi = async () =>
  */
 export const deleteAccountApi = async ({ password, confirmation } = {}) =>
   (await client.post('/auth/account/delete', { password, confirmation })).data;
+
+/** The signed-in account's passcode: whether one is set, and whether it would work right now. */
+export const getPasscodeStatus = async () => (await client.get('/auth/passcode')).data?.data;
+/** Set or replace the 6-digit passcode. The current password is required. */
+export const setPasscode = async ({ passcode, password }) => (await client.post('/auth/passcode', { passcode, password })).data;
+export const removePasscode = async () => (await client.delete('/auth/passcode')).data;

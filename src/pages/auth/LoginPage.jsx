@@ -13,11 +13,11 @@ import { PASSWORD_HINT } from '../../constants/password';
 import Select from '../../components/ui/Select';
 import useCompanyCode from '../../hooks/useCompanyCode';
 import {
-  forgetAccount, initialsOf, maskEmail, readKnownAccount, rememberAccount,
+  forgetAccount, initialsOf, maskEmail, passcodeLikelyOpen, readKnownAccount, rememberAccount,
 } from '../../lib/knownAccount';
 import { enumLabel } from '../../utils/enumLabel';
 import {
-  AuthBrand, AuthField, AuthShell, PasswordField, ShowcasePanel, ghostButton, primaryButton, primaryInk,
+  AuthBrand, AuthField, AuthShell, PasscodeInput, PasswordField, ShowcasePanel, ghostButton, primaryButton, primaryInk,
 } from '../../components/auth/AuthKit';
 
 /*
@@ -154,8 +154,14 @@ export default function LoginPage() {
   const [totpToken, setTotpToken] = useState('');
   const [passcode, setPasscode] = useState('');
   const [tempToken, setTempToken] = useState('');
+  /*
+   * Somebody this device signed in IN FULL less than two hours ago, who has a
+   * passcode, starts on the passcode: six digits and they are back in. The
+   * password is one tap away for anyone who has forgotten it, and is what
+   * everybody else starts on.
+   */
   // authStep: 'credentials' | 'passcode' | 'company' | '2fa' | '2fa-setup' | '2fa-setup-verify'
-  const [authStep, setAuthStep] = useState('credentials');
+  const [authStep, setAuthStep] = useState(() => (greeting && passcodeLikelyOpen(greeting) ? 'passcode' : 'credentials'));
   const [setupData, setSetupData] = useState(null); // { qrCodeUrl, secret } from forced setup
   /**
    * The companies this password opened, and the token that proves it did.
@@ -227,6 +233,18 @@ export default function LoginPage() {
     setAuthStep('company');
   }, [location.search]);
 
+  /*
+   * A Google sign-in that still owes its second factor (GoogleCallbackPage):
+   * straight to the same code step, or forced set-up, a password reaches.
+   */
+  useEffect(() => {
+    const pending = location.state?.pendingTwoFactor;
+    if (!pending?.temp_token) return;
+    navigate(location.pathname + location.search, { replace: true, state: null });
+    applyAuthResponse(pending);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /**
    * A session, finished: stored, remembered on this device if asked, and on
    * to wherever the visitor was going.
@@ -235,9 +253,16 @@ export default function LoginPage() {
    * to wait for before the next screen — it is already in the right colours.
    * An older server that does not send it still gets the separate read.
    */
-  const finishSession = async (res) => {
+  const finishSession = async (res, { viaPasscode = false } = {}) => {
+    // Read before setSession, whose sign-in wipe clears the remembered account.
+    const before = readKnownAccount();
     setSession(res);
-    if (form.remember) rememberAccount(res);
+    /*
+     * A passcode sign-in keeps the device's record of the last FULL sign-in,
+     * as the server keeps its own clock: the passcode window is two hours from
+     * the password, not from the last passcode.
+     */
+    if (form.remember) rememberAccount(res, { passwordAt: viaPasscode ? before?.password_at : Date.now() });
     else forgetAccount();
     if (!res.appearance) await refreshAppearance();
     navigate(redirectTo || '/');
@@ -253,7 +278,7 @@ export default function LoginPage() {
    * the choice has been made, which is exactly why this cannot live in the
    * password handler alone.
    */
-  const applyAuthResponse = async (res) => {
+  const applyAuthResponse = async (res, finish = {}) => {
     if (res.requires_company) {
       setCompanyChoice({ token: res.company_token, companies: res.companies || [] });
       setAuthStep('company');
@@ -275,7 +300,7 @@ export default function LoginPage() {
       }
       return;
     }
-    await finishSession(res);
+    await finishSession(res, finish);
   };
 
   const submit = async (e) => {
@@ -296,22 +321,31 @@ export default function LoginPage() {
    * last few hours. Outside that window the server says so, and the password
    * form comes back with the reason on it.
    */
+  /*
+   * No second factor here, by design: the passcode is only accepted within two
+   * hours of a full sign-in, and that sign-in already asked for the code.
+   */
   const submitPasscode = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
+    if (loading || passcode.length !== 6) return;
     setLoading(true);
     setError('');
     try {
-      await applyAuthResponse(await passcodeLogin({ identifier: form.identifier, passcode }));
+      await applyAuthResponse(await passcodeLogin({ identifier: form.identifier, passcode }), { viaPasscode: true });
     } catch (err) {
       setError(err.response?.data?.message || 'That passcode did not work. Sign in with your password.');
-      if (err.response?.data?.reason === 'window_expired') {
-        setPasscode('');
-        setAuthStep('credentials');
-      }
+      setPasscode('');
+      if (err.response?.data?.reason === 'window_expired') setAuthStep('credentials');
     } finally {
       setLoading(false);
     }
   };
+
+  // The sixth digit signs in — there is nothing else on the form to press.
+  useEffect(() => {
+    if (authStep === 'passcode' && passcode.length === 6 && form.identifier) submitPasscode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [passcode]);
 
   /** Finish a sign-in against the company that was picked. */
   const chooseCompany = async (companyId) => {
@@ -459,7 +493,7 @@ export default function LoginPage() {
   const heading = authStep === '2fa' ? 'Verify sign in'
     : authStep === 'company' ? 'Choose a company'
     : authStep === '2fa-setup' || authStep === '2fa-setup-verify' ? 'Set up two-factor auth'
-    : authStep === 'passcode' ? 'Sign in with your passcode'
+    : authStep === 'passcode' ? (greeting?.name ? `Welcome back, ${greeting.name.trim().split(/\s+/)[0]}` : 'Sign in with your passcode')
     : greeting ? 'Good to see you again'
     : 'Welcome back';
   const subheading = authStep === '2fa'
@@ -471,7 +505,7 @@ export default function LoginPage() {
     : authStep === '2fa-setup-verify'
     ? 'Enter the 6-digit code from your authenticator app to confirm setup.'
     : authStep === 'passcode'
-    ? 'The 6-digit passcode works for a few hours after you last signed in with your password.'
+    ? (greeting ? 'Enter your 6-digit passcode to carry on where you left off.' : 'The 6-digit passcode works for two hours after you last signed in with your password.')
     : greeting ? 'This device remembers you, so there is only your password left.'
     : companyName ? `Sign in to your ${companyName} account.`
     : 'Sign in to your account to continue.';
@@ -612,25 +646,19 @@ export default function LoginPage() {
               autoComplete="username"
             />
           )}
-          <AuthField
+          <PasscodeInput
             id="passcode"
-            label="6-digit passcode"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            pattern="[0-9]{6}"
-            placeholder="••••••"
+            label="Passcode"
             value={passcode}
-            onChange={(e) => setPasscode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            required
+            onChange={setPasscode}
             autoFocus
-            inputClassName="text-center font-mono text-xl tracking-[0.5em]"
+            disabled={loading}
           />
           {errorLine}
           <button type="submit" disabled={loading || passcode.length !== 6} className={primaryButton} style={primaryInk}>
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
-          {backButton(resetToCredentials, 'Use my password instead')}
+          {backButton(resetToCredentials, "Forgot it? Use my password instead")}
         </form>
       )}
 

@@ -85,6 +85,55 @@ export function PasswordField({
   );
 }
 
+/**
+ * Six boxes for a 6-digit code. One real input lies over them — so paste,
+ * the phone's one-time-code suggestion and screen readers all work as on any
+ * field — and the boxes only draw what it holds: a dot per digit, and a ring
+ * on the next one while it has focus.
+ */
+export function PasscodeInput({
+  id, label, value, onChange, autoFocus = false, disabled = false,
+}) {
+  const [focused, setFocused] = useState(false);
+  const digits = String(value || '').slice(0, 6);
+  return (
+    <div className="space-y-2">
+      <label htmlFor={id} className="block text-[13px] font-semibold text-[#D5D9E2]">{label}</label>
+      <div className="relative">
+        <div className="grid grid-cols-6 gap-2" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, i) => {
+            const filled = i < digits.length;
+            const next = focused && i === Math.min(digits.length, 5);
+            return (
+              <span
+                key={i}
+                className={`flex h-14 items-center justify-center rounded-xl border bg-[#161B2C] transition ${next ? 'border-[color:var(--primary)] ring-2 ring-[rgba(var(--primary-rgb),0.35)]' : 'border-[#2B3350]'}`}
+              >
+                {filled && <span className="h-3 w-3 rounded-full bg-[#F3F1EC]" />}
+              </span>
+            );
+          })}
+        </div>
+        <input
+          id={id}
+          type="password"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="[0-9]{6}"
+          maxLength={6}
+          value={digits}
+          onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          autoFocus={autoFocus}
+          disabled={disabled}
+          className="absolute inset-0 h-full w-full cursor-text opacity-0"
+        />
+      </div>
+    </div>
+  );
+}
+
 const STRENGTH = [
   { label: `Use ${MIN_PASSWORD_LENGTH} or more characters with a mix of letters, numbers and symbols.`, text: 'text-[#A6ADBD]', bar: 'bg-[#262D44]' },
   { label: 'Weak', text: 'text-rose-300', bar: 'bg-rose-500' },

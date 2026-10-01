@@ -52,6 +52,28 @@ export default function GoogleCallbackPage() {
       return;
     }
 
+    /**
+     * Google proved the address, but this account (or its company) also asks
+     * for a second factor — Google does not stand in for it. Hand over to the
+     * sign-in page's code step, the same one a password sign-in reaches. The
+     * short-lived token travels in navigation state, not the URL, so it is not
+     * left behind in the browser's history.
+     */
+    const pendingToken = params.get('temp_token');
+    if (pendingToken && (params.get('requires_2fa') || params.get('requires_2fa_setup'))) {
+      setMessage('One more step — your authentication code…');
+      navigate('/login', {
+        replace: true,
+        state: {
+          pendingTwoFactor: {
+            [params.get('requires_2fa') ? 'requires_2fa' : 'requires_2fa_setup']: true,
+            temp_token: pendingToken,
+          },
+        },
+      });
+      return;
+    }
+
     if (!token || !refreshToken || !userParam) {
       setMessage('Google sign-in response is incomplete. Redirecting…');
       navigate('/login?error=google_auth_failed', { replace: true });
