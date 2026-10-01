@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Check, Eye, EyeOff, Home } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import {
+  AlertTriangle, Check, Eye, EyeOff, HelpCircle, Home, ScrollText,
+} from 'lucide-react';
 import PropertyCarousel from '../common/PropertyCarousel';
 import { useAppearance, useCurrency } from '../../context/useAppearance';
 import { parseImages } from '../../utils/parseImages';
@@ -312,18 +315,57 @@ export function AsidePanel({ kicker, title, children }) {
 }
 
 /**
+ * A link drawn as an icon, its label shown on hover and on keyboard focus —
+ * the label is also its accessible name, so a screen reader hears the words
+ * the tooltip shows. Clicking is an ordinary link.
+ */
+export function IconLink({ to, icon: Icon, label }) {
+  return (
+    <Link
+      to={to}
+      aria-label={label}
+      className="group relative flex h-10 w-10 items-center justify-center rounded-xl text-[#A6ADBD] transition hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--primary-rgb),0.6)]"
+    >
+      <Icon size={20} aria-hidden="true" />
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute right-0 top-full z-30 mt-1.5 whitespace-nowrap rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-slate-900 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+      >
+        {label}
+      </span>
+    </Link>
+  );
+}
+
+/** Help and Terms & Privacy, side by side, for the right of the sign-in and sign-up header. */
+export function AuthHeaderLinks({ helpTo = '/help' }) {
+  return (
+    <nav aria-label="Help and policies" className="flex items-center gap-1">
+      <IconLink to={helpTo} icon={HelpCircle} label="Get help" />
+      <IconLink to="/legal/terms" icon={ScrollText} label="Terms & Privacy" />
+    </nav>
+  );
+}
+
+/**
  * The page: form on the left, the company's world on the right. On a phone the
  * form comes first and full width, with an optional photo strip above it.
  */
 export function AuthShell({
-  brand, aside, mobileTop, footer, children, wide = false,
+  brand, headerAction, aside, mobileTop, footer, children, wide = false,
 }) {
   return (
     <div className="flex min-h-screen w-full bg-[#0E1220] font-body text-[#F3F1EC] lg:h-screen lg:overflow-hidden">
       <main className={`flex w-full shrink-0 flex-col lg:overflow-y-auto ${wide ? 'lg:w-[560px]' : 'lg:w-[480px]'}`}>
         {mobileTop && <div className="lg:hidden">{mobileTop}</div>}
         <div className={`relative flex flex-1 flex-col gap-7 bg-[#0E1220] px-5 pb-8 pt-6 sm:px-10 lg:px-14 lg:pt-10 ${mobileTop ? '-mt-4 rounded-t-[20px] lg:mt-0 lg:rounded-none' : ''}`}>
-          <div className={mobileTop ? 'hidden lg:block' : ''}>{brand}</div>
+          {/* The name on the left, an action (Get help) opposite it. With a
+              photo strip on a phone the name is on the strip, so the action
+              keeps the row to itself, still on the right. */}
+          <div className="flex items-center justify-between gap-3">
+            <div className={`min-w-0 ${mobileTop ? 'hidden lg:block' : ''}`}>{brand}</div>
+            {headerAction && <div className="ml-auto shrink-0">{headerAction}</div>}
+          </div>
           <div className="flex flex-1 flex-col justify-center gap-7">{children}</div>
           {footer && <div className="flex flex-col gap-3 text-sm text-[#A6ADBD]">{footer}</div>}
         </div>

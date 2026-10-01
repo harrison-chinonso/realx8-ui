@@ -17,7 +17,7 @@ import {
 } from '../../lib/knownAccount';
 import { enumLabel } from '../../utils/enumLabel';
 import {
-  AuthBrand, AuthField, AuthShell, PasscodeInput, PasswordField, ShowcasePanel, ghostButton, primaryButton, primaryInk,
+  AuthBrand, AuthField, AuthHeaderLinks, AuthShell, PasscodeInput, PasswordField, ShowcasePanel, ghostButton, primaryButton, primaryInk,
 } from '../../components/auth/AuthKit';
 
 /*
@@ -782,10 +782,8 @@ export default function LoginPage() {
             : <>New{companyName ? ` to ${companyName}` : ' here'}? <Link to={registerHref} className="font-bold text-[#E9D8C4] hover:underline">Create an account</Link></>}
         </p>
       )}
-      <p className="text-xs text-[#7C8497]">
-        Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Realx8'} ·{' '}
-        <Link to={company?.code || linkCode ? `/help?c=${encodeURIComponent(company?.code || linkCode)}` : '/help'} className="text-[#A6ADBD] hover:text-white">Get help</Link>
-        {' '}· <Link to="/legal/terms" className="text-[#A6ADBD] hover:text-white">Terms &amp; Privacy</Link>
+      <p className="text-center text-xs text-[#7C8497]">
+        Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Realx8'}
       </p>
     </>
   );
@@ -794,6 +792,7 @@ export default function LoginPage() {
     <>
       <AuthShell
         brand={<AuthBrand company={company || (greeting?.company_name ? { name: greeting.company_name } : null)} />}
+        headerAction={<AuthHeaderLinks helpTo={company?.code || linkCode ? `/help?c=${encodeURIComponent(company?.code || linkCode)}` : '/help'} />}
         aside={<ShowcasePanel properties={properties} />}
         mobileTop={(
           <div className="relative h-64">
