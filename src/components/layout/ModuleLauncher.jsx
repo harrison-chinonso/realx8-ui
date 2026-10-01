@@ -728,10 +728,10 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
                 }}
                 aria-label={group ? `Back to ${section?.section || 'the section'}` : 'Back to all modules'}
               >
-                <ArrowLeft size={18} />
+                <ArrowLeft size={16} />
               </button>
             )}
-            <Search aria-hidden="true" size={20} className="rx-search-icon" />
+            <Search aria-hidden="true" size={18} className="rx-search-icon" />
             <input
               ref={searchRef}
               value={query}
@@ -755,10 +755,6 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
                 <div className="rx-banner-text">
                   <span className="rx-banner-kicker">Welcome back,</span>
                   <span className="rx-banner-name">{user?.name || 'there'}</span>
-                  <span className="rx-banner-lead">
-                    {appearance?.launcher_welcome_text
-                      || 'Manage your properties, clients, transactions and more — all in one place.'}
-                  </span>
                 </div>
                 <div className="rx-banner-art" aria-hidden="true">
                   {bannerImage ? <img src={bannerImage} alt="" /> : <Skyline />}
@@ -817,9 +813,13 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
             </nav>
           </div>
 
-          <footer className="rx-footer">
-            <Brand logo={logo} name={appName} small />
-            <span className="rx-footer-tag">{appearance?.app_tagline || 'Smarter tools. Greater results.'}</span>
+          {/*
+            The platform's copyright, fixed: the same words for every company,
+            never the tenant's name or a tagline it sets, with the year kept
+            current. The bar itself still wears the company's colours.
+          */}
+          <footer className="rx-footer rx-footer-centered">
+            <span className="rx-footer-copy">© {new Date().getFullYear()} Realx8. All rights reserved.</span>
           </footer>
         </div>
       </div>

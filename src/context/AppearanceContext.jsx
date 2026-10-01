@@ -27,7 +27,6 @@ const DEFAULTS = {
   // launcherPalette.js for the colours and ModuleLauncher for the words.
   accent_colors: '',
   launcher_banner_image: '',
-  launcher_welcome_text: '',
   launcher_badge: '',
   app_tagline: '',
 };

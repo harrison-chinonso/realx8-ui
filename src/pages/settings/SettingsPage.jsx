@@ -539,9 +539,7 @@ const TEMPLATE_OPTIONS = [
 const launcherFormFrom = (src = {}) => ({
   accent_colors: parseAccents(src.accent_colors),
   launcher_banner_image: src.launcher_banner_image || '',
-  launcher_welcome_text: src.launcher_welcome_text || '',
   launcher_badge: src.launcher_badge || '',
-  app_tagline: src.app_tagline || '',
 });
 
 function AppearanceTab() {
@@ -596,7 +594,7 @@ function AppearanceTab() {
     // every render, so the fields that matter are listed instead.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, app_name, app_logo, primary_color, secondary_color, dark_primary_color, dark_secondary_color, font_heading, font_body, font_ui, dark_mode, currency, template,
-    current.accent_colors, current.launcher_banner_image, current.launcher_welcome_text, current.launcher_badge, current.app_tagline]);
+    current.accent_colors, current.launcher_banner_image, current.launcher_badge]);
 
   /** A chosen company's own appearance, read fresh. */
   useEffect(() => {
@@ -659,9 +657,7 @@ function AppearanceTab() {
         // The module launcher. Blank values fall back to the built-in defaults.
         { key: 'accent_colors', value: serialiseAccents(form.accent_colors) },
         { key: 'launcher_banner_image', value: form.launcher_banner_image.trim() },
-        { key: 'launcher_welcome_text', value: form.launcher_welcome_text.trim() },
         { key: 'launcher_badge', value: form.launcher_badge.trim() },
-        { key: 'app_tagline', value: form.app_tagline.trim() },
       ];
       await bulkUpdateSettings(settings, 'appearance', companyId);
 
@@ -893,27 +889,11 @@ function AppearanceTab() {
               />
             </label>
             <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">Welcome message<FieldMark /></span>
-              <Input
-                value={form.launcher_welcome_text}
-                onChange={(e) => setForm({ ...form, launcher_welcome_text: e.target.value })}
-                placeholder="Manage your properties, clients, transactions and more — all in one place."
-              />
-            </label>
-            <label className="block space-y-1">
               <span className="text-sm font-medium text-slate-700">Banner badge<FieldMark /></span>
               <Input
                 value={form.launcher_badge}
                 onChange={(e) => setForm({ ...form, launcher_badge: e.target.value })}
                 placeholder="Grow · Track · Succeed"
-              />
-            </label>
-            <label className="block space-y-1">
-              <span className="text-sm font-medium text-slate-700">Footer tagline<FieldMark /></span>
-              <Input
-                value={form.app_tagline}
-                onChange={(e) => setForm({ ...form, app_tagline: e.target.value })}
-                placeholder="Smarter tools. Greater results."
               />
             </label>
           </div>
