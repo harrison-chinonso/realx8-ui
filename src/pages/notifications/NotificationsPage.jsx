@@ -25,6 +25,7 @@ import { extractError } from '../../utils/extractError';
 import BrowserNotificationsCard from '../../components/settings/BrowserNotificationsCard';
 import Select from '../../components/ui/Select';
 import FieldMark from '../../components/ui/FieldMark';
+import { enumTitle } from '../../utils/enumLabel';
 
 const TYPE_OPTIONS = ['info', 'warning', 'success', 'alert'];
 const EMAIL_TYPES = ['email', 'push', 'sms'];
@@ -45,7 +46,7 @@ const TARGET_OPTIONS_SUPERIOR = [
 const ROLE_OPTIONS = ['super_admin', 'admin', 'realtor', 'branch_manager', 'product_manager', 'employee', 'client'];
 
 const EMPTY_FORM = { title: '', body: '', type: 'info', target: 'all', user_ids: [], company_id: '', role: '', template_id: '' };
-const EMPTY_SINGLE_FORM = { mode: 'in_app', user_id: '', title: '', message: '', type: 'info', to: '', subject: '', body: '' };
+const EMPTY_SINGLE_FORM = { mode: 'in_app', user_type: '', user_id: '', title: '', message: '', type: 'info', subject: '', body: '' };
 const EMPTY_TEMPLATE_FORM = { name: '', type: 'email', subject: '', body: '' };
 
 const getItems = (response) => {
@@ -172,75 +173,107 @@ function MultiUserPicker({ users, selectedIds, onChange }) {
   );
 }
 
-// ── Single-recipient picker with search ──────────────────────────────────────
+// ── Single-recipient picker: user type, then the person ─────────────────────
 /**
- * The single-send modal used to ask for a "Recipient User ID" typed by hand.
- * That put an internal number on the sender to remember, and answered every
- * wrong guess — a typo, a deleted user, somebody at another company — with the
- * API's 403 and no way to tell which. This is the same list MultiUserPicker
- * draws from, narrowed to one choice, so an unsendable id cannot be named.
+ * The single-send modal used to ask for a "Recipient User ID", and its email
+ * mode for an address, typed by hand. Both put something on the sender to
+ * remember and let a typo reach somebody who is not a user here. Now both
+ * modes pick from the users this sender may reach: the type first (Client,
+ * Realtor, Employee…), which narrows a long list to the people who matter,
+ * then the person, searchable by name or email.
+ *
+ * With `requireEmail` a user without an email address is shown but cannot be
+ * chosen — an email to them has nowhere to go.
  */
-function SingleUserPicker({ users, loading, selectedId, onChange }) {
+const typeOf = (user) => String(user?.type || '').toLowerCase();
+
+function SingleUserPicker({ users, loading, selectedId, onChange, userType, onUserTypeChange, requireEmail = false }) {
   const [search, setSearch] = useState('');
+
+  const types = useMemo(() => {
+    const counts = new Map();
+    users.forEach((u) => {
+      const t = typeOf(u);
+      if (t) counts.set(t, (counts.get(t) || 0) + 1);
+    });
+    return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [users]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return users;
-    return users.filter((u) =>
-      (u.name || '').toLowerCase().includes(q) ||
-      (u.email || '').toLowerCase().includes(q) ||
-      (u.type || '').toLowerCase().includes(q)
-    );
-  }, [users, search]);
+    return users
+      .filter((u) => !userType || typeOf(u) === userType)
+      .filter((u) => !q
+        || (u.name || '').toLowerCase().includes(q)
+        || (u.email || '').toLowerCase().includes(q));
+  }, [users, userType, search]);
 
   const selected = users.find((u) => String(u.id) === String(selectedId)) || null;
 
   return (
-    <div className="space-y-2">
-      <span className="block text-sm font-medium text-slate-700">
-        Recipient<FieldMark required />
-        {selected && (
-          <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
-            {selected.name}
+    <div className="space-y-3">
+      <label className="block space-y-1">
+        <span className="text-sm font-medium text-slate-700">User type<FieldMark required /></span>
+        <Select
+          value={userType}
+          onChange={(event) => { setSearch(''); onUserTypeChange(event.target.value); }}
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          disabled={loading}
+        >
+          <option value="">{loading ? 'Loading users…' : 'Select a user type'}</option>
+          {types.map(([t, count]) => (
+            <option key={t} value={t}>{enumTitle(t)} ({count})</option>
+          ))}
+        </Select>
+      </label>
+
+      {userType && (
+        <div className="space-y-2">
+          <span className="block text-sm font-medium text-slate-700">
+            {enumTitle(userType)}<FieldMark required />
+            {selected && (
+              <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                {selected.name}
+              </span>
+            )}
           </span>
-        )}
-      </span>
-
-      <input
-        type="text"
-        placeholder="Search by name, email or role…"
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-      />
-
-      <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
-        {loading && <p className="px-3 py-4 text-center text-sm text-slate-400">Loading users…</p>}
-        {!loading && filtered.length === 0 && (
-          <p className="px-3 py-4 text-center text-sm text-slate-400">No users found</p>
-        )}
-        {!loading && filtered.map((u) => {
-          const isSelected = String(u.id) === String(selectedId);
-          return (
-            <label key={u.id} className={`flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors hover:bg-slate-50 ${isSelected ? 'bg-blue-50' : ''}`}>
-              <input
-                type="radio"
-                name="single-recipient"
-                checked={isSelected}
-                onChange={() => onChange(String(u.id))}
-                className="h-4 w-4 border-slate-300 accent-blue-600"
-              />
-              <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-800">{u.name}</p>
-                  <p className="truncate text-xs text-slate-400">{u.email}</p>
-                </div>
-                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 capitalize">{u.type}</span>
-              </div>
-            </label>
-          );
-        })}
-      </div>
+          <input
+            type="text"
+            placeholder="Search by name or email…"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          />
+          <div className="max-h-44 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200">
+            {filtered.length === 0 && (
+              <p className="px-3 py-4 text-center text-sm text-slate-400">No users found</p>
+            )}
+            {filtered.map((u) => {
+              const isSelected = String(u.id) === String(selectedId);
+              const unreachable = requireEmail && !u.email;
+              return (
+                <label
+                  key={u.id}
+                  className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${unreachable ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-slate-50'} ${isSelected ? 'bg-blue-50' : ''}`}
+                >
+                  <input
+                    type="radio"
+                    name="single-recipient"
+                    checked={isSelected}
+                    disabled={unreachable}
+                    onChange={() => onChange(String(u.id))}
+                    className="h-4 w-4 border-slate-300 accent-blue-600"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-800">{u.name}</p>
+                    <p className="truncate text-xs text-slate-400">{u.email || 'No email address'}</p>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -351,9 +384,14 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
     event.preventDefault();
     setSingleError('');
 
+    const recipient = users.find((u) => String(u.id) === String(singleForm.user_id)) || null;
     if (singleForm.mode === 'email') {
-      if (!singleForm.to.trim() || !singleForm.subject.trim() || !singleForm.body.trim()) {
-        setSingleError('Recipient email, subject, and body are required.');
+      if (!recipient || !singleForm.subject.trim() || !singleForm.body.trim()) {
+        setSingleError('Recipient, subject, and body are required.');
+        return;
+      }
+      if (!recipient.email) {
+        setSingleError(`${recipient.name} has no email address.`);
         return;
       }
     } else if (!singleForm.user_id || !singleForm.title.trim() || !singleForm.message.trim()) {
@@ -365,7 +403,7 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
     try {
       if (singleForm.mode === 'email') {
         await sendEmail({
-          to: singleForm.to.trim(),
+          to: recipient.email,
           subject: singleForm.subject.trim(),
           body: singleForm.body.trim(),
         });
@@ -560,12 +598,14 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
 
           {singleForm.mode === 'email' ? (
             <>
-              <Input
-                label="To"
-                type="email"
-                value={singleForm.to}
-                onChange={(event) => setSingleForm((current) => ({ ...current, to: event.target.value }))}
-                required
+              <SingleUserPicker
+                users={users}
+                loading={usersLoading}
+                userType={singleForm.user_type}
+                onUserTypeChange={(t) => setSingleForm((current) => ({ ...current, user_type: t, user_id: '' }))}
+                selectedId={singleForm.user_id}
+                onChange={(id) => setSingleForm((current) => ({ ...current, user_id: id }))}
+                requireEmail
               />
               <Input
                 label="Subject"
@@ -589,6 +629,8 @@ function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] 
               <SingleUserPicker
                 users={users}
                 loading={usersLoading}
+                userType={singleForm.user_type}
+                onUserTypeChange={(t) => setSingleForm((current) => ({ ...current, user_type: t, user_id: '' }))}
                 selectedId={singleForm.user_id}
                 onChange={(id) => setSingleForm((current) => ({ ...current, user_id: id }))}
               />
