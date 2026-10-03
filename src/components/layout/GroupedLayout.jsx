@@ -205,7 +205,7 @@ export default function GroupedLayout({ children }) {
   }, [mobileOpen]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-app overflow-hidden bg-slate-50">
       {/* Desktop sidebar — 256px wide (within 240-260px spec) */}
       <aside className="hidden w-[300px] shrink-0 border-r border-slate-200 bg-white lg:flex lg:flex-col">
         <SidebarContent onNavigate={undefined} />

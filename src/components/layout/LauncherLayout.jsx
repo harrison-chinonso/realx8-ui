@@ -85,7 +85,7 @@ export default function LauncherLayout({ children }) {
   const firstName = user?.name?.split(' ')[0];
 
   return (
-    <div className="flex h-screen flex-col bg-slate-50">
+    <div className="flex h-app flex-col overflow-hidden bg-slate-50">
       <header className="rx-topbar relative z-50 flex h-14 shrink-0 items-center gap-2 px-3 shadow-sm sm:px-4">
         {/*
           The launcher button sits first, where a hamburger would.

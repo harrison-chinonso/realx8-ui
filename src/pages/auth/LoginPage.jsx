@@ -795,10 +795,10 @@ export default function LoginPage() {
         headerAction={<AuthHeaderLinks helpTo={company?.code || linkCode ? `/help?c=${encodeURIComponent(company?.code || linkCode)}` : '/help'} />}
         aside={<ShowcasePanel properties={properties} />}
         mobileTop={(
-          <div className="relative h-64">
+          <div className="relative h-64 sm:h-96">
             <ShowcasePanel properties={properties} compact />
-            <div className="absolute left-5 top-5 z-20 rounded-2xl bg-[rgba(14,18,32,0.7)] px-3 py-2">
-              <AuthBrand company={company || (greeting?.company_name ? { name: greeting.company_name } : null)} />
+            <div className="absolute left-3 top-3 z-20 max-w-[60%] rounded-lg bg-[rgba(14,18,32,0.7)] py-1 pl-1 pr-2.5">
+              <AuthBrand small company={company || (greeting?.company_name ? { name: greeting.company_name } : null)} />
             </div>
           </div>
         )}
