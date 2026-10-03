@@ -22,7 +22,7 @@ export default function Sidebar() {
     .map((s, idx) => ({ ...s, defaultOpen: idx < 3 }));
 
   return (
-    <aside className="flex h-screen w-64 flex-col overflow-y-auto border-r border-slate-700 bg-slate-900 text-white">
+    <aside className="flex h-app w-64 flex-col overflow-y-auto border-r border-slate-700 bg-slate-900 text-white">
       <div className="sticky top-0 flex items-center gap-3 border-b border-slate-700 bg-slate-900 px-4 py-5">
         {app_logo && (
           <img

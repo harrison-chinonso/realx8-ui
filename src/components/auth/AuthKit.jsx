@@ -183,32 +183,35 @@ export function PasswordStrength({ password }) {
  * the company, the platform's otherwise, with "Powered by" underneath so the
  * visitor knows the product they are signing in to.
  */
-export function AuthBrand({ company }) {
+export function AuthBrand({ company, small = false }) {
   const { app_name, app_logo, nameLoaded } = useAppearance();
+  // `small` is the chip over the photo strip on a phone: same content, a
+  // smaller mark and type so it labels the photo instead of covering it.
+  const mark = small ? 'h-7 w-7 rounded-md' : 'h-11 w-11 rounded-xl';
   const [logoFailed, setLogoFailed] = useState(false);
   const logo = company?.logo || app_logo;
   const name = company?.name || app_name || 'RealX8';
   if (!nameLoaded && !company) {
-    return <span className="inline-block h-11 w-40 animate-pulse rounded-xl bg-white/10" aria-hidden="true" />;
+    return <span className={`inline-block animate-pulse rounded-xl bg-white/10 ${small ? 'h-7 w-24' : 'h-11 w-40'}`} aria-hidden="true" />;
   }
   return (
-    <div className="flex min-w-0 items-center gap-3">
+    <div className={`flex min-w-0 items-center ${small ? 'gap-2' : 'gap-3'}`}>
       {logo && !logoFailed ? (
         <img
           src={logo}
           alt=""
           onError={() => setLogoFailed(true)}
-          className="h-11 w-11 shrink-0 rounded-xl bg-white object-contain p-1"
+          className={`${mark} shrink-0 bg-white object-contain ${small ? 'p-0.5' : 'p-1'}`}
         />
       ) : (
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-xl font-bold" style={primaryInk} aria-hidden="true">
+        <span className={`flex ${mark} shrink-0 items-center justify-center bg-primary font-bold ${small ? 'text-sm' : 'text-xl'}`} style={primaryInk} aria-hidden="true">
           {name.trim().charAt(0).toUpperCase()}
         </span>
       )}
       <div className="min-w-0">
-        <p className="truncate text-base font-bold text-[#F3F1EC]">{name}</p>
+        <p className={`truncate text-[#F3F1EC] ${small ? 'text-[13px] font-semibold leading-tight' : 'text-base font-bold'}`}>{name}</p>
         {company && app_name && app_name !== company.name && (
-          <p className="truncate text-xs text-[#A6ADBD]">Powered by {app_name}</p>
+          <p className={`truncate text-[#A6ADBD] ${small ? 'text-[10px] leading-tight' : 'text-xs'}`}>Powered by {app_name}</p>
         )}
       </div>
     </div>
@@ -348,17 +351,18 @@ export function AuthHeaderLinks({ helpTo = '/help' }) {
 }
 
 /**
- * The page: form on the left, the company's world on the right. On a phone the
- * form comes first and full width, with an optional photo strip above it.
+ * The page: form on the left, the company's world on the right. Below the
+ * large breakpoint the form comes first, at a readable width, with an
+ * optional photo strip above it.
  */
 export function AuthShell({
   brand, headerAction, aside, mobileTop, footer, children, wide = false,
 }) {
   return (
-    <div className="flex min-h-screen w-full bg-[#0E1220] font-body text-[#F3F1EC] lg:h-screen lg:overflow-hidden">
+    <div className="flex min-h-screen w-full bg-[#0E1220] font-body text-[#F3F1EC] lg:h-app lg:overflow-hidden">
       <main className={`flex w-full shrink-0 flex-col lg:overflow-y-auto ${wide ? 'lg:w-[560px]' : 'lg:w-[480px]'}`}>
         {mobileTop && <div className="lg:hidden">{mobileTop}</div>}
-        <div className={`relative flex flex-1 flex-col gap-7 bg-[#0E1220] px-5 pb-8 pt-6 sm:px-10 lg:px-14 lg:pt-10 ${mobileTop ? '-mt-4 rounded-t-[20px] lg:mt-0 lg:rounded-none' : ''}`}>
+        <div className={`relative flex w-full flex-1 flex-col gap-7 bg-[#0E1220] px-5 pb-8 pt-6 sm:mx-auto sm:max-w-[560px] sm:px-10 lg:mx-0 lg:max-w-none lg:px-14 lg:pt-10 ${mobileTop ? '-mt-4 rounded-t-[20px] lg:mt-0 lg:rounded-none' : ''}`}>
           {/* The name on the left, an action (Get help) opposite it. With a
               photo strip on a phone the name is on the strip, so the action
               keeps the row to itself, still on the right. */}

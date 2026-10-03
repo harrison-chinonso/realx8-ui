@@ -391,7 +391,7 @@ export default function ModernLayout({ children }) {
     .filter((s) => s.items.length > 0);
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
+    <div className="flex h-app flex-col overflow-hidden bg-slate-50">
       <TopNav onMobileMenuOpen={() => setMobileOpen(true)} />
 
       {/* Mobile full-screen drawer */}

@@ -201,7 +201,7 @@ export default function ClassicLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-app overflow-hidden">
       <ClassicSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-1 min-w-0 flex-col overflow-hidden">
         <ClassicHeader onMenuOpen={() => setSidebarOpen(true)} />

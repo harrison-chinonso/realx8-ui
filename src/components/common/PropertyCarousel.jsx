@@ -81,7 +81,7 @@ export default function PropertyCarousel({ className = '', compact = false }) {
               key={idx}
               onClick={() => goTo(idx)}
               aria-label={`Go to slide ${idx + 1}`}
-              className="rounded-full transition-all duration-400 cursor-pointer"
+              className="min-h-0 rounded-full transition-all duration-400 cursor-pointer"
               style={{
                 width: idx === active ? '2rem' : '0.35rem',
                 height: '0.2rem',

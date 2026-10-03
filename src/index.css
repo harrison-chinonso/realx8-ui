@@ -62,6 +62,26 @@ nav, [role="navigation"],
   @apply min-h-screen;
 }
 
+/*
+ * The signed-in shells fill the visible viewport, not 100vh. On a phone 100vh
+ * is the height with the address bar hidden, so a 100vh shell is taller than
+ * the screen while the bar shows: the page itself then scrolls under the
+ * shell's own scroller, the header rides off the top, and getting it back
+ * takes repeated drags down. dvh follows the bar; 100vh stays as the fallback
+ * for browsers without it. Inner scrollers keep their scroll to themselves so
+ * reaching the end never starts the page moving instead.
+ */
+@layer utilities {
+  .h-app {
+    height: 100vh;
+    height: 100dvh;
+  }
+}
+.h-app main,
+.h-app aside {
+  overscroll-behavior-y: contain;
+}
+
 /* ── Mobile touch improvements ──────────────────────────────────────────── */
 
 /* Ensure tap targets are at least 44px (Apple HIG / WCAG) */
