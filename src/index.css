@@ -59,7 +59,8 @@ nav, [role="navigation"],
 }
 
 #root {
-  @apply min-h-screen;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /*
@@ -80,6 +81,13 @@ nav, [role="navigation"],
 .h-app main,
 .h-app aside {
   overscroll-behavior-y: contain;
+}
+/* Clipped, not just hidden: an overflow-hidden box can still be scrolled by
+   code (scrollIntoView, focusing a field), and once it is there is no gesture
+   that scrolls it back — the header stays out of sight. clip cannot scroll. */
+.h-app.overflow-hidden {
+  overflow: hidden;
+  overflow: clip;
 }
 
 /* ── Mobile touch improvements ──────────────────────────────────────────── */

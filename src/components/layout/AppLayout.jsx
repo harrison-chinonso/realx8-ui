@@ -7,6 +7,7 @@ import GroupedLayout from './GroupedLayout';
 import LauncherLayout from './LauncherLayout';
 import AssistantWidget from '../common/AssistantWidget';
 import { NavBadges } from './NavBadge';
+import usePinnedPage from '../../hooks/usePinnedPage';
 
 const TEMPLATES = {
   classic: ClassicLayout,
@@ -20,6 +21,8 @@ const TEMPLATES = {
 export default function AppLayout({ children }) {
   const { template } = useAppearance();
   const Layout = TEMPLATES[template] || LauncherLayout;
+  // The layouts scroll inside themselves; the page under them stays put.
+  usePinnedPage();
   return (
     <>
       {/*
