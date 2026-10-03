@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Bell, CheckCheck, Eye, Inbox, Pencil, Send, Trash2, Upload, X } from 'lucide-react';
 import useNavBadgeStore from '../../store/navBadgeStore';
 import {
   listNotifications,
   markRead,
   markAllRead,
   sendBulkNotification,
-  sendNotification,
   listSentNotifications,
-  sendEmail,
   listNotificationTemplates,
   createNotificationTemplate,
   updateNotificationTemplate,
@@ -15,852 +14,496 @@ import {
 } from '../../api/notificationApi';
 import { listUsers, listEmployees, listClients, listRealtors } from '../../api/userApi';
 import { listCompanies } from '../../api/companyApi';
-import Badge from '../../components/common/Badge';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/ui/Input';
-import Table from '../../components/common/Table';
-import useAuthStore from '../../store/authStore';
-import { extractError } from '../../utils/extractError';
-import BrowserNotificationsCard from '../../components/settings/BrowserNotificationsCard';
 import Select from '../../components/ui/Select';
 import FieldMark from '../../components/ui/FieldMark';
+import BrowserNotificationsCard from '../../components/settings/BrowserNotificationsCard';
+import useAuthStore from '../../store/authStore';
+import { extractError } from '../../utils/extractError';
 import { enumTitle } from '../../utils/enumLabel';
+import { useAppearance } from '../../context/useAppearance';
 
-const TYPE_OPTIONS = ['info', 'warning', 'success', 'alert'];
-const EMAIL_TYPES = ['email', 'push', 'sms'];
-const TARGET_OPTIONS_NORMAL = [
-  { value: 'all', label: 'All Users (My Company)' },
-  { value: 'employees', label: 'Employees' },
+/**
+ * Notifications: what you have received (Inbox), sending a message (Send) and
+ * what you have sent (Sent).
+ *
+ * Sending is one form. Every message lands in the recipients' in-app inbox and
+ * is emailed to those with an address — the same for one person as for a
+ * thousand, so "send to one user" is simply "Specific people" with one chosen.
+ * A company may upload its own HTML email designs and pick one per message;
+ * without one, emails go out in the default design.
+ */
+
+const AUDIENCES = [
+  { value: 'all', label: 'Everyone' },
   { value: 'clients', label: 'Clients' },
   { value: 'realtors', label: 'Realtors' },
-  { value: 'specific', label: 'Select Specific Users' },
+  { value: 'employees', label: 'Employees' },
+  { value: 'specific', label: 'Specific people' },
 ];
-const TARGET_OPTIONS_SUPERIOR = [
-  { value: 'all_global', label: 'All Users (All Companies)' },
-  { value: 'all', label: 'All Users (My Company)' },
-  { value: 'company', label: 'A Specific Company' },
-  { value: 'role', label: 'By Role' },
-  { value: 'specific', label: 'Select Specific Users' },
+const PLATFORM_AUDIENCES = [
+  { value: 'all', label: 'Everyone (all companies)' },
+  { value: 'company', label: 'One company' },
+  { value: 'role', label: 'By role' },
+  { value: 'specific', label: 'Specific people' },
 ];
 const ROLE_OPTIONS = ['super_admin', 'admin', 'realtor', 'branch_manager', 'product_manager', 'employee', 'client'];
 
-const EMPTY_FORM = { title: '', body: '', type: 'info', target: 'all', user_ids: [], company_id: '', role: '', template_id: '' };
-const EMPTY_SINGLE_FORM = { mode: 'in_app', user_type: '', user_id: '', title: '', message: '', type: 'info', subject: '', body: '' };
-const EMPTY_TEMPLATE_FORM = { name: '', type: 'email', subject: '', body: '' };
+const EMPTY_FORM = { audience: 'all', company_id: '', role: '', user_ids: [], title: '', body: '' };
 
 const getItems = (response) => {
   if (Array.isArray(response)) return response;
   if (Array.isArray(response?.data)) return response.data;
   return [];
 };
-
-const userMatchesRole = (user, role) => {
-  if (!role) return true;
-  if (user?.type === role) return true;
-  return Array.isArray(user?.roles) && user.roles.some((item) => item?.name === role);
-};
-
-// ── Multi-user picker with search ─────────────────────────────────────────────
-function MultiUserPicker({ users, selectedIds, onChange }) {
-  const [search, setSearch] = useState('');
-
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return users;
-    return users.filter((u) =>
-      (u.name || '').toLowerCase().includes(q) ||
-      (u.email || '').toLowerCase().includes(q) ||
-      (u.type || '').toLowerCase().includes(q)
-    );
-  }, [users, search]);
-
-  const toggle = (id) => {
-    onChange(selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id]);
-  };
-
-  const selectAll = () => onChange(filtered.map((u) => u.id));
-  const clearAll = () => onChange([]);
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-slate-700">
-          Select Recipients
-          {/* This picker only renders for the "Select Specific Users" target,
-              and in that mode the send is refused without one — by the page,
-              and by the API, which answers 400 to an empty list. */}
-          <FieldMark required />
-          {selectedIds.length > 0 && (
-            <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
-              {selectedIds.length} selected
-            </span>
-          )}
-        </label>
-        <div className="flex gap-2 text-xs">
-          <button type="button" onClick={selectAll} className="text-blue-600 hover:underline">
-            Select all{search ? ' filtered' : ''}
-          </button>
-          {selectedIds.length > 0 && (
-            <button type="button" onClick={clearAll} className="text-slate-400 hover:underline">Clear</button>
-          )}
-        </div>
-      </div>
-
-      {/* Search */}
-      <input
-        type="text"
-        placeholder="Search by name, email or role…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-      />
-
-      {/*
-        The requirement, before it becomes an error.
-        A disabled Send button with nothing explaining it is its own problem,
-        so the reason sits with the field it belongs to.
-      */}
-      {selectedIds.length === 0 && (
-        <p className="text-xs text-slate-500">
-          Choose at least one person to send this to.
-        </p>
-      )}
-
-      {/* Selected chips */}
-      {selectedIds.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2">
-          {selectedIds.map((id) => {
-            const u = users.find((x) => x.id === id);
-            if (!u) return null;
-            return (
-              <span key={id} className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-800">
-                {u.name}
-                <button type="button" onClick={() => toggle(id)} className="ml-0.5 text-blue-500 hover:text-blue-800">×</button>
-              </span>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Scrollable user list */}
-      <div className="max-h-52 overflow-y-auto rounded-lg border border-slate-200 divide-y divide-slate-100">
-        {filtered.length === 0 && (
-          <p className="px-3 py-4 text-center text-sm text-slate-400">No users found</p>
-        )}
-        {filtered.map((u) => {
-          const selected = selectedIds.includes(u.id);
-          return (
-            <label key={u.id} className={`flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors hover:bg-slate-50 ${selected ? 'bg-blue-50' : ''}`}>
-              <input
-                type="checkbox"
-                checked={selected}
-                onChange={() => toggle(u.id)}
-                className="h-4 w-4 rounded border-slate-300 accent-blue-600"
-              />
-              <div className="flex flex-1 items-center justify-between gap-2 min-w-0">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-800">{u.name}</p>
-                  <p className="truncate text-xs text-slate-400">{u.email}</p>
-                </div>
-                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500 capitalize">{u.type}</span>
-              </div>
-            </label>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ── Single-recipient picker: user type, then the person ─────────────────────
-/**
- * The single-send modal used to ask for a "Recipient User ID", and its email
- * mode for an address, typed by hand. Both put something on the sender to
- * remember and let a typo reach somebody who is not a user here. Now both
- * modes pick from the users this sender may reach: the type first (Client,
- * Realtor, Employee…), which narrows a long list to the people who matter,
- * then the person, searchable by name or email.
- *
- * With `requireEmail` a user without an email address is shown but cannot be
- * chosen — an email to them has nowhere to go.
- */
 const typeOf = (user) => String(user?.type || '').toLowerCase();
+const userMatchesRole = (user, role) => typeOf(user) === role
+  || (Array.isArray(user?.roles) && user.roles.some((item) => item?.name === role));
+const formatWhen = (value) => (value ? new Date(value).toLocaleString('en-GB', {
+  day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+}) : '');
 
-function SingleUserPicker({ users, loading, selectedId, onChange, userType, onUserTypeChange, requireEmail = false }) {
+const FIELD = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
+
+// ── Recipient picker: user type, then the people ────────────────────────────
+function PeoplePicker({ users, loading, selectedIds, onChange }) {
+  const [userType, setUserType] = useState('');
   const [search, setSearch] = useState('');
 
   const types = useMemo(() => {
     const counts = new Map();
-    users.forEach((u) => {
-      const t = typeOf(u);
-      if (t) counts.set(t, (counts.get(t) || 0) + 1);
-    });
+    users.forEach((u) => { const t = typeOf(u); if (t) counts.set(t, (counts.get(t) || 0) + 1); });
     return [...counts.entries()].sort(([a], [b]) => a.localeCompare(b));
   }, [users]);
 
-  const filtered = useMemo(() => {
+  const visible = useMemo(() => {
     const q = search.toLowerCase().trim();
     return users
-      .filter((u) => !userType || typeOf(u) === userType)
-      .filter((u) => !q
-        || (u.name || '').toLowerCase().includes(q)
-        || (u.email || '').toLowerCase().includes(q));
+      .filter((u) => typeOf(u) === userType)
+      .filter((u) => !q || (u.name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q));
   }, [users, userType, search]);
 
-  const selected = users.find((u) => String(u.id) === String(selectedId)) || null;
+  const selected = users.filter((u) => selectedIds.includes(String(u.id)));
+  const toggle = (id) => onChange(selectedIds.includes(id) ? selectedIds.filter((x) => x !== id) : [...selectedIds, id]);
 
   return (
-    <div className="space-y-3">
-      <label className="block space-y-1">
-        <span className="text-sm font-medium text-slate-700">User type<FieldMark required /></span>
-        <Select
-          value={userType}
-          onChange={(event) => { setSearch(''); onUserTypeChange(event.target.value); }}
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-          disabled={loading}
-        >
-          <option value="">{loading ? 'Loading users…' : 'Select a user type'}</option>
-          {types.map(([t, count]) => (
-            <option key={t} value={t}>{enumTitle(t)} ({count})</option>
+    <div className="space-y-3 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map((u) => (
+            <span key={u.id} className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200">
+              {u.name}
+              <button type="button" onClick={() => toggle(String(u.id))} aria-label={`Remove ${u.name}`} className="min-h-0 text-slate-400 hover:text-slate-700">
+                <X size={12} aria-hidden="true" />
+              </button>
+            </span>
           ))}
+        </div>
+      )}
+
+      <div className="grid gap-2 sm:grid-cols-[minmax(0,12rem)_1fr]">
+        <Select value={userType} onChange={(e) => { setUserType(e.target.value); setSearch(''); }} className={FIELD} disabled={loading} aria-label="User type">
+          <option value="">{loading ? 'Loading users…' : 'User type'}</option>
+          {types.map(([t, count]) => <option key={t} value={t}>{enumTitle(t)} ({count})</option>)}
         </Select>
-      </label>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name or email"
+          disabled={!userType}
+          className={`${FIELD} disabled:bg-slate-100`}
+        />
+      </div>
 
       {userType && (
-        <div className="space-y-2">
-          <span className="block text-sm font-medium text-slate-700">
-            {enumTitle(userType)}<FieldMark required />
-            {selected && (
-              <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
-                {selected.name}
+        <div className="max-h-56 divide-y divide-slate-100 overflow-y-auto rounded-lg bg-white ring-1 ring-slate-200">
+          {visible.length === 0 && <p className="px-3 py-4 text-center text-sm text-slate-400">No one found</p>}
+          {visible.map((u) => (
+            <label key={u.id} className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-slate-50">
+              <input type="checkbox" checked={selectedIds.includes(String(u.id))} onChange={() => toggle(String(u.id))} className="h-4 w-4 accent-blue-600" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium text-slate-800">{u.name}</span>
+                <span className="block truncate text-xs text-slate-400">{u.email || 'No email — in-app only'}</span>
               </span>
-            )}
-          </span>
-          <input
-            type="text"
-            placeholder="Search by name or email…"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-          />
-          <div className="max-h-44 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200">
-            {filtered.length === 0 && (
-              <p className="px-3 py-4 text-center text-sm text-slate-400">No users found</p>
-            )}
-            {filtered.map((u) => {
-              const isSelected = String(u.id) === String(selectedId);
-              const unreachable = requireEmail && !u.email;
-              return (
-                <label
-                  key={u.id}
-                  className={`flex items-center gap-3 px-3 py-2.5 transition-colors ${unreachable ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-slate-50'} ${isSelected ? 'bg-blue-50' : ''}`}
-                >
-                  <input
-                    type="radio"
-                    name="single-recipient"
-                    checked={isSelected}
-                    disabled={unreachable}
-                    onChange={() => onChange(String(u.id))}
-                    className="h-4 w-4 border-slate-300 accent-blue-600"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-800">{u.name}</p>
-                    <p className="truncate text-xs text-slate-400">{u.email || 'No email address'}</p>
-                  </div>
-                </label>
-              );
-            })}
-          </div>
+            </label>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-function ComposePanel({ onSent, isSuperiorAdmin, companies = [], templates = [] }) {
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [users, setUsers] = useState([]);
-  const [sending, setSending] = useState(false);
-  const [result, setResult] = useState(null);
-  const [showSingleModal, setShowSingleModal] = useState(false);
-  const [singleForm, setSingleForm] = useState(EMPTY_SINGLE_FORM);
-  const [singleSending, setSingleSending] = useState(false);
-  const [singleError, setSingleError] = useState('');
-  const [usersLoading, setUsersLoading] = useState(false);
+// ── Email designs ───────────────────────────────────────────────────────────
+/**
+ * A company's own HTML email designs. Optional: without one, emails go out in
+ * the default design. The server cleans each design and insists on
+ * {{message}}; this window uploads, previews and names them.
+ */
+const PLACEHOLDER_HELP = [
+  ['{{message}}', 'the message (required)'],
+  ['{{title}}', 'the title'],
+  ['{{name}}', "recipient's name"],
+  ['{{first_name}}', "recipient's first name"],
+  ['{{company_name}}', 'your company name'],
+  ['{{logo_url}}', 'your logo address'],
+  ['{{primary_color}}', 'your brand colour'],
+  ['{{support_email}}', 'your contact email'],
+  ['{{year}}', 'this year'],
+];
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const isDesign = (template) => template?.type === 'email' && /\{\{\s*message\s*\}\}/.test(template.body || '');
 
-  useEffect(() => {
-    // Clear selected users when switching away
-    if (form.target !== 'specific') setForm((c) => ({ ...c, user_ids: [] }));
-  }, [form.target]);
-
-  // Both recipient pickers read this one list, so it is fetched once and kept:
-  // the single-send modal needs it as much as the "specific users" target does.
-  const needUsers = form.target === 'specific' || showSingleModal;
-  useEffect(() => {
-    if (!needUsers || users.length > 0 || usersLoading) return;
-    setUsersLoading(true);
-    listUsers({ limit: 5000 })
-      .then((response) => setUsers(getItems(response)))
-      .catch(() => setUsers([]))
-      .finally(() => setUsersLoading(false));
-  }, [needUsers, users.length, usersLoading]);
-
-  const handleSend = async () => {
-    if (!form.title.trim() || !form.body.trim()) {
-      setResult({ type: 'error', text: 'Title and message are required.' });
-      return;
-    }
-
-    setSending(true);
-    setResult(null);
-    try {
-      let userIds = [];
-      if (form.target === 'all_global') {
-        const response = await listUsers({ limit: 5000 });
-        userIds = getItems(response).map((user) => user.id);
-      } else if (form.target === 'all') {
-        const response = await listUsers({ limit: 5000 });
-        userIds = getItems(response).map((user) => user.id);
-      } else if (form.target === 'company') {
-        if (!form.company_id) {
-          setResult({ type: 'error', text: 'Please select a company.' });
-          return;
-        }
-        const response = await listUsers({ company_id: form.company_id, limit: 5000 });
-        userIds = getItems(response).map((user) => user.id);
-      } else if (form.target === 'role') {
-        if (!form.role) {
-          setResult({ type: 'error', text: 'Please select a role.' });
-          return;
-        }
-        const response = await listUsers({ role: form.role, limit: 5000 });
-        userIds = getItems(response)
-          .filter((user) => userMatchesRole(user, form.role))
-          .map((user) => user.id);
-      } else if (form.target === 'employees') {
-        const response = await listEmployees();
-        userIds = getItems(response).map((user) => user.id);
-      } else if (form.target === 'clients') {
-        const response = await listClients();
-        userIds = getItems(response).map((user) => user.id);
-      } else if (form.target === 'realtors') {
-        const response = await listRealtors();
-        userIds = getItems(response).map((user) => user.id);
-      } else if (form.target === 'specific') {
-        if (!form.user_ids || form.user_ids.length === 0) {
-          setResult({ type: 'error', text: 'Please select at least one user.' });
-          setSending(false);
-          return;
-        }
-        userIds = form.user_ids.map(Number);
-      }
-
-      userIds = [...new Set(userIds.filter(Boolean))];
-      if (userIds.length === 0) {
-        setResult({ type: 'error', text: 'No users found for the selected target.' });
-        return;
-      }
-
-      const response = await sendBulkNotification({ user_ids: userIds, title: form.title, body: form.body, type: form.type });
-      const emailInfo = response.email ? ` (${response.email.sent} email${response.email.sent !== 1 ? 's' : ''} sent${response.email.failed ? `, ${response.email.failed} failed` : ''})` : '';
-      setResult({ type: 'success', text: `Notification sent to ${response.count} user(s).${emailInfo}` });
-      setForm(EMPTY_FORM);
-      onSent();
-    } catch (error) {
-      setResult({ type: 'error', text: extractError(error, 'Failed to send notification.') });
-    } finally {
-      setSending(false);
-    }
+/** The same fill the server does, for previews only. */
+const fillDesign = (html, { title, message, name, brand }) => {
+  const values = {
+    title: escapeHtml(title),
+    message: String(message ?? '').split(/\n{2,}/).map((p) => escapeHtml(p).replace(/\n/g, '<br/>')).join('<br/><br/>'),
+    name: escapeHtml(name),
+    first_name: escapeHtml(String(name ?? '').split(' ')[0]),
+    company_name: escapeHtml(brand.name),
+    logo_url: escapeHtml(brand.logo || ''),
+    primary_color: escapeHtml(brand.primaryColor || '#2563eb'),
+    support_email: escapeHtml(brand.supportEmail || ''),
+    year: String(new Date().getFullYear()),
   };
+  return Object.entries(values).reduce((out, [key, value]) => out.replace(new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'g'), () => value), String(html ?? ''));
+};
 
-  const closeSingleModal = () => {
-    setShowSingleModal(false);
-    setSingleForm(EMPTY_SINGLE_FORM);
-    setSingleError('');
-  };
-
-  const handleSendSingle = async (event) => {
-    event.preventDefault();
-    setSingleError('');
-
-    const recipient = users.find((u) => String(u.id) === String(singleForm.user_id)) || null;
-    if (singleForm.mode === 'email') {
-      if (!recipient || !singleForm.subject.trim() || !singleForm.body.trim()) {
-        setSingleError('Recipient, subject, and body are required.');
-        return;
-      }
-      if (!recipient.email) {
-        setSingleError(`${recipient.name} has no email address.`);
-        return;
-      }
-    } else if (!singleForm.user_id || !singleForm.title.trim() || !singleForm.message.trim()) {
-      setSingleError('Recipient, title, and message are required.');
-      return;
-    }
-
-    setSingleSending(true);
-    try {
-      if (singleForm.mode === 'email') {
-        await sendEmail({
-          to: recipient.email,
-          subject: singleForm.subject.trim(),
-          body: singleForm.body.trim(),
-        });
-        setResult({ type: 'success', text: 'Email sent successfully.' });
-      } else {
-        await sendNotification({
-          user_id: Number(singleForm.user_id),
-          title: singleForm.title,
-          message: singleForm.message,
-          type: singleForm.type,
-        });
-        setResult({ type: 'success', text: 'Single notification sent successfully.' });
-      }
-      closeSingleModal();
-      onSent();
-    } catch (error) {
-      // The server says exactly why — the recipient is not a user of this
-      // company, the address is unknown, SMTP is not configured. Swallowing it
-      // left "Failed to send single notification." as the only clue.
-      setSingleError(extractError(
-        error,
-        `Failed to send ${singleForm.mode === 'email' ? 'email' : 'single notification'}.`,
-      ));
-    } finally {
-      setSingleSending(false);
-    }
-  };
-
+/** A design rendered in a sandbox: no scripts, no navigation, no access to the app. */
+function DesignPreview({ html, sample, className = 'h-80' }) {
   return (
-    <>
-      <div className="space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-base font-semibold text-slate-800">Compose Notification</h2>
-          <Button type="button" variant="secondary" onClick={() => setShowSingleModal(true)}>Send Single</Button>
-        </div>
-
-        {result && (
-          <div className={`rounded-lg px-4 py-2 text-sm ${result.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
-            {result.text}
-          </div>
-        )}
-
-        {templates.length > 0 && (
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Use Template<FieldMark /></label>
-            <Select
-              value={form.template_id}
-              onChange={(event) => {
-                const template = templates.find((item) => String(item.id) === event.target.value);
-                if (template) {
-                  setForm((current) => ({
-                    ...current,
-                    template_id: event.target.value,
-                    title: template.subject || template.name || current.title,
-                    body: template.body || current.body,
-                  }));
-                } else {
-                  setForm((current) => ({ ...current, template_id: '' }));
-                }
-              }}
-              className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 pr-8 text-sm focus:outline-none"
-            >
-              <option value="">No template</option>
-              {templates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}
-            </Select>
-          </div>
-        )}
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Title<FieldMark required /></label>
-            <input
-              value={form.title}
-              onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))}
-              placeholder="Notification title"
-              required
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">Type<FieldMark /></label>
-              <Select
-                value={form.type}
-                onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              >
-                {TYPE_OPTIONS.map((type) => <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>)}
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">Send To<FieldMark /></label>
-              <Select
-                value={form.target}
-                onChange={(event) => setForm((current) => ({ ...current, target: event.target.value, user_ids: [], company_id: '', role: '' }))}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              >
-                {(isSuperiorAdmin ? TARGET_OPTIONS_SUPERIOR : TARGET_OPTIONS_NORMAL).map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </Select>
-            </div>
-          </div>
-        </div>
-
-        {isSuperiorAdmin && form.target === 'company' && (
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Company<FieldMark /></label>
-            <Select
-              value={form.company_id}
-              onChange={(event) => setForm((current) => ({ ...current, company_id: event.target.value }))}
-              className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 pr-8 text-sm focus:outline-none"
-            >
-              <option value="">Select company...</option>
-              {companies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}
-            </Select>
-          </div>
-        )}
-
-        {form.target === 'role' && (
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700">Role<FieldMark /></label>
-            <Select
-              value={form.role}
-              onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}
-              className="w-full appearance-none rounded-lg border border-slate-300 bg-white px-3 py-2 pr-8 text-sm focus:outline-none"
-            >
-              <option value="">Select role...</option>
-              {ROLE_OPTIONS.map((role) => <option key={role} value={role}>{role.replace(/_/g, ' ')}</option>)}
-            </Select>
-          </div>
-        )}
-
-        {form.target === 'specific' && (
-          <MultiUserPicker
-            users={users}
-            selectedIds={form.user_ids}
-            onChange={(ids) => setForm((c) => ({ ...c, user_ids: ids }))}
-          />
-        )}
-
-        <div>
-          <label className="mb-1 block text-sm font-medium text-slate-700">Message<FieldMark required /></label>
-          <textarea
-            rows={3}
-            value={form.body}
-            onChange={(event) => setForm((current) => ({ ...current, body: event.target.value }))}
-            placeholder="Write your notification message..."
-            required
-            className="w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-          />
-        </div>
-
-        {/*
-          Disabled rather than validated on click, for the one target where the
-          answer is already on screen. The other targets resolve their audience
-          server-side, so whether they are empty is not knowable here — those
-          still report after the press.
-        */}
-        <Button
-          onClick={handleSend}
-          disabled={sending || (form.target === 'specific' && form.user_ids.length === 0)}
-        >
-          {sending ? 'Sending…' : 'Send Notification'}
-        </Button>
-      </div>
-
-      <Modal open={showSingleModal} onClose={closeSingleModal} title="Send Single Notification" size="sm">
-        <form onSubmit={handleSendSingle} className="space-y-3">
-          {singleError && <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{singleError}</div>}
-
-          <div className="flex rounded-lg border border-slate-200 p-1">
-            <Button
-              type="button"
-              variant={singleForm.mode === 'in_app' ? 'primary' : 'secondary'}
-              size="sm"
-              className="flex-1"
-              onClick={() => setSingleForm((current) => ({ ...current, mode: 'in_app' }))}
-            >
-              In-App
-            </Button>
-            <Button
-              type="button"
-              variant={singleForm.mode === 'email' ? 'primary' : 'secondary'}
-              size="sm"
-              className="flex-1"
-              onClick={() => setSingleForm((current) => ({ ...current, mode: 'email' }))}
-            >
-              Email
-            </Button>
-          </div>
-
-          {singleForm.mode === 'email' ? (
-            <>
-              <SingleUserPicker
-                users={users}
-                loading={usersLoading}
-                userType={singleForm.user_type}
-                onUserTypeChange={(t) => setSingleForm((current) => ({ ...current, user_type: t, user_id: '' }))}
-                selectedId={singleForm.user_id}
-                onChange={(id) => setSingleForm((current) => ({ ...current, user_id: id }))}
-                requireEmail
-              />
-              <Input
-                label="Subject"
-                value={singleForm.subject}
-                onChange={(event) => setSingleForm((current) => ({ ...current, subject: event.target.value }))}
-                required
-              />
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Body<FieldMark required /></span>
-                <textarea
-                  rows={5}
-                  value={singleForm.body}
-                  onChange={(event) => setSingleForm((current) => ({ ...current, body: event.target.value }))}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                  required
-                />
-              </label>
-            </>
-          ) : (
-            <>
-              <SingleUserPicker
-                users={users}
-                loading={usersLoading}
-                userType={singleForm.user_type}
-                onUserTypeChange={(t) => setSingleForm((current) => ({ ...current, user_type: t, user_id: '' }))}
-                selectedId={singleForm.user_id}
-                onChange={(id) => setSingleForm((current) => ({ ...current, user_id: id }))}
-              />
-              <Input
-                label="Title"
-                value={singleForm.title}
-                onChange={(event) => setSingleForm((current) => ({ ...current, title: event.target.value }))}
-                required
-              />
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Type<FieldMark /></span>
-                <Select
-                  value={singleForm.type}
-                  onChange={(event) => setSingleForm((current) => ({ ...current, type: event.target.value }))}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                >
-                  {['info', 'warning', 'alert'].map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </Select>
-              </label>
-              <label className="block space-y-1">
-                <span className="text-sm font-medium text-slate-700">Message<FieldMark required /></span>
-                <textarea
-                  rows={4}
-                  value={singleForm.message}
-                  onChange={(event) => setSingleForm((current) => ({ ...current, message: event.target.value }))}
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                  required
-                />
-              </label>
-            </>
-          )}
-          <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={singleSending}>{singleSending ? 'Sending…' : singleForm.mode === 'email' ? 'Send Email' : 'Send Single'}</Button>
-            <Button type="button" variant="secondary" onClick={closeSingleModal} disabled={singleSending}>Cancel</Button>
-          </div>
-        </form>
-      </Modal>
-    </>
+    <iframe
+      title="Email preview"
+      sandbox=""
+      srcDoc={fillDesign(html, sample)}
+      className={`w-full rounded-lg bg-white ring-1 ring-slate-200 ${className}`}
+    />
   );
 }
 
-function TemplatesPanel() {
-  const [templates, setTemplates] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState(null);
-  const [showModal, setShowModal] = useState(false);
+function DesignsModal({ open, onClose, designs, onChanged, sample }) {
+  const [editing, setEditing] = useState(null); // null = list, {} = new, {...} = edit
+  const [previewing, setPreviewing] = useState(null);
+  const [form, setForm] = useState({ name: '', body: '' });
   const [saving, setSaving] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState(null);
-  const [form, setForm] = useState(EMPTY_TEMPLATE_FORM);
+  const [error, setError] = useState('');
 
-  const loadTemplates = async () => {
-    setLoading(true);
-    try {
-      const response = await listNotificationTemplates();
-      setTemplates(getItems(response));
-    } catch {
-      setTemplates([]);
-      setMessage({ type: 'error', text: 'Failed to load templates.' });
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => { if (!open) { setEditing(null); setPreviewing(null); setError(''); } }, [open]);
+
+  const startEdit = (design) => {
+    setEditing(design);
+    setPreviewing(null);
+    setForm({ name: design.name || '', body: design.body || '' });
+    setError('');
   };
 
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
-  const closeModal = (force = false) => {
-    if (saving && !force) return;
-    setShowModal(false);
-    setEditingTemplate(null);
-    setForm(EMPTY_TEMPLATE_FORM);
+  const upload = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > 512 * 1024) { setError('That file is larger than 512 KB. Host its images elsewhere and link to them.'); return; }
+    const reader = new FileReader();
+    reader.onload = () => setForm((f) => ({
+      ...f,
+      body: String(reader.result || ''),
+      name: f.name || file.name.replace(/\.html?$/i, ''),
+    }));
+    reader.readAsText(file);
   };
 
-  const openCreate = () => {
-    setEditingTemplate(null);
-    setForm(EMPTY_TEMPLATE_FORM);
-    setShowModal(true);
-  };
+  const hasMessage = /\{\{\s*message\s*\}\}/.test(form.body);
 
-  const openEdit = (template) => {
-    setEditingTemplate(template);
-    setForm({
-      name: template.name || '',
-      type: template.type || 'email',
-      subject: template.subject || '',
-      body: template.body || '',
-    });
-    setShowModal(true);
-  };
-
-  const handleSubmit = async (event) => {
+  const save = async (event) => {
     event.preventDefault();
-    if (!form.name.trim() || !form.body.trim()) return;
-
+    if (!form.name.trim() || !hasMessage) return;
     setSaving(true);
-    setMessage(null);
+    setError('');
     try {
-      const payload = {
-        name: form.name.trim(),
-        type: form.type,
-        subject: form.subject.trim(),
-        body: form.body.trim(),
-      };
-      if (editingTemplate) {
-        await updateNotificationTemplate(editingTemplate.id, payload);
-      } else {
-        await createNotificationTemplate(payload);
-      }
-      closeModal(true);
-      await loadTemplates();
-      setMessage({ type: 'success', text: `Template ${editingTemplate ? 'updated' : 'created'} successfully.` });
-    } catch {
-      setMessage({ type: 'error', text: `Failed to ${editingTemplate ? 'update' : 'create'} template.` });
+      const payload = { name: form.name.trim(), subject: form.name.trim(), body: form.body, type: 'email' };
+      if (editing?.id) await updateNotificationTemplate(editing.id, payload);
+      else await createNotificationTemplate(payload);
+      await onChanged();
+      setEditing(null);
+    } catch (err) {
+      setError(extractError(err, 'Could not save the design.'));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (template) => {
-    if (!window.confirm(`Delete template "${template.name}"?`)) return;
-    setMessage(null);
+  const remove = async (design) => {
+    if (!window.confirm(`Delete the "${design.name}" design?`)) return;
     try {
-      await deleteNotificationTemplate(template.id);
-      await loadTemplates();
-      setMessage({ type: 'success', text: 'Template deleted successfully.' });
-    } catch {
-      setMessage({ type: 'error', text: 'Failed to delete template.' });
+      await deleteNotificationTemplate(design.id);
+      await onChanged();
+    } catch (err) {
+      setError(extractError(err, 'Could not delete the design.'));
     }
   };
 
-  const columns = useMemo(() => [
-    { key: 'name', label: 'Name', render: (row) => row.name || '—' },
-    { key: 'type', label: 'Type', render: (row) => <Badge value={row.type || '—'} /> },
-    { key: 'subject', label: 'Subject', render: (row) => row.subject || '—' },
-    {
-      key: 'createdAt',
-      label: 'Created',
-      render: (row) => {
-        const value = row.createdAt || row.created_at;
-        return value ? new Date(value).toLocaleString() : '—';
-      },
-    },
-  ], []);
+  const title = editing ? (editing.id ? `Edit ${editing.name}` : 'New email design') : previewing ? previewing.name : 'Email designs';
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-        <div>
-          <h2 className="text-base font-semibold text-slate-800">Notification Templates</h2>
-          <p className="text-sm text-slate-500">Create reusable templates for email, push, and SMS messages.</p>
-        </div>
-        <Button onClick={openCreate}>New Template</Button>
-      </div>
+    <Modal open={open} onClose={onClose} title={title} size="xl">
+      {error && <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
-      {message && (
-        <div className={`rounded-lg px-4 py-2 text-sm ${message.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
-          {message.text}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="rounded-xl bg-white p-6 text-sm text-slate-500 shadow-sm ring-1 ring-slate-200">Loading templates...</div>
-      ) : (
-        <Table
-        /*
-          This page has its own search box, which filters on the SERVER and
-          therefore searches every row rather than the page in view. The
-          table's built-in search would sit beside it searching only the
-          loaded rows — two boxes, different answers.
-        */
-        searchable={false}
-          columns={columns}
-          rows={templates}
-          renderActions={(template) => (
-            <div className="flex justify-end gap-2">
-              <Button onClick={() => openEdit(template)} variant="primary" size="sm">Edit</Button>
-              <Button onClick={() => handleDelete(template)} variant="danger" size="sm">Delete</Button>
-            </div>
-          )}
-        />
-      )}
-
-      <Modal open={showModal} onClose={closeModal} title={editingTemplate ? 'Edit Template' : 'New Template'} size="lg">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Name"
-            value={form.name}
-            onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-            required
-          />
-          <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Type<FieldMark /></span>
-            <Select
-              value={form.type}
-              onChange={(event) => setForm((current) => ({ ...current, type: event.target.value }))}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            >
-              {EMAIL_TYPES.map((type) => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </Select>
-          </label>
-          <Input
-            label="Subject"
-            value={form.subject}
-            onChange={(event) => setForm((current) => ({ ...current, subject: event.target.value }))}
-          />
-          <label className="block space-y-1">
-            <span className="text-sm font-medium text-slate-700">Body<FieldMark required /></span>
+      {editing && (
+        <form onSubmit={save} className="space-y-3">
+          <Input label="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm font-medium text-slate-700">HTML<FieldMark required /></span>
+            <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200">
+              <Upload size={14} aria-hidden="true" /> Upload .html file
+              <input type="file" accept=".html,.htm,text/html" onChange={upload} className="sr-only" />
+            </label>
+          </div>
+          <div className="grid gap-3 lg:grid-cols-2">
             <textarea
-              rows={6}
+              rows={14}
               value={form.body}
-              onChange={(event) => setForm((current) => ({ ...current, body: event.target.value }))}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              required
+              onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
+              placeholder="Paste your email HTML, or upload a file"
+              spellCheck={false}
+              className={`${FIELD} font-mono text-xs`}
             />
-          </label>
-          <div className="flex gap-2 pt-2">
-            <Button type="submit" disabled={saving}>{saving ? 'Saving…' : editingTemplate ? 'Save Changes' : 'Create Template'}</Button>
-            <Button type="button" variant="secondary" onClick={closeModal}>Cancel</Button>
+            {form.body.trim()
+              ? <DesignPreview html={form.body} sample={sample} className="h-[22rem]" />
+              : <div className="flex h-[22rem] items-center justify-center rounded-lg bg-slate-50 text-sm text-slate-400 ring-1 ring-slate-200">Preview appears here</div>}
+          </div>
+          {form.body.trim() && !hasMessage && (
+            <p className="text-sm text-amber-700">Add <code>{'{{message}}'}</code> where the message should appear.</p>
+          )}
+          <details className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 ring-1 ring-slate-200">
+            <summary className="cursor-pointer font-semibold text-slate-700">Placeholders you can use</summary>
+            <dl className="mt-2 grid gap-x-4 gap-y-1 sm:grid-cols-2">
+              {PLACEHOLDER_HELP.map(([key, meaning]) => (
+                <div key={key} className="flex gap-2"><dt className="font-mono text-slate-800">{key}</dt><dd>{meaning}</dd></div>
+              ))}
+            </dl>
+            <p className="mt-2">Scripts are removed. Images must be links to files hosted online.</p>
+          </details>
+          <div className="flex gap-2 pt-1">
+            <Button type="submit" disabled={saving || !form.name.trim() || !hasMessage}>{saving ? 'Saving…' : 'Save design'}</Button>
+            <Button type="button" variant="secondary" onClick={() => setEditing(null)} disabled={saving}>Back</Button>
           </div>
         </form>
-      </Modal>
-    </div>
+      )}
+
+      {!editing && previewing && (
+        <div className="space-y-3">
+          <DesignPreview html={previewing.body} sample={sample} className="h-[28rem]" />
+          <div className="flex gap-2">
+            <Button type="button" onClick={() => startEdit(previewing)}>Edit</Button>
+            <Button type="button" variant="secondary" onClick={() => setPreviewing(null)}>Back</Button>
+          </div>
+        </div>
+      )}
+
+      {!editing && !previewing && (
+        <div className="space-y-3">
+          <p className="text-sm text-slate-500">
+            Optional. Upload your own HTML design to send emails in your brand&apos;s look; without one, emails use the default design.
+          </p>
+          {designs.length > 0 && (
+            <ul className="divide-y divide-slate-100 rounded-lg ring-1 ring-slate-200">
+              {designs.map((d) => (
+                <li key={d.id} className="flex items-center gap-2 px-3 py-2.5">
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-800">{d.name}</span>
+                  <button type="button" onClick={() => setPreviewing(d)} aria-label={`Preview ${d.name}`} className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Eye size={15} aria-hidden="true" /></button>
+                  <button type="button" onClick={() => startEdit(d)} aria-label={`Edit ${d.name}`} className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><Pencil size={15} aria-hidden="true" /></button>
+                  <button type="button" onClick={() => remove(d)} aria-label={`Delete ${d.name}`} className="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={15} aria-hidden="true" /></button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Button type="button" onClick={() => startEdit({})}><Upload size={15} aria-hidden="true" /> Add a design</Button>
+        </div>
+      )}
+    </Modal>
   );
 }
 
+// ── Send ────────────────────────────────────────────────────────────────────
+function SendPanel({ isSuperiorAdmin, onSent }) {
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [companies, setCompanies] = useState([]);
+  const [designs, setDesigns] = useState([]);
+  const [designId, setDesignId] = useState('');
+  const [showDesigns, setShowDesigns] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const { app_name: appName, app_logo: appLogo } = useAppearance();
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const audiences = isSuperiorAdmin ? PLATFORM_AUDIENCES : AUDIENCES;
+  const set = (patch) => setForm((current) => ({ ...current, ...patch }));
+
+  const loadDesigns = () => listNotificationTemplates({ limit: 200 })
+    .then((response) => setDesigns(getItems(response).filter(isDesign)))
+    .catch(() => setDesigns([]));
+
+  useEffect(() => {
+    loadDesigns();
+    if (isSuperiorAdmin) listCompanies().then((r) => setCompanies(getItems(r))).catch(() => setCompanies([]));
+  }, [isSuperiorAdmin]);
+
+  useEffect(() => {
+    if (form.audience !== 'specific' || users.length || usersLoading) return;
+    setUsersLoading(true);
+    listUsers({ limit: 5000 })
+      .then((response) => setUsers(getItems(response)))
+      .catch(() => setUsers([]))
+      .finally(() => setUsersLoading(false));
+  }, [form.audience, users.length, usersLoading]);
+
+  // A deleted design must not stay selected.
+  useEffect(() => {
+    if (designId && !designs.some((d) => String(d.id) === designId)) setDesignId('');
+  }, [designs, designId]);
+
+  const chosenDesign = designs.find((d) => String(d.id) === designId) || null;
+  const sample = {
+    title: form.title || 'Your title',
+    message: form.body || 'Your message appears here.',
+    name: 'Ada Obi',
+    brand: { name: appName || 'Your company', logo: appLogo, primaryColor: getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() },
+  };
+
+  const resolveRecipients = async () => {
+    switch (form.audience) {
+      case 'specific': return form.user_ids.map(Number);
+      case 'clients': return getItems(await listClients()).map((u) => u.id);
+      case 'realtors': return getItems(await listRealtors()).map((u) => u.id);
+      case 'employees': return getItems(await listEmployees()).map((u) => u.id);
+      case 'company': return getItems(await listUsers({ company_id: form.company_id, limit: 5000 })).map((u) => u.id);
+      case 'role': return getItems(await listUsers({ role: form.role, limit: 5000 })).filter((u) => userMatchesRole(u, form.role)).map((u) => u.id);
+      default: return getItems(await listUsers({ limit: 5000 })).map((u) => u.id);
+    }
+  };
+
+  const missing = !form.title.trim() || !form.body.trim()
+    || (form.audience === 'specific' && form.user_ids.length === 0)
+    || (form.audience === 'company' && !form.company_id)
+    || (form.audience === 'role' && !form.role);
+
+  const handleSend = async (event) => {
+    event.preventDefault();
+    if (missing) return;
+    setSending(true);
+    setResult(null);
+    try {
+      const userIds = [...new Set((await resolveRecipients()).filter(Boolean))];
+      if (!userIds.length) {
+        setResult({ type: 'error', text: 'No one matches who you chose.' });
+        return;
+      }
+      const response = await sendBulkNotification({
+        user_ids: userIds, title: form.title.trim(), body: form.body.trim(), type: 'info',
+        ...(designId ? { template_id: Number(designId) } : {}),
+      });
+      const mail = response.email
+        ? ` ${response.email.sent} email${response.email.sent === 1 ? '' : 's'} sent${response.email.failed ? `, ${response.email.failed} failed` : ''}.`
+        : '';
+      setResult({ type: 'success', text: `Sent to ${response.count} ${response.count === 1 ? 'person' : 'people'}.${mail}` });
+      setForm((current) => ({ ...EMPTY_FORM, audience: current.audience }));
+      onSent();
+    } catch (error) {
+      setResult({ type: 'error', text: extractError(error, 'Could not send the message.') });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSend} className="space-y-5 rounded-xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
+      {result && (
+        <div className={`rounded-lg px-4 py-2 text-sm ${result.type === 'error' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`} role="status">
+          {result.text}
+        </div>
+      )}
+
+      <fieldset className="space-y-2">
+        <legend className="mb-2 text-sm font-medium text-slate-700">To</legend>
+        <div className="flex flex-wrap gap-2">
+          {audiences.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => set({ audience: option.value, user_ids: [], company_id: '', role: '' })}
+              aria-pressed={form.audience === option.value}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-medium ring-1 transition ${form.audience === option.value ? 'bg-primary text-white ring-transparent' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'}`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {form.audience === 'company' && (
+          <Select value={form.company_id} onChange={(e) => set({ company_id: e.target.value })} className={FIELD} aria-label="Company">
+            <option value="">Select a company</option>
+            {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </Select>
+        )}
+        {form.audience === 'role' && (
+          <Select value={form.role} onChange={(e) => set({ role: e.target.value })} className={FIELD} aria-label="Role">
+            <option value="">Select a role</option>
+            {ROLE_OPTIONS.map((role) => <option key={role} value={role}>{enumTitle(role)}</option>)}
+          </Select>
+        )}
+        {form.audience === 'specific' && (
+          <PeoplePicker users={users} loading={usersLoading} selectedIds={form.user_ids} onChange={(ids) => set({ user_ids: ids })} />
+        )}
+      </fieldset>
+
+      <div className="space-y-3">
+        <span className="block text-sm font-medium text-slate-700">Message</span>
+        <input value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder="Title" aria-label="Title" className={FIELD} required />
+        <textarea rows={5} value={form.body} onChange={(e) => set({ body: e.target.value })} placeholder="Write your message…" aria-label="Message" className={`${FIELD} resize-y`} required />
+        <p className="text-xs text-slate-500">Arrives in each person&apos;s in-app inbox and is emailed to those with an email address.</p>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-sm font-medium text-slate-700">Email design</span>
+          <button type="button" onClick={() => setShowDesigns(true)} className="text-xs font-semibold text-primary hover:underline">
+            {designs.length ? 'Manage designs' : 'Use your own HTML design'}
+          </button>
+        </div>
+        {designs.length > 0 ? (
+          <div className="flex gap-2">
+            <Select value={designId} onChange={(e) => setDesignId(e.target.value)} className={FIELD} aria-label="Email design">
+              <option value="">Default design</option>
+              {designs.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </Select>
+            {chosenDesign && (
+              <Button type="button" variant="secondary" onClick={() => setShowPreview(true)}>
+                <Eye size={15} aria-hidden="true" /> Preview
+              </Button>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-slate-500">Emails use the default design.</p>
+        )}
+      </div>
+
+      <Button type="submit" disabled={sending || missing}>
+        <Send size={15} aria-hidden="true" /> {sending ? 'Sending…' : 'Send'}
+      </Button>
+
+      <DesignsModal open={showDesigns} onClose={() => setShowDesigns(false)} designs={designs} onChanged={loadDesigns} sample={sample} />
+      <Modal open={showPreview && !!chosenDesign} onClose={() => setShowPreview(false)} title={chosenDesign ? `Preview: ${chosenDesign.name}` : 'Preview'} size="xl">
+        {chosenDesign && <DesignPreview html={chosenDesign.body} sample={sample} className="h-[30rem]" />}
+      </Modal>
+    </form>
+  );
+}
+
+// ── Page ────────────────────────────────────────────────────────────────────
 export default function NotificationsPage() {
   const user = useAuthStore((state) => state.user);
   const isSuperiorAdmin = useAuthStore((state) => state.isSuperiorAdmin);
@@ -870,10 +513,8 @@ export default function NotificationsPage() {
 
   const [notifications, setNotifications] = useState([]);
   const [sent, setSent] = useState([]);
-  const [templates, setTemplates] = useState([]);
-  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState(isAdmin ? 'compose' : 'inbox');
+  const [tab, setTab] = useState(isAdmin ? 'send' : 'inbox');
 
   const fetchNotifications = () => {
     setLoading(true);
@@ -881,152 +522,127 @@ export default function NotificationsPage() {
       .then((response) => setNotifications(getItems(response)))
       .finally(() => setLoading(false));
   };
+  const fetchSent = () => listSentNotifications().then((response) => setSent(getItems(response))).catch(() => {});
 
-  const fetchSent = () => {
-    listSentNotifications().then((response) => setSent(getItems(response))).catch(() => {});
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-    if (isAdmin) {
-      fetchSent();
-      listNotificationTemplates().then((response) => setTemplates(getItems(response))).catch(() => setTemplates([]));
-      listCompanies().then((response) => setCompanies(getItems(response))).catch(() => setCompanies([]));
-    }
-  }, [isAdmin]);
-
-  useEffect(() => {
-    if (isAdmin && tab === 'sent') fetchSent();
-  }, [isAdmin, tab]);
+  useEffect(() => { fetchNotifications(); }, []);
+  useEffect(() => { if (isAdmin && tab === 'sent') fetchSent(); }, [isAdmin, tab]);
 
   /*
-   * The bell has to move with the list.
-   *
-   * The count behind it is shared - one store read by every layout - and
-   * marking things read here is the only place it changes without a page load.
-   * Without these two lines the badge kept its old number until a full reload,
-   * which read as the mark-as-read having silently failed.
+   * The bell has to move with the list: the count behind it is shared, and
+   * marking things read here is the only place it changes without a reload.
    */
   const handleMarkRead = async (id) => {
     await markRead(id);
-    setNotifications((prev) => prev.map((notification) => notification.id === id ? { ...notification, is_read: true } : notification));
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
     refreshNotifications();
   };
-
   const handleMarkAll = async () => {
     await markAllRead();
-    setNotifications((prev) => prev.map((notification) => ({ ...notification, is_read: true })));
-    // Zeroed rather than re-fetched: nothing is unread by definition, and the
-    // badge should go as the rows do rather than one round trip later.
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     clearBadge('unreadNotifications');
   };
 
-  const unreadCount = notifications.filter((notification) => !notification.is_read).length;
-
-  const TABS = isAdmin
-    ? [
-        { id: 'compose', label: '✉ Compose' },
-        { id: 'sent', label: '📤 Sent' },
-        { id: 'templates', label: '🧩 Templates' },
-        { id: 'inbox', label: `🔔 Inbox${unreadCount > 0 ? ` (${unreadCount})` : ''}` },
-      ]
-    : [{ id: 'inbox', label: `🔔 Inbox${unreadCount > 0 ? ` (${unreadCount})` : ''}` }];
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const tabs = [
+    { id: 'inbox', label: 'Inbox', icon: Inbox, count: unreadCount },
+    ...(isAdmin ? [{ id: 'send', label: 'Send', icon: Send }, { id: 'sent', label: 'Sent', icon: CheckCheck }] : []),
+  ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Notifications</h1>
-        <div className="flex items-center gap-2">
-          <div className="flex overflow-hidden rounded-lg border border-slate-200 text-sm">
-            {TABS.map((item) => (
-              <Button key={item.id} onClick={() => setTab(item.id)} variant={tab === item.id ? 'primary' : 'secondary'} size="sm">
-                {item.label}
-              </Button>
+    <div className="mx-auto max-w-3xl space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold text-slate-800">Notifications</h1>
+        {tabs.length > 1 && (
+          <div role="tablist" className="inline-flex rounded-lg bg-slate-100 p-1">
+            {tabs.map(({ id, label, icon: Icon, count }) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                aria-selected={tab === id}
+                onClick={() => setTab(id)}
+                className={`inline-flex min-h-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${tab === id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                <Icon size={15} aria-hidden="true" />
+                {label}
+                {count > 0 && <span className="rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-4 text-white">{count}</span>}
+              </button>
             ))}
           </div>
-          {tab === 'inbox' && unreadCount > 0 && (
-            <Button variant="secondary" onClick={handleMarkAll}>Mark all read</Button>
-          )}
-        </div>
+        )}
       </div>
 
-      {/*
-        Turning notifications on for THIS browser, on the page everybody can
-        open. It is a personal, per-device setting — there is nothing about it
-        that belongs behind an administrator's permission, which is where it
-        used to be — so it sits above the inbox where somebody wondering why
-        their laptop is quiet will actually find it.
-      */}
-      <BrowserNotificationsCard />
-
-      {isAdmin && tab === 'compose' && (
-        <ComposePanel
-          onSent={() => { fetchNotifications(); fetchSent(); }}
-          isSuperiorAdmin={isSuperiorAdmin}
-          companies={companies}
-          templates={templates}
-        />
+      {tab === 'send' && isAdmin && (
+        <SendPanel isSuperiorAdmin={isSuperiorAdmin} onSent={() => { fetchNotifications(); fetchSent(); }} />
       )}
 
-      {isAdmin && tab === 'sent' && (
-        <div className="space-y-2">
-          {sent.length === 0 ? (
-            <div className="rounded-xl bg-white p-12 text-center shadow-sm ring-1 ring-slate-200">
-              <p className="text-slate-500">No notifications sent yet.</p>
-            </div>
-          ) : (
-            sent.map((notification, index) => (
-              <div key={notification.id || index} className="flex items-start justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-slate-800">{notification.title}</span>
-                    <Badge value={notification.type} />
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-400">{notification.recipientCount} recipient{notification.recipientCount !== 1 ? 's' : ''}</span>
-                  </div>
-                  <p className="text-sm text-slate-600">{notification.body}</p>
-                  <p className="text-xs text-slate-400">{new Date(notification.createdAt).toLocaleString()}</p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
-
-      {isAdmin && tab === 'templates' && <TemplatesPanel />}
-
-      {tab === 'inbox' && (
-        loading ? (
-          <p className="text-sm text-slate-500">Loading...</p>
-        ) : notifications.length === 0 ? (
-          <div className="rounded-xl bg-white p-12 text-center shadow-sm ring-1 ring-slate-200">
-            <p className="text-slate-500">No notifications yet.</p>
-          </div>
+      {tab === 'sent' && isAdmin && (
+        sent.length === 0 ? (
+          <EmptyState icon={Send} text="Nothing sent yet." />
         ) : (
-          <div className="space-y-2">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`flex items-start justify-between rounded-xl p-4 shadow-sm ring-1 ${notification.is_read ? 'bg-white ring-slate-200' : 'bg-slate-50 ring-slate-300'}`}
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-slate-800">{notification.title}</span>
-                    <Badge value={notification.type} />
-                    {!notification.is_read && <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--primary)' }} />}
-                  </div>
-                  <p className="text-sm text-slate-600">{notification.body}</p>
-                  <p className="text-xs text-slate-400">{new Date(notification.createdAt).toLocaleString()}</p>
+          <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+            {sent.map((n, index) => (
+              <li key={n.id || index} className="space-y-1 px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="font-medium text-slate-800">{n.title}</p>
+                  <span className="shrink-0 text-xs text-slate-400">{formatWhen(n.createdAt)}</span>
                 </div>
-                {!notification.is_read && (
-                  <Button onClick={() => handleMarkRead(notification.id)} variant="primary" size="sm" className="ml-4 shrink-0">
-                    Mark read
-                  </Button>
-                )}
-              </div>
+                <p className="line-clamp-2 text-sm text-slate-600">{n.body}</p>
+                <p className="text-xs text-slate-400">{n.recipientCount} {n.recipientCount === 1 ? 'person' : 'people'}</p>
+              </li>
             ))}
-          </div>
+          </ul>
         )
       )}
+
+      {tab === 'inbox' && (
+        <>
+          {unreadCount > 0 && (
+            <div className="flex justify-end">
+              <button type="button" onClick={handleMarkAll} className="text-sm font-semibold text-primary hover:underline">Mark all as read</button>
+            </div>
+          )}
+          {loading ? (
+            <p className="text-sm text-slate-500">Loading…</p>
+          ) : notifications.length === 0 ? (
+            <EmptyState icon={Bell} text="You're all caught up." />
+          ) : (
+            <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+              {notifications.map((n) => (
+                <li key={n.id}>
+                  {/* The row is the action: opening an unread message marks it read. */}
+                  <button
+                    type="button"
+                    onClick={() => !n.is_read && handleMarkRead(n.id)}
+                    className={`flex w-full items-start gap-3 px-4 py-3 text-left ${n.is_read ? 'cursor-default' : 'bg-blue-50/40 hover:bg-blue-50'}`}
+                  >
+                    <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.is_read ? 'bg-transparent' : 'bg-primary'}`} aria-hidden="true" />
+                    <span className="min-w-0 flex-1 space-y-0.5">
+                      <span className="flex items-start justify-between gap-3">
+                        <span className={`text-sm ${n.is_read ? 'text-slate-700' : 'font-semibold text-slate-900'}`}>{n.title}</span>
+                        <span className="shrink-0 text-xs text-slate-400">{formatWhen(n.createdAt)}</span>
+                      </span>
+                      <span className="block text-sm text-slate-600">{n.body}</span>
+                      {!n.is_read && <span className="sr-only">Unread — select to mark as read</span>}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {/* Per-device, and only relevant to what you receive. */}
+          <BrowserNotificationsCard />
+        </>
+      )}
+    </div>
+  );
+}
+
+function EmptyState({ icon: Icon, text }) {
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-xl bg-white p-10 text-center shadow-sm ring-1 ring-slate-200">
+      <Icon size={22} className="text-slate-300" aria-hidden="true" />
+      <p className="text-sm text-slate-500">{text}</p>
     </div>
   );
 }
