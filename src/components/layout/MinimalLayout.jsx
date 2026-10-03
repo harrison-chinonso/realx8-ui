@@ -80,7 +80,7 @@ function MinimalSidebar({ expanded, onToggle, mobileOpen, onClose }) {
 
       {/* Desktop icon sidebar */}
       <aside className={[
-        'hidden lg:flex h-screen flex-col overflow-y-auto',
+        'hidden lg:flex h-app flex-col overflow-y-auto',
         'border-r border-slate-200 bg-white transition-all duration-200',
         expanded ? 'w-[300px]' : 'w-14',
       ].join(' ')}>
@@ -212,7 +212,7 @@ export default function MinimalLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex h-app overflow-hidden bg-slate-50">
       <MinimalSidebar
         expanded={expanded}
         onToggle={() => setExpanded((v) => !v)}

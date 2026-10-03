@@ -55,7 +55,7 @@ export const LAUNCHER_CSS = `
   display: flex; flex-direction: column;
   overflow: hidden;
 }
-.rx-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+.rx-scroll { flex: 1; overflow-y: auto; overscroll-behavior-y: contain; display: flex; flex-direction: column; }
 
 /* The content column: full bleed surfaces, a readable measure inside them. */
 .rx-hero-row, .rx-search, .rx-content, .rx-footer {
@@ -347,7 +347,20 @@ export const LAUNCHER_CSS = `
   /* The design on a phone is name and summary only; the shortcuts are for
      screens with room to spare. */
   .rx-card-links { display: none; }
-  .rx-banner-badge { right: 10px; bottom: 10px; padding: 7px 11px; font-size: 11px; }
+  /* On a phone the banner is a greeting, not a hero: shorter, with the badge
+     under the name instead of below a band of empty colour, so a long name
+     wraps beside the picture and never runs under the badge. */
+  .rx-banner { min-height: 0; border-radius: 16px; grid-template-columns: minmax(0, 1fr) 32%; }
+  .rx-banner-text { grid-column: 1; grid-row: 1; padding: 14px 8px 8px 16px; gap: 4px; }
+  .rx-banner-kicker { font-size: 10px; }
+  .rx-banner-name { font-size: 17px; }
+  .rx-banner-art { grid-column: 2; grid-row: 1 / span 2; }
+  .rx-banner-art svg { padding: 8px 8px 0; }
+  .rx-banner-badge {
+    position: static; grid-column: 1; grid-row: 2; justify-self: start;
+    margin: 0 0 14px 16px; padding: 5px 10px; font-size: 10.5px; gap: 6px;
+  }
+  .rx-banner-badge .rx-bars { height: 10px; }
   .rx-footer-tag, .rx-footer-copy { font-size: 12px; }
 }
 
