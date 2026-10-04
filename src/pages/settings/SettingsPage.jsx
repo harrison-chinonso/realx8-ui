@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  getSettings, bulkUpdateSettings, uploadLogo, getSystemConfig, saveSystemConfig,
+  getSettings, bulkUpdateSettings, uploadLogo, uploadFavicon, getSystemConfig, saveSystemConfig,
 } from '../../api/userApi';
 import { listCompanies } from '../../api/companyApi';
 import { stripeCreateIntent, flutterwaveVerify, paystackVerify } from '../../api/financeApi';
@@ -576,6 +576,12 @@ function AppearanceTab() {
   });
   const [logoPreview, setLogoPreview] = useState(app_logo || null);
   const [logoFile, setLogoFile] = useState(null);
+  // The browser tab icon: '' = the Realx8 mark. `faviconFile` waits for Save,
+  // as the logo does; clearing it is saved as a blank setting.
+  const [faviconPreview, setFaviconPreview] = useState(current.app_favicon || '');
+  const [faviconFile, setFaviconFile] = useState(null);
+  const [faviconCleared, setFaviconCleared] = useState(false);
+  const faviconRef = useRef();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [loadingTarget, setLoadingTarget] = useState(false);
@@ -605,11 +611,14 @@ function AppearanceTab() {
       ...launcherFormFrom(current),
     });
     setLogoPreview(app_logo || null);
+    setFaviconPreview(current.app_favicon || '');
+    setFaviconFile(null);
+    setFaviconCleared(false);
     // `current` is read for the launcher fields; its own identity changes on
     // every render, so the fields that matter are listed instead.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, app_name, app_logo, primary_color, secondary_color, dark_primary_color, dark_secondary_color, font_heading, font_body, font_ui, dark_mode, currency, template,
-    current.accent_colors, current.launcher_banner_image, current.launcher_badge]);
+    current.accent_colors, current.launcher_banner_image, current.launcher_badge, current.app_favicon]);
 
   /** A chosen company's own appearance, read fresh. */
   useEffect(() => {
@@ -636,11 +645,29 @@ function AppearanceTab() {
         });
         setLogoPreview(data.app_logo || null);
         setLogoFile(null);
+        setFaviconPreview(data.app_favicon || '');
+        setFaviconFile(null);
+        setFaviconCleared(false);
       })
       .catch(() => { if (!cancelled) setMessage({ type: 'error', text: 'Could not load that company’s appearance.' }); })
       .finally(() => { if (!cancelled) setLoadingTarget(false); });
     return () => { cancelled = true; };
   }, [companyId]);
+
+  const handleFaviconChange = (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    setFaviconFile(file);
+    setFaviconCleared(false);
+    setFaviconPreview(URL.createObjectURL(file));
+  };
+
+  const useDefaultFavicon = () => {
+    setFaviconFile(null);
+    setFaviconCleared(true);
+    setFaviconPreview('');
+  };
 
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
@@ -654,6 +681,7 @@ function AppearanceTab() {
     setMessage(null);
     try {
       if (logoFile) await uploadLogo(logoFile, companyId);
+      if (faviconFile) await uploadFavicon(faviconFile, companyId);
 
       const settings = [
         { key: 'app_name', value: form.app_name },
@@ -673,6 +701,8 @@ function AppearanceTab() {
         { key: 'accent_colors', value: serialiseAccents(form.accent_colors) },
         { key: 'launcher_banner_image', value: form.launcher_banner_image.trim() },
         { key: 'launcher_badge', value: form.launcher_badge.trim() },
+        // Only when it was cleared: an upload has already saved its own value.
+        ...(faviconCleared && !faviconFile ? [{ key: 'app_favicon', value: '' }] : []),
       ];
       await bulkUpdateSettings(settings, 'appearance', companyId);
 
@@ -689,6 +719,8 @@ function AppearanceTab() {
       if (!companyId) await refresh();
 
       setLogoFile(null);
+      setFaviconFile(null);
+      setFaviconCleared(false);
       setMessage({
         type: 'success',
         text: companyId
@@ -772,6 +804,31 @@ function AppearanceTab() {
                 {logoPreview ? 'Change logo' : 'Upload logo'}
               </Button>
               <p className="mt-1 text-xs text-slate-500">PNG or SVG recommended.</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-medium">Browser tab icon<FieldMark /></label>
+          <div className="flex items-center gap-4">
+            {/* Drawn as a tab, so it is judged at the size people will see it. */}
+            <div className="flex h-10 w-48 items-center gap-2 rounded-t-lg border border-b-0 border-slate-200 bg-white px-3 shadow-sm">
+              <img src={faviconPreview || '/favicon.svg'} alt="" className="h-4 w-4 shrink-0 rounded-sm object-contain" />
+              <span className="truncate text-xs text-slate-700">{form.app_name || 'Realx8'}</span>
+            </div>
+            <div className="space-y-1">
+              <input ref={faviconRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={handleFaviconChange} />
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="secondary" onClick={() => faviconRef.current?.click()}>
+                  {faviconPreview ? 'Change icon' : 'Upload icon'}
+                </Button>
+                {faviconPreview && (
+                  <Button type="button" variant="secondary" onClick={useDefaultFavicon}>Use Realx8 icon</Button>
+                )}
+              </div>
+              <p className="text-xs text-slate-500">
+                {faviconPreview ? 'A square PNG works best.' : 'Using the Realx8 icon. Upload a square PNG to use your own.'}
+              </p>
             </div>
           </div>
         </div>

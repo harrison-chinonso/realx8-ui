@@ -8,10 +8,13 @@ import { AppearanceContext } from './appearanceContextRef';
 import useAuthStore from '../store/authStore';
 import { preferredCompanyId, readTheme, saveTheme } from '../lib/themeCache';
 import { appearanceCameWith, onSessionAppearance } from '../lib/sessionAppearance';
+import { applyTabIcon } from '../lib/tabIcon';
 
 const DEFAULTS = {
   app_name: '',
   app_logo: null,
+  // The browser tab icon. Blank means the Realx8 mark — see lib/tabIcon.js.
+  app_favicon: '',
   primary_color: '#1e3a8a',
   secondary_color: '#0f172a',
   dark_primary_color: null,
@@ -196,6 +199,7 @@ export function AppearanceProvider({ children }) {
     setAppearance(merged);
     const applied = applyTheme(merged);
     if (merged.app_name) document.title = merged.app_name;
+    applyTabIcon(merged.app_favicon);
     if (seq !== undefined) fullApplied.current = seq;
     setNameLoaded(true);
     if (remember && companyId !== undefined) {
@@ -216,6 +220,7 @@ export function AppearanceProvider({ children }) {
       const merged = { ...prev, ...branding };
       applyTheme(merged);
       if (merged.app_name) document.title = merged.app_name;
+      applyTabIcon(merged.app_favicon);
       return merged;
     });
     setNameLoaded(true);
