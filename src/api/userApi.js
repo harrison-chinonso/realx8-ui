@@ -78,6 +78,15 @@ export const uploadLogo = (file, companyId = null) => {
   return client.post('/settings/upload-logo', fd).then(r => r.data);
 };
 
+/** The browser tab icon. Cut to a square on the server; blank setting = the Realx8 mark. */
+export const uploadFavicon = (file, companyId = null) => {
+  const fd = new FormData();
+  fd.append('favicon', file);
+  const target = companyParam(companyId);
+  if (target.company_id !== undefined) fd.append('company_id', target.company_id);
+  return client.post('/settings/upload-favicon', fd).then(r => r.data);
+};
+
 export const getSystemConfig = (companyId = null) =>
   client.get('/settings/system', { params: companyParam(companyId) }).then(r => r.data);
 
