@@ -1,5 +1,6 @@
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import client from './api/client';
 import { dismissKeyboard } from './utils/softKeyboard';
 import AppLayout from './components/layout/AppLayout';
 import useAuthStore from './store/authStore';
@@ -97,21 +98,42 @@ import CompanySettingsPage from './pages/superior/CompanySettingsPage';
 import CompaniesPage from './pages/superior/CompaniesPage';
 import { useNativeDeviceRegistration } from './lib/nativeDevice';
 
-const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
+/*
+ * Signed out after five minutes with no mouse, keyboard or touch activity —
+ * the same window the server applies (SESSION_INACTIVITY_MINUTES in
+ * Realx8-Core); keep the two in step.
+ */
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;   // 5 minutes
 const WARNING_MS = 60 * 1000;           // warn 1 minute before logout
 const WARNING_SECONDS = WARNING_MS / 1000;
+/*
+ * The server only sees requests, so someone reading a page or filling in a form
+ * looks idle to it while they are plainly working. While there is activity,
+ * tell it so — at most this often, which keeps the server's record within
+ * seconds of the real last activity without a request per mouse move.
+ */
+const KEEPALIVE_MS = 15 * 1000;
 
 function useIdleLogout(enabled) {
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const [showWarning, setShowWarning] = useState(false);
+  const lastPing = useRef(Date.now());
 
   useIdleTimeout({
     enabled,
     idleMs: IDLE_TIMEOUT_MS,
     warningMs: WARNING_MS,
     onWarning: () => setShowWarning(true),
-    onActivity: () => setShowWarning(false),
+    onActivity: () => {
+      setShowWarning(false);
+      const now = Date.now();
+      if (now - lastPing.current < KEEPALIVE_MS) return;
+      lastPing.current = now;
+      // Fire and forget: a failure here is the server's own verdict, and the
+      // next real request will act on it.
+      client.get('/auth/session/ping').catch(() => {});
+    },
     onIdle: () => {
       setShowWarning(false);
       logout();
