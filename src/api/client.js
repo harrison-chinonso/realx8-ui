@@ -4,6 +4,7 @@ import { API_BASE } from './apiBase';
 import { extractError } from '../utils/extractError';
 import { signRequest, HEADER_NAME } from './frontendSignature';
 import { refreshLooping } from './refreshBudget';
+import { getDeviceId } from '../lib/deviceId';
 import {
   isEncryptionEnabled, keyForRequest, encryptBody, decryptBody, isEnvelope,
   ensureSessionKey, setSessionKey, clearSessionKey, hasSessionKey,
@@ -52,6 +53,19 @@ client.interceptors.request.use(async (config) => {
     if (signature) config.headers[HEADER_NAME] = signature;
   } catch {
     // Leave the header off; the server decides.
+  }
+
+  /**
+   * Sign-in calls say which device they come from (lib/deviceId.js), so the
+   * one-device rule can let this device back in while refusing another. Added
+   * to the body, not a header, so it needs no CORS change; before encryption,
+   * so it is encrypted with the rest.
+   */
+  const method = String(config.method || 'get').toLowerCase();
+  if ((method === 'post' || method === 'put') && /^\/?auth\//.test(String(config.url || ''))
+    && !(config.data instanceof FormData)) {
+    const body = config.data && typeof config.data === 'object' ? config.data : {};
+    if (!('device_id' in body)) config.data = { ...body, device_id: getDeviceId() };
   }
 
   /**
