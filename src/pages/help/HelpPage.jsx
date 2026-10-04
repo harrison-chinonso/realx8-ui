@@ -8,14 +8,15 @@ import useCompanyCode from '../../hooks/useCompanyCode';
 import { getSupportContacts } from '../../api/shareApi';
 import { useAppearance } from '../../context/useAppearance';
 import {
-  FAQ_GROUPS, QUICK_GUIDE, TAGLINE, searchableText,
+  FAQ_GROUPS, QUICK_GUIDE, searchableText, withCompanyName,
 } from '../../content/helpFaq';
 
 /**
  * Help & FAQ — one page for everyone: signed in or not, reached from the
  * sign-in and sign-up pages, a shared property, a referral link, or the app.
  *
- * The FAQ is the platform's and the same for all. The ways to reach a person —
+ * The FAQ speaks as the company: its name fills every answer, and nothing
+ * names the software behind it. The ways to reach a person —
  * email, WhatsApp, a phone call — are the platform's defaults with the
  * company's own over them (Settings → Help & support), for the company this
  * visitor is with: their own when signed in, else the one whose link brought
@@ -34,7 +35,7 @@ const telHref = (number) => {
   return cleaned ? `tel:${cleaned}` : null;
 };
 
-function ContactOptions({ contacts, compact = false, subject = 'Help with Realx8' }) {
+function ContactOptions({ contacts, compact = false, subject = 'Help request' }) {
   const options = [
     contacts.email && {
       key: 'email', icon: Mail, title: 'Email us', detail: contacts.email,
@@ -79,7 +80,7 @@ function ContactOptions({ contacts, compact = false, subject = 'Help with Realx8
   );
 }
 
-function Answer({ blocks, contacts }) {
+function Answer({ blocks, contacts, brandName }) {
   return (
     <div className="space-y-2 text-sm leading-relaxed text-slate-700">
       {blocks.map((block, i) => {
@@ -100,7 +101,7 @@ function Answer({ blocks, contacts }) {
               <ContactOptions
                 contacts={contacts}
                 compact
-                subject={block.contact === 'fraud' ? 'Report: fraud or suspicious activity' : 'Help with Realx8'}
+                subject={block.contact === 'fraud' ? 'Report: fraud or suspicious activity' : `Help with ${brandName || 'my account'}`}
               />
               {contacts.hours && <p className="mt-2 flex items-center gap-1.5 text-xs text-slate-500"><Clock size={13} aria-hidden="true" /> {contacts.hours}</p>}
             </div>
@@ -124,6 +125,10 @@ export default function HelpPage() {
   const linkCode = (params.get('c') || '').toUpperCase() || null;
   const { company: linkedCompany } = useCompanyCode(signedIn ? null : linkCode, { brand: true });
   const companyName = signedIn ? (sessionCompany?.name || null) : (linkedCompany?.name || null);
+  // Whose name the page speaks in: the company's, else what the appearance
+  // says (a company's own name since the server stopped lending the
+  // platform's), never a hard-coded product name.
+  const brandName = companyName || app_name || '';
 
   const [contacts, setContacts] = useState({});
   useEffect(() => {
@@ -144,10 +149,11 @@ export default function HelpPage() {
   });
 
   const needle = query.trim().toLowerCase();
-  const groups = useMemo(() => FAQ_GROUPS
+  const faq = useMemo(() => withCompanyName(FAQ_GROUPS, brandName), [brandName]);
+  const groups = useMemo(() => faq
     .filter((g) => topic === 'all' || g.id === topic)
     .map((g) => ({ ...g, items: needle ? g.items.filter((item) => searchableText(item).includes(needle)) : g.items }))
-    .filter((g) => g.items.length), [topic, needle]);
+    .filter((g) => g.items.length), [faq, topic, needle]);
   const matches = groups.reduce((t, g) => t + g.items.length, 0);
 
   // Back to wherever they came from; a fresh tab has nowhere to go back to.
@@ -167,7 +173,7 @@ export default function HelpPage() {
             {(linkedCompany?.logo || app_logo) && (
               <img src={linkedCompany?.logo || app_logo} alt="" className="h-8 w-8 shrink-0 rounded-lg object-contain" />
             )}
-            <span className="truncate text-sm font-semibold text-slate-900">{companyName || app_name || 'Realx8'}</span>
+            <span className="truncate text-sm font-semibold text-slate-900">{brandName}</span>
           </div>
           {signedIn
             ? <Link to="/" className="rounded-lg px-2 py-2 text-sm font-semibold text-primary hover:underline">Dashboard</Link>
@@ -178,7 +184,7 @@ export default function HelpPage() {
       <main className="mx-auto max-w-5xl space-y-8 px-4 py-8">
         <section className="space-y-4 text-center">
           <h1 className="text-2xl font-bold text-slate-900">How can we help?</h1>
-          <p className="text-sm text-slate-600">Search the questions people ask most, or get in touch with {companyName || 'the team'}.</p>
+          <p className="text-sm text-slate-600">Search the questions people ask most, or get in touch with {brandName || 'the team'}.</p>
           <label className="relative mx-auto block max-w-xl">
             <span className="sr-only">Search help</span>
             <Search size={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true" />
@@ -242,7 +248,7 @@ export default function HelpPage() {
                       </button>
                       {isOpen && (
                         <div id={`faq-${item.n}`} className="px-4 pb-4">
-                          <Answer blocks={item.a} contacts={contacts} />
+                          <Answer blocks={item.a} contacts={contacts} brandName={brandName} />
                         </div>
                       )}
                     </li>
@@ -264,7 +270,7 @@ export default function HelpPage() {
             {QUICK_GUIDE.map((g) => (
               <div key={g.who} className="rounded-xl bg-white p-4 ring-1 ring-slate-200">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">If you are a {g.who}</p>
-                <p className="mt-1 text-sm text-slate-600">You can use Realx8 to manage:</p>
+                <p className="mt-1 text-sm text-slate-600">You can manage:</p>
                 <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm font-medium text-slate-800">
                   {g.steps.map((step, i) => (
                     <span key={step} className="flex items-center gap-1.5">
@@ -279,13 +285,12 @@ export default function HelpPage() {
         </section>
 
         <footer className="space-y-1 border-t border-slate-200 pt-6 text-center">
-          <p className="text-sm font-semibold text-slate-800">REALX8</p>
-          <p className="text-xs text-slate-500">{TAGLINE}</p>
+          {brandName && <p className="text-sm font-semibold text-slate-800">{brandName}</p>}
           <p className="text-xs text-slate-400">
             <Link to="/legal/terms" className="hover:underline">Terms of Use</Link> ·{' '}
             <Link to="/legal/terms#part-b" className="hover:underline">Privacy Policy</Link>
           </p>
-          <p className="text-xs text-slate-400">© {new Date().getFullYear()} Realx8. All rights reserved.</p>
+          {brandName && <p className="text-xs text-slate-400">© {new Date().getFullYear()} {brandName}. All rights reserved.</p>}
         </footer>
       </main>
     </div>

@@ -113,10 +113,10 @@ export default function LauncherLayout({ children }) {
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-xs font-bold"
                 style={{ backgroundColor: 'var(--primary, #2563eb)', color: onPrimary }}
               >
-                {(app_name || 'R').charAt(0)}
+                {(app_name || '').charAt(0)}
               </span>
             )}
-          <span className="truncate text-sm font-semibold">{app_name || 'Realx8'}</span>
+          <span className="truncate text-sm font-semibold">{app_name}</span>
         </Link>
 
         <div className="flex-1" />

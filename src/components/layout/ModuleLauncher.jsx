@@ -670,7 +670,7 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
     </div>
   );
 
-  const appName = appearance?.app_name || 'Realx8';
+  const appName = appearance?.app_name || '';
   const logo = appearance?.app_logo;
   const initials = (user?.name || '?').split(/\s+/).filter(Boolean).slice(0, 2)
     .map((part) => part[0].toUpperCase()).join('');
@@ -814,12 +814,12 @@ export default function ModuleLauncher({ open, onClose, returnFocusTo }) {
           </div>
 
           {/*
-            The platform's copyright, fixed: the same words for every company,
-            never the tenant's name or a tagline it sets, with the year kept
-            current. The bar itself still wears the company's colours.
+            The copyright, in the company's name: the people here are its
+            clients, realtors and staff, on its platform. Fixed wording that a
+            company cannot edit, with the year kept current.
           */}
           <footer className="rx-footer rx-footer-centered">
-            <span className="rx-footer-copy">© {new Date().getFullYear()} Realx8. All rights reserved.</span>
+            <span className="rx-footer-copy">© {new Date().getFullYear()}{appName ? ` ${appName}` : ''}. All rights reserved.</span>
           </footer>
         </div>
       </div>
