@@ -95,6 +95,7 @@ import CustomerCarePage from './pages/care/CustomerCarePage';
 import PlatformDashboardPage from './pages/superior/PlatformDashboardPage';
 import CompanySettingsPage from './pages/superior/CompanySettingsPage';
 import CompaniesPage from './pages/superior/CompaniesPage';
+import { useNativeDeviceRegistration } from './lib/nativeDevice';
 
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 const WARNING_MS = 60 * 1000;           // warn 1 minute before logout
@@ -242,6 +243,8 @@ function DismissKeyboardOnNavigate() {
 }
 
 export default function App() {
+  // Inside Realx8-Mobile: register this phone for notifications once signed in.
+  useNativeDeviceRegistration();
   return (
     <AppearanceProvider>
       <DismissKeyboardOnNavigate />

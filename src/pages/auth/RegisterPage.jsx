@@ -15,6 +15,7 @@ import { useAppearance } from '../../context/useAppearance';
 import { googleAuthUrl } from '../../utils/googleAuthUrl';
 import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '../../constants/password';
 import { getTerms } from '../../api/legalApi';
+import { lockedCompanyCode } from '../../lib/nativeShell';
 import TermsConsent, { EMPTY_CONSENT, consentComplete } from '../../components/legal/TermsConsent';
 import TermsModal from '../../components/legal/TermsModal';
 import { rememberPendingConsent } from '../../components/legal/TermsGate';
@@ -130,7 +131,9 @@ export default function RegisterPage() {
   // sealed token, or a prior load's storage — says who this visitor belongs
   // to. A visitor should never be able to type over a code that was already
   // established for them; that would silently discard the referral.
-  const isCompanyCodeLocked = !!(presetCompanyCode || referralCompanyCode);
+  // A company's own branded mobile app signs people up to that company only.
+  const appCompanyCode = lockedCompanyCode();
+  const isCompanyCodeLocked = !!(presetCompanyCode || referralCompanyCode || appCompanyCode);
   const isRealtorLinked = !!(referringRealtorCode || referralRealtorCode);
   const setSession = useAuthStore((state) => state.setSession);
   // Someone can reach this form while still signed in — a referral link is an
@@ -148,7 +151,7 @@ export default function RegisterPage() {
     company_code: (() => {
       const q = new URLSearchParams(window.location.search);
       const fromUrl = (q.get('company_code') || q.get('code') || '').toUpperCase();
-      return fromUrl || (referralCompanyCode || '').toUpperCase();
+      return fromUrl || (referralCompanyCode || appCompanyCode || '').toUpperCase();
     })(),
   });
   const [error, setError] = useState('');

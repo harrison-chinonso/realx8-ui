@@ -12,6 +12,7 @@ import { resetRefreshBudget } from '../api/refreshBudget';
 import { markFreshLogin } from '../lib/launcherGreeting';
 import { clearAdvertDismissals } from '../lib/advertDismissal';
 import { clearBrowserState } from '../lib/clearBrowserState';
+import { forgetNativeDevice } from '../lib/nativeDevice';
 
 const useAuthStore = create(
   persist(
@@ -173,7 +174,9 @@ const useAuthStore = create(
        * apparently still signed in — which is the worst outcome of the three.
        */
       logout: () => {
-        const { refreshToken } = get();
+        const { refreshToken, accessToken } = get();
+        // Inside Realx8-Mobile: stop this phone receiving this account's notifications.
+        forgetNativeDevice(accessToken);
         clearSessionKey();
         if (refreshToken) {
           logoutApi(refreshToken).catch(() => {
