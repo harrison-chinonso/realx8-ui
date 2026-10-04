@@ -10,11 +10,11 @@ export const consentComplete = (consent) => Boolean(consent?.terms && consent?.p
 
 export default function TermsConsent({ value, onChange, onRead, tone = 'light', disabled = false }) {
   const dark = tone === 'dark';
-  const text = dark ? 'text-[#D5D9E2]' : 'text-slate-700';
+  const text = dark ? 'text-[color:var(--auth-soft,#D5D9E2)]' : 'text-slate-700';
   const link = dark ? 'font-semibold text-[#E9D8C4] underline underline-offset-2' : 'font-semibold text-primary underline underline-offset-2';
-  const tag = dark ? 'text-[#A6ADBD]' : 'text-slate-500';
+  const tag = dark ? 'text-[color:var(--auth-muted,#A6ADBD)]' : 'text-slate-500';
   const set = (key) => (e) => onChange({ ...value, [key]: e.target.checked });
-  const box = 'mt-0.5 h-[18px] w-[18px] shrink-0 accent-[var(--primary)]';
+  const box = 'mt-0.5 h-[18px] w-[18px] shrink-0 accent-[var(--auth-accent,var(--primary))]';
   return (
     <fieldset className="space-y-3" disabled={disabled}>
       <legend className="sr-only">Terms of Use and Privacy Policy</legend>
