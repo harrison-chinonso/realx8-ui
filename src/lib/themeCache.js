@@ -66,3 +66,21 @@ export const saveTheme = (companyId, theme) => {
     localStorage.setItem(themeKeyFor(companyId), JSON.stringify({ ...theme, v: VERSION }));
   } catch { /* private mode or full storage — the theme still applies, it is just not remembered */ }
 };
+
+/**
+ * The company a page is FOR, from its address: /login/<code>, /c/<code>, or
+ * ?company_code= / ?code=. Such a page is that company's front door, so it is
+ * painted in that company's colours from the first frame — never the platform's
+ * on the way there. Null on every other page.
+ */
+export const companyCodeFromUrl = (location = typeof window !== 'undefined' ? window.location : null) => {
+  if (!location) return null;
+  const path = /^\/(?:login|c)\/([A-Za-z0-9-]{3,16})\/?$/.exec(location.pathname || '');
+  const query = new URLSearchParams(location.search || '');
+  const code = (path && path[1]) || query.get('company_code') || query.get('code');
+  return code ? String(code).trim().toUpperCase() : null;
+};
+
+/** A company's look, remembered by its code — what the index.html script paints first on its page. */
+export const readCodeTheme = (code) => (code ? readTheme(`code:${code}`) : null);
+export const saveCodeTheme = (code, theme) => { if (code) saveTheme(`code:${code}`, theme); };
