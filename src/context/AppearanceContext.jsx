@@ -8,7 +8,9 @@ import {
 } from '../utils/colorUtils';
 import { AppearanceContext } from './appearanceContextRef';
 import useAuthStore from '../store/authStore';
-import { preferredCompanyId, readTheme, saveTheme } from '../lib/themeCache';
+import {
+  companyCodeFromUrl, preferredCompanyId, readCodeTheme, readTheme, saveCodeTheme, saveTheme,
+} from '../lib/themeCache';
 import { appearanceCameWith, onSessionAppearance } from '../lib/sessionAppearance';
 import { applyTabIcon } from '../lib/tabIcon';
 
@@ -149,7 +151,31 @@ const scopeNow = () => {
   return state.accessToken ? (state.user?.company_id ?? state.company_id ?? null) : null;
 };
 
+/**
+ * Tells the mobile app (Realx8-Mobile) the page is now in its final colours,
+ * so it can lift its own splash: whatever loads on the way — the built-in
+ * defaults, the platform's look — happens behind it, never on screen. Once per
+ * page load; a no-op in a browser. Also left as a flag, for a shell whose
+ * bridge arrives after this runs.
+ */
+const signalReady = () => {
+  if (typeof window === 'undefined' || window.__rx8Ready) return;
+  window.__rx8Ready = true;
+  try {
+    if (window.Realx8Native) window.Realx8Native.postMessage({ type: 'ui.ready' });
+    else window.ReactNativeWebView?.postMessage(JSON.stringify({ type: 'ui.ready' }));
+  } catch { /* not in the app */ }
+};
+
 export function AppearanceProvider({ children }) {
+  /*
+   * A company's own page (/login/<code> and friends) is painted in that
+   * company's colours from the first frame — from the theme remembered under
+   * its code — and nothing on the platform's side may repaint it while the
+   * company's look is fetched. Before this it went defaults → platform →
+   * company in three visible steps on every first visit.
+   */
+  const [urlCode] = useState(() => companyCodeFromUrl());
   // nameLoaded: true once the lightweight platform-name call returns
   // fullyLoaded: true once the full appearance call returns
   /*
@@ -158,7 +184,7 @@ export function AppearanceProvider({ children }) {
    * React's first render agrees with them (name, logo, template) instead of
    * starting from the platform defaults and repainting.
    */
-  const [initialTheme] = useState(() => readTheme(preferredCompanyId()));
+  const [initialTheme] = useState(() => (urlCode ? readCodeTheme(urlCode) : readTheme(preferredCompanyId())));
   const [appearance, setAppearance] = useState(() => (initialTheme?.appearance ? { ...DEFAULTS, ...initialTheme.appearance } : DEFAULTS));
   const [nameLoaded, setNameLoaded] = useState(Boolean(initialTheme?.appearance?.app_name));
 
@@ -169,7 +195,7 @@ export function AppearanceProvider({ children }) {
    * order nobody controls, so without this they could repaint over the
    * company's colours a moment after the prospect sees them. The link wins.
    */
-  const brandLocked = useRef(false);
+  const brandLocked = useRef(Boolean(urlCode));
 
   /**
    * Which appearance load is the current one.
@@ -215,6 +241,7 @@ export function AppearanceProvider({ children }) {
     applyTabIcon(merged.app_favicon);
     if (seq !== undefined) fullApplied.current = seq;
     setNameLoaded(true);
+    signalReady();
     if (remember && companyId !== undefined) {
       saveTheme(companyId, {
         vars: applied.vars, fonts: applied.fonts, dark: applied.dark, title: merged.app_name || '', appearance: data,
@@ -226,25 +253,39 @@ export function AppearanceProvider({ children }) {
    * Apply the branding carried by a sealed share link, for visitors who have no
    * account and so no company of their own.
    */
-  const applyBrand = useCallback((branding) => {
+  const applyBrand = useCallback((branding, { code } = {}) => {
     if (!branding) return;
     brandLocked.current = true;
     setAppearance((prev) => {
       const merged = { ...prev, ...branding };
-      applyTheme(merged);
+      const applied = applyTheme(merged);
       if (merged.app_name) document.title = merged.app_name;
       applyTabIcon(merged.app_favicon);
+      // Remembered under the company's code, so its page opens in these colours next time.
+      if (code) {
+        saveCodeTheme(code, {
+          vars: applied.vars, fonts: applied.fonts, dark: applied.dark, title: merged.app_name || '', appearance: branding,
+        });
+      }
       return merged;
     });
     setNameLoaded(true);
+    signalReady();
   }, []);
+
 
   useEffect(() => {
     const seq = (loadSeq.current += 1);
     const companyId = scopeNow();
     // The remembered theme, through the same path as a fresh one, so the
     // derived state (fullApplied, the title) is set before any request returns.
-    if (initialTheme?.appearance) load(initialTheme.appearance, { seq, companyId, remember: false });
+    if (initialTheme?.appearance) load(initialTheme.appearance, { seq, companyId, remember: false, force: Boolean(urlCode) });
+
+    /*
+     * A company's own page waits for that company (useCompanyCode → applyBrand)
+     * and loads nothing of the platform's to paint over it in the meantime.
+     */
+    if (urlCode) return;
 
     /*
      * 1️⃣ Fast call: the PLATFORM's name, logo and colour, for a visitor with
@@ -322,6 +363,16 @@ export function AppearanceProvider({ children }) {
      
   }, []);
 
+  /**
+   * The code on the address named no company: let go of its page and show the
+   * platform's look after all.
+   */
+  const releaseBrand = useCallback(() => {
+    if (!urlCode) return;
+    brandLocked.current = false;
+    refresh();
+  }, [urlCode, refresh]);
+
   /*
    * Branding that arrived with the session itself — the login, registration,
    * refresh or profile-switch response. Applied the moment the response is
@@ -398,7 +449,7 @@ export function AppearanceProvider({ children }) {
   }, [appearance.currency]);
 
   return (
-    <AppearanceContext.Provider value={{ ...appearance, nameLoaded, refresh, formatCurrency, currencySymbol, applyBrand }}>
+    <AppearanceContext.Provider value={{ ...appearance, nameLoaded, refresh, formatCurrency, currencySymbol, applyBrand, releaseBrand }}>
       {children}
     </AppearanceContext.Provider>
   );

@@ -14,7 +14,7 @@ import { useAppearance } from '../context/useAppearance';
  * status: 'idle' (no code) | 'loading' | 'found' | 'missing'
  */
 export default function useCompanyCode(code, { brand = true, showcase = false } = {}) {
-  const { applyBrand } = useAppearance();
+  const { applyBrand, releaseBrand } = useAppearance();
   const normalized = String(code || '').trim().toUpperCase();
   const [state, setState] = useState({ status: normalized ? 'loading' : 'idle', company: null, properties: [] });
 
@@ -28,17 +28,23 @@ export default function useCompanyCode(code, { brand = true, showcase = false } 
     lookupCompanyCode(normalized)
       .then((data) => {
         if (cancelled || !data?.company) return;
-        if (brand && data.branding) applyBrand(data.branding);
+        if (brand && data.branding) applyBrand(data.branding, { code: normalized });
         setState((prev) => ({ ...prev, status: 'found', company: { ...data.company, logo: data.branding?.app_logo || null } }));
       })
-      .catch(() => { if (!cancelled) setState({ status: 'missing', company: null, properties: [] }); });
+      .catch((error) => {
+        if (cancelled) return;
+        setState({ status: 'missing', company: null, properties: [] });
+        // No such company: the page falls back to the platform's look. Only on
+        // a real "not found" — a network blip must not repaint a company's page.
+        if (brand && error?.response?.status === 404) releaseBrand?.();
+      });
     if (showcase) {
       companyShowcase(normalized)
         .then((data) => { if (!cancelled) setState((prev) => ({ ...prev, properties: data?.properties || [] })); })
         .catch(() => {});
     }
     return () => { cancelled = true; };
-  }, [normalized, brand, showcase, applyBrand]);
+  }, [normalized, brand, showcase, applyBrand, releaseBrand]);
 
   return state;
 }
