@@ -29,9 +29,9 @@ import { useAppearance } from '../../context/useAppearance';
  * Notifications: what you have received (Inbox), sending a message (Send) and
  * what you have sent (Sent).
  *
- * Sending is one form. Every message lands in the recipients' in-app inbox and
- * is emailed to those with an address — the same for one person as for a
- * thousand, so "send to one user" is simply "Specific people" with one chosen.
+ * Sending is one form. Every message lands in the recipients' in-app inbox,
+ * and — as the sender chooses — is emailed, sent as a push notification
+ * (mobile app and browsers) and/or texted; the same for one person as for a thousand, so "send to one user" is simply "Specific people" with one chosen.
  * A company may upload its own HTML email designs and pick one per message;
  * without one, emails go out in the default design.
  */
@@ -339,6 +339,9 @@ function SendPanel({ isSuperiorAdmin, onSent }) {
   const { app_name: appName, app_logo: appLogo } = useAppearance();
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState(null);
+  // How it is delivered besides the in-app inbox, which is always included.
+  // SMS starts off: it is the one route the company pays for per message.
+  const [delivery, setDelivery] = useState({ email: true, push: true, sms: false });
 
   const audiences = isSuperiorAdmin ? PLATFORM_AUDIENCES : AUDIENCES;
   const set = (patch) => setForm((current) => ({ ...current, ...patch }));
@@ -404,12 +407,21 @@ function SendPanel({ isSuperiorAdmin, onSent }) {
       }
       const response = await sendBulkNotification({
         user_ids: userIds, title: form.title.trim(), body: form.body.trim(), type: 'info',
-        ...(designId ? { template_id: Number(designId) } : {}),
+        channels: Object.keys(delivery).filter((route) => delivery[route]),
+        ...(delivery.email && designId ? { template_id: Number(designId) } : {}),
       });
-      const mail = response.email
+      const mail = delivery.email && response.email
         ? ` ${response.email.sent} email${response.email.sent === 1 ? '' : 's'} sent${response.email.failed ? `, ${response.email.failed} failed` : ''}.`
         : '';
-      setResult({ type: 'success', text: `Sent to ${response.count} ${response.count === 1 ? 'person' : 'people'}.${mail}` });
+      const push = delivery.push && response.push
+        ? ` Push notification reached ${response.push.people} ${response.push.people === 1 ? 'person' : 'people'}${response.push.people < response.count ? ' (the rest have no app or browser alerts turned on)' : ''}.`
+        : '';
+      const sms = delivery.sms && response.sms
+        ? (response.sms.not_configured
+          ? ' Text messages were not sent: SMS is not set up for your company (Settings → SMS).'
+          : ` ${response.sms.sent} text message${response.sms.sent === 1 ? '' : 's'} sent${response.sms.failed ? `, ${response.sms.failed} failed` : ''}${response.sms.no_phone ? `; ${response.sms.no_phone} without a phone number` : ''}.`)
+        : '';
+      setResult({ type: 'success', text: `Sent to ${response.count} ${response.count === 1 ? 'person' : 'people'}.${mail}${push}${sms}` });
       setForm((current) => ({ ...EMPTY_FORM, audience: current.audience }));
       onSent();
     } catch (error) {
@@ -464,9 +476,34 @@ function SendPanel({ isSuperiorAdmin, onSent }) {
         <span className="block text-sm font-medium text-slate-700">Message</span>
         <input value={form.title} onChange={(e) => set({ title: e.target.value })} placeholder="Title" aria-label="Title" className={FIELD} required />
         <textarea rows={5} value={form.body} onChange={(e) => set({ body: e.target.value })} placeholder="Write your message…" aria-label="Message" className={`${FIELD} resize-y`} required />
-        <p className="text-xs text-slate-500">Arrives in each person&apos;s in-app inbox and is emailed to those with an email address.</p>
       </div>
 
+      <fieldset className="space-y-2">
+        <legend className="mb-1 text-sm font-medium text-slate-700">Send as</legend>
+        <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-700">
+          <label className="inline-flex items-center gap-2 text-slate-500">
+            <input type="checkbox" checked disabled className="h-4 w-4 accent-blue-600" /> In-app (always)
+          </label>
+          <label className="inline-flex cursor-pointer items-center gap-2">
+            <input type="checkbox" checked={delivery.email} onChange={(e) => setDelivery((d) => ({ ...d, email: e.target.checked }))} className="h-4 w-4 accent-blue-600" />
+            Email
+          </label>
+          <label className="inline-flex cursor-pointer items-center gap-2">
+            <input type="checkbox" checked={delivery.push} onChange={(e) => setDelivery((d) => ({ ...d, push: e.target.checked }))} className="h-4 w-4 accent-blue-600" />
+            Push notification
+          </label>
+          <label className="inline-flex cursor-pointer items-center gap-2">
+            <input type="checkbox" checked={delivery.sms} onChange={(e) => setDelivery((d) => ({ ...d, sms: e.target.checked }))} className="h-4 w-4 accent-blue-600" />
+            SMS
+          </label>
+        </div>
+        <p className="text-xs text-slate-500">
+          Email goes to those with an email address. Push notifications reach the mobile app and any browser where the person turned alerts on.
+          SMS goes to those with a phone number, through your company&apos;s SMS provider, and is charged per message.
+        </p>
+      </fieldset>
+
+      {delivery.email && (
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-sm font-medium text-slate-700">Email design</span>
@@ -490,6 +527,7 @@ function SendPanel({ isSuperiorAdmin, onSent }) {
           <p className="text-xs text-slate-500">Emails use the default design.</p>
         )}
       </div>
+      )}
 
       <Button type="submit" disabled={sending || missing}>
         <Send size={15} aria-hidden="true" /> {sending ? 'Sending…' : 'Send'}
