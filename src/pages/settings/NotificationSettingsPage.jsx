@@ -5,19 +5,32 @@ import {
   previewNotificationRecipients,
 } from '../../api/notificationApi';
 import Button from '../../components/ui/Button';
-import Select from '../../components/ui/Select';
 import Modal from '../../components/common/Modal';
 
 const getData = (response) => response?.data ?? response ?? null;
 
-const CHANNEL_LABELS = {
-  in_app: 'In-app only',
-  email: 'Email only',
-  both: 'In-app and email',
-  push: 'Browser only',
-  'in_app,push': 'In-app and browser',
-  'email,push': 'Email and browser',
-  'in_app,email,push': 'In-app, email and browser',
+/*
+ * The four delivery routes, each a toggle per event. Stored as the server's
+ * comma-separated set (CHANNELS in Realx8-Core notificationEvents.js), in this
+ * order; in-app + email alone keeps its old spelling, 'both'. "Push
+ * notification" reaches the mobile app and any browser where alerts are on.
+ */
+const ROUTES = [
+  { key: 'in_app', label: 'In-app' },
+  { key: 'email', label: 'Email' },
+  { key: 'push', label: 'Push', title: 'Push notification: the mobile app and browsers where alerts are on' },
+  { key: 'sms', label: 'SMS', title: 'Text message through your SMS provider, charged per message' },
+];
+const routesOf = (channel) => {
+  const raw = String(channel || 'both').toLowerCase();
+  if (raw === 'both') return new Set(['in_app', 'email']);
+  if (raw === 'all') return new Set(ROUTES.map((r) => r.key));
+  const set = new Set(raw.split(',').map((part) => part.trim()).filter((part) => ROUTES.some((r) => r.key === part)));
+  return set.size ? set : new Set(['in_app']);
+};
+const channelOf = (set) => {
+  const value = ROUTES.map((r) => r.key).filter((key) => set.has(key)).join(',');
+  return value === 'in_app,email' ? 'both' : value;
 };
 const MODULE_LABELS = {
   finance: 'Finance', properties: 'Properties', crm: 'CRM', investments: 'Investments',
@@ -177,6 +190,10 @@ export default function NotificationSettingsPage() {
           <p className="text-sm text-slate-500">
             Every event in the system that can notify someone — {enabledCount} of {events.length} are on.
           </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Each event can go in-app, by email, as a push notification (the mobile app and browsers where
+            alerts are on) or by SMS — choose the mix in the Channel column.
+          </p>
         </div>
         {isOverride && (
           <Button type="button" variant="secondary" onClick={revert} disabled={saving}>
@@ -223,7 +240,7 @@ export default function NotificationSettingsPage() {
                       <th className="px-4 py-3 text-center font-semibold text-slate-600">Person involved</th>
                       <th className="px-4 py-3 text-center font-semibold text-slate-600">Their realtor</th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-600">Anyone who can…</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-600">Channel</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-600" title="Push notifications reach the mobile app and any browser where alerts are turned on.">Channel</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -295,15 +312,30 @@ export default function NotificationSettingsPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <Select
-                            value={event.channel || 'both'}
-                            disabled={!event.enabled}
-                            onChange={(e) => update(event.event_key, { channel: e.target.value })}
-                          >
-                            {channels.map((c) => (
-                              <option key={c} value={c}>{CHANNEL_LABELS[c] || c}</option>
-                            ))}
-                          </Select>
+                          <div className="flex flex-wrap gap-1" role="group" aria-label={`Channels for ${event.label || event.event_key}`}>
+                            {ROUTES.map((route) => {
+                              const current = routesOf(event.channel);
+                              const on = current.has(route.key);
+                              const next = new Set(current);
+                              if (on) next.delete(route.key); else next.add(route.key);
+                              const value = channelOf(next);
+                              // At least one route, and only combinations the server knows.
+                              const allowed = next.size > 0 && (value === 'both' || channels.includes(value));
+                              return (
+                                <button
+                                  key={route.key}
+                                  type="button"
+                                  title={route.title}
+                                  aria-pressed={on}
+                                  disabled={!event.enabled || !allowed}
+                                  onClick={() => update(event.event_key, { channel: value })}
+                                  className={`min-h-0 rounded-full px-2.5 py-1 text-xs font-medium ring-1 transition disabled:cursor-not-allowed ${on ? 'bg-primary text-white ring-transparent' : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'} ${!event.enabled ? 'opacity-50' : ''}`}
+                                >
+                                  {route.label}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </td>
                       </tr>
                     ))}
