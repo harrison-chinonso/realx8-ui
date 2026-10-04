@@ -46,6 +46,17 @@ server {
     proxy_read_timeout 180s;
   }
 
+  # Universal links / App Links: iOS and Android fetch these from this host;
+  # Realx8-Core builds them (shared/src/appLinks.js). Exact paths, no redirect.
+  location = /.well-known/apple-app-site-association {
+    proxy_pass ${API_TARGET}/api/public/app-links/apple-app-site-association;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+  location = /.well-known/assetlinks.json {
+    proxy_pass ${API_TARGET}/api/public/app-links/assetlinks.json;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+
   # Property images and documents, served by user-service.
   location /uploads/ {
     proxy_pass ${API_TARGET}/uploads/;

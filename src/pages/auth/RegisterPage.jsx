@@ -14,6 +14,7 @@ import {
 import { useAppearance } from '../../context/useAppearance';
 import { googleAuthUrl } from '../../utils/googleAuthUrl';
 import AppleSignInButton from '../../components/auth/AppleSignInButton';
+import { appFeatureOff } from '../../lib/nativeShell';
 import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from '../../constants/password';
 import { getTerms } from '../../api/legalApi';
 import { lockedCompanyCode } from '../../lib/nativeShell';
@@ -495,33 +496,37 @@ export default function RegisterPage() {
         rather than a button because this is a full-page redirect the browser
         must follow, not something fetch can do.
       */}
-      <a
-        href={googleAuthUrl({
-          companyCode: form.company_code || presetCompanyCode || referralCompanyCode,
-          realtorCode: referringRealtorCode || referralRealtorCode,
-          redirect: redirectTo,
-        })}
-        /*
-         * The account is created on Google's return, so the boxes ticked here
-         * travel with the redirect and are recorded on arrival (TermsGate).
-         * Not offered until they are ticked — Google is not a way round them.
-         */
-        onClick={(event) => {
-          if (!termsAgreed) { event.preventDefault(); setError('Please confirm that you agree to the Terms of Use and the Privacy Policy first.'); return; }
-          if (terms) rememberPendingConsent(terms.id, consent);
-        }}
-        aria-disabled={!termsAgreed}
-        className={`${ghostButton} ${termsAgreed ? '' : 'opacity-50'}`}
-      >
-        <GoogleIcon />
-        Sign up with Google instead
-      </a>
+      {/* A company can switch Google off inside its mobile app (Settings → Mobile app). */}
+      {!appFeatureOff('googleLogin') && (
+        <a
+          href={googleAuthUrl({
+            companyCode: form.company_code || presetCompanyCode || referralCompanyCode,
+            realtorCode: referringRealtorCode || referralRealtorCode,
+            redirect: redirectTo,
+          })}
+          /*
+           * The account is created on Google's return, so the boxes ticked here
+           * travel with the redirect and are recorded on arrival (TermsGate).
+           * Not offered until they are ticked — Google is not a way round them.
+           */
+          onClick={(event) => {
+            if (!termsAgreed) { event.preventDefault(); setError('Please confirm that you agree to the Terms of Use and the Privacy Policy first.'); return; }
+            if (terms) rememberPendingConsent(terms.id, consent);
+          }}
+          aria-disabled={!termsAgreed}
+          className={`${ghostButton} ${termsAgreed ? '' : 'opacity-50'}`}
+        >
+          <GoogleIcon />
+          Sign up with Google instead
+        </a>
+      )}
 
       {/* Inside the iOS app only. Held to the same Terms rule as Google. */}
       <AppleSignInButton
         label="Sign up with Apple"
         companyCode={form.company_code || presetCompanyCode || referralCompanyCode}
         realtorCode={referringRealtorCode || referralRealtorCode}
+        redirect={redirectTo}
         disabled={!termsAgreed}
         beforeStart={() => {
           if (!termsAgreed) { setError('Please confirm that you agree to the Terms of Use and the Privacy Policy first.'); return false; }

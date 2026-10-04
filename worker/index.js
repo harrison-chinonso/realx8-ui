@@ -82,9 +82,22 @@ const withSecurityHeaders = (response, env) => {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 };
 
+/**
+ * The universal-link / App Link files. iOS and Android fetch them from THIS
+ * host; Realx8-Core builds them from its configuration (shared/src/appLinks.js).
+ */
+const APP_LINK_FILES = {
+  '/.well-known/apple-app-site-association': '/api/public/app-links/apple-app-site-association',
+  '/.well-known/assetlinks.json': '/api/public/app-links/assetlinks.json',
+};
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (APP_LINK_FILES[url.pathname] && env.API_TARGET) {
+      return fetch(new URL(APP_LINK_FILES[url.pathname], env.API_TARGET), { redirect: 'manual' });
+    }
 
     if (!PROXIED_PREFIXES.some((prefix) => url.pathname.startsWith(prefix))) {
       return withSecurityHeaders(await env.ASSETS.fetch(request), env);
