@@ -785,7 +785,7 @@ function AppearanceTab() {
       <div className="space-y-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
         <div>
           <label className="mb-1 block text-sm font-medium">App Name<FieldMark /></label>
-          <Input value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} placeholder="Realx8" className="max-w-xs" />
+          <Input value={form.app_name} onChange={(e) => setForm({ ...form, app_name: e.target.value })} placeholder="Your company name" className="max-w-xs" />
           <p className="mt-1 text-xs text-slate-500">Shown in the sidebar and browser tab.</p>
         </div>
 
@@ -814,7 +814,7 @@ function AppearanceTab() {
             {/* Drawn as a tab, so it is judged at the size people will see it. */}
             <div className="flex h-10 w-48 items-center gap-2 rounded-t-lg border border-b-0 border-slate-200 bg-white px-3 shadow-sm">
               <img src={faviconPreview || '/favicon.svg'} alt="" className="h-4 w-4 shrink-0 rounded-sm object-contain" />
-              <span className="truncate text-xs text-slate-700">{form.app_name || 'Realx8'}</span>
+              <span className="truncate text-xs text-slate-700">{form.app_name || 'Your company'}</span>
             </div>
             <div className="space-y-1">
               <input ref={faviconRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={handleFaviconChange} />
@@ -823,11 +823,11 @@ function AppearanceTab() {
                   {faviconPreview ? 'Change icon' : 'Upload icon'}
                 </Button>
                 {faviconPreview && (
-                  <Button type="button" variant="secondary" onClick={useDefaultFavicon}>Use Realx8 icon</Button>
+                  <Button type="button" variant="secondary" onClick={useDefaultFavicon}>Use default icon</Button>
                 )}
               </div>
               <p className="text-xs text-slate-500">
-                {faviconPreview ? 'A square PNG works best.' : 'Using the Realx8 icon. Upload a square PNG to use your own.'}
+                {faviconPreview ? 'A square PNG works best.' : 'Using the default icon. Upload a square PNG to use your own.'}
               </p>
             </div>
           </div>

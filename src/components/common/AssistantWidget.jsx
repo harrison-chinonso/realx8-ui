@@ -119,7 +119,7 @@ export default function AssistantWidget() {
    * not recognise.
    */
   const serverEnabled = Boolean(status?.enabled);
-  const appName = status?.app_name || 'Realx8';
+  const appName = status?.app_name || 'the app';
   useEffect(() => {
     if (!isAuthenticated) { setStatus(null); return; }
     getAssistantStatus()
