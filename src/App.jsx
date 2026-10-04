@@ -242,6 +242,13 @@ function DismissKeyboardOnNavigate() {
   return null;
 }
 
+/** /c/<code> in a browser: the company's own sign-in page, query string kept. */
+function CompanyLink() {
+  const { companyCode } = useParams();
+  const { search } = useLocation();
+  return <Navigate to={`/login/${encodeURIComponent(String(companyCode || '').toUpperCase())}${search}`} replace />;
+}
+
 export default function App() {
   // Inside Realx8-Mobile: register this phone for notifications once signed in.
   useNativeDeviceRegistration();
@@ -252,6 +259,9 @@ export default function App() {
         <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
         {/* A company's own sign-in page — its logo, colours and listings. */}
         <Route path="/login/:companyCode" element={<PublicOnly><LoginPage /></PublicOnly>} />
+        {/* A company link (https://<host>/c/<code>). With the mobile app installed the phone opens
+            the app instead; without it, the link lands on that company's sign-in page. */}
+        <Route path="/c/:companyCode" element={<CompanyLink />} />
         <Route path="/register" element={<PublicOnly allowInvited><RegisterPage /></PublicOnly>} />
         {/* Help & FAQ: open to everyone, signed in or not — see HelpPage. */}
         <Route path="/help" element={<HelpPage />} />

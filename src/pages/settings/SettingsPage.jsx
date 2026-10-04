@@ -12,6 +12,7 @@ import useAuthStore from '../../store/authStore';
 import client from '../../api/client';
 import Button from '../../components/ui/Button';
 import SmsSettingsPanel from '../../components/settings/SmsSettingsPanel';
+import MobileAppPanel from '../../components/settings/MobileAppPanel';
 import Input from '../../components/ui/Input';
 import { brightenForDark } from '../../utils/colorUtils';
 import {
@@ -197,6 +198,16 @@ const SETTING_GROUPS = [
     group: 'sms',
     label: 'SMS',
     permission: 'settings.sms.manage',
+  },
+  {
+    /*
+     * The Realx8 mobile app for this company: its opening screen, forced
+     * updates and in-app features. A panel of its own (MobileAppPanel) rather
+     * than a field list — it shows what each blank field inherits and checks
+     * values the way the server will.
+     */
+    group: 'mobile',
+    label: 'Mobile app',
   },
   {
     group: 'payment',
@@ -1896,6 +1907,8 @@ export default function SettingsPage() {
           <SystemConfigTab />
         ) : activeGroup === 'sms' ? (
           <SmsSettingsPanel />
+        ) : activeGroup === 'mobile' ? (
+          <MobileAppPanel companyId={targetCompanyId} companyName={targetCompanyName} />
         ) : (
           <div className="space-y-4">
             <h1 className="text-xl font-semibold">{currentGroup?.label} Settings</h1>
