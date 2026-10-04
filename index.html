@@ -29,7 +29,12 @@
             var known = JSON.parse(localStorage.getItem('rx-known-account') || 'null');
             if (known && known.company_id != null) company = known.company_id;
           }
-          var theme = JSON.parse(localStorage.getItem('rx-theme:' + (company == null ? 'platform' : company)) || 'null');
+          // A company's own page (/login/<code>, /c/<code>, ?company_code=) paints that company first.
+          var path = /^\/(?:login|c)\/([A-Za-z0-9-]{3,16})\/?$/.exec(location.pathname);
+          var params = new URLSearchParams(location.search);
+          var code = (path && path[1]) || params.get('company_code') || params.get('code');
+          var theme = code ? JSON.parse(localStorage.getItem('rx-theme:code:' + code.toUpperCase()) || 'null') : null;
+          if (!theme && !code) theme = JSON.parse(localStorage.getItem('rx-theme:' + (company == null ? 'platform' : company)) || 'null');
           if (!theme || theme.v !== 1) return;
           var root = document.documentElement;
           for (var name in theme.vars || {}) root.style.setProperty(name, theme.vars[name]);
