@@ -20,18 +20,18 @@ import { MIN_PASSWORD_LENGTH } from '../../constants/password';
  * on cream.
  */
 
-export const primaryButton = 'flex h-11 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50';
-export const primaryInk = { color: 'var(--primary-ink, #fff)' };
-export const ghostButton = 'flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#2B3350] px-4 text-sm font-semibold text-[#F3F1EC] transition hover:bg-white/5 disabled:opacity-50';
-const inputClass = 'h-11 w-full rounded-xl border border-[#2B3350] bg-[#161B2C] px-3.5 text-sm text-[#F3F1EC] placeholder:text-[#7C8497] transition focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--primary-rgb),0.35)] read-only:cursor-not-allowed read-only:text-[#A6ADBD]';
+export const primaryButton = 'flex h-11 w-full items-center justify-center rounded-xl bg-[color:var(--auth-accent,var(--primary))] px-4 text-sm font-semibold transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50';
+export const primaryInk = { color: 'var(--auth-accent-ink, var(--primary-ink, #fff))' };
+export const ghostButton = 'flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[color:var(--auth-border,#2B3350)] px-4 text-sm font-semibold text-[#F3F1EC] transition hover:bg-white/5 disabled:opacity-50';
+const inputClass = 'h-11 w-full rounded-xl border border-[color:var(--auth-border,#2B3350)] bg-[color:var(--auth-field,#161B2C)] px-3.5 text-sm text-[#F3F1EC] placeholder:text-[color:var(--auth-faint,#7C8497)] transition focus:border-[color:var(--auth-accent,var(--primary))] focus:outline-none focus:ring-2 focus:ring-[rgba(var(--auth-accent-rgb,var(--primary-rgb)),0.35)] read-only:cursor-not-allowed read-only:text-[color:var(--auth-muted,#A6ADBD)]';
 
 export function AuthField({
   id, label, hint, note, className = '', inputClassName = '', ...input
 }) {
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <label htmlFor={id} className="block text-xs font-semibold text-[#D5D9E2]">
-        {label}{note && <span className="font-normal text-[#A6ADBD]"> {note}</span>}
+      <label htmlFor={id} className="block text-xs font-semibold text-[color:var(--auth-soft,#D5D9E2)]">
+        {label}{note && <span className="font-normal text-[color:var(--auth-muted,#A6ADBD)]"> {note}</span>}
       </label>
       <input id={id} className={`${inputClass} ${inputClassName}`} {...input} />
       {hint}
@@ -54,7 +54,7 @@ export function PasswordField({
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="text-xs font-semibold text-[#D5D9E2]">{label}</label>
+        <label htmlFor={id} className="text-xs font-semibold text-[color:var(--auth-soft,#D5D9E2)]">{label}</label>
         {action}
       </div>
       <div className="relative">
@@ -73,7 +73,7 @@ export function PasswordField({
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? 'Hide password' : 'Show password'}
           aria-pressed={visible}
-          className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-lg text-[#A6ADBD] hover:text-white"
+          className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-lg text-[color:var(--auth-muted,#A6ADBD)] hover:text-white"
         >
           {visible ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
         </button>
@@ -101,7 +101,7 @@ export function PasscodeInput({
   const digits = String(value || '').slice(0, 6);
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-xs font-semibold text-[#D5D9E2]">{label}</label>
+      <label htmlFor={id} className="block text-xs font-semibold text-[color:var(--auth-soft,#D5D9E2)]">{label}</label>
       <div className="relative">
         <div className="grid grid-cols-6 gap-2" aria-hidden="true">
           {Array.from({ length: 6 }, (_, i) => {
@@ -110,7 +110,7 @@ export function PasscodeInput({
             return (
               <span
                 key={i}
-                className={`flex h-12 items-center justify-center rounded-xl border bg-[#161B2C] transition ${next ? 'border-[color:var(--primary)] ring-2 ring-[rgba(var(--primary-rgb),0.35)]' : 'border-[#2B3350]'}`}
+                className={`flex h-12 items-center justify-center rounded-xl border bg-[color:var(--auth-field,#161B2C)] transition ${next ? 'border-[color:var(--auth-accent,var(--primary))] ring-2 ring-[rgba(var(--auth-accent-rgb,var(--primary-rgb)),0.35)]' : 'border-[color:var(--auth-border,#2B3350)]'}`}
               >
                 {filled && <span className="h-3 w-3 rounded-full bg-[#F3F1EC]" />}
               </span>
@@ -138,7 +138,7 @@ export function PasscodeInput({
 }
 
 const STRENGTH = [
-  { label: `Use ${MIN_PASSWORD_LENGTH} or more characters with a mix of letters, numbers and symbols.`, text: 'text-[#A6ADBD]', bar: 'bg-[#262D44]' },
+  { label: `Use ${MIN_PASSWORD_LENGTH} or more characters with a mix of letters, numbers and symbols.`, text: 'text-[color:var(--auth-muted,#A6ADBD)]', bar: 'bg-[color:var(--auth-raised,#262D44)]' },
   { label: 'Weak', text: 'text-rose-300', bar: 'bg-rose-500' },
   { label: 'Fair', text: 'text-amber-300', bar: 'bg-amber-500' },
   { label: 'Good', text: 'text-sky-300', bar: 'bg-sky-500' },
@@ -161,13 +161,13 @@ export function PasswordStrength({ password }) {
     <div className="space-y-2">
       <div className="grid grid-cols-4 gap-1.5" aria-hidden="true">
         {[0, 1, 2, 3].map((i) => (
-          <span key={i} className={`h-1.5 rounded-full ${i < score ? level.bar : 'bg-[#262D44]'}`} />
+          <span key={i} className={`h-1.5 rounded-full ${i < score ? level.bar : 'bg-[color:var(--auth-raised,#262D44)]'}`} />
         ))}
       </div>
       <p className={`text-xs ${level.text}`} aria-live="polite">{password ? `Password strength: ${level.label}` : level.label}</p>
       <ul className="grid grid-cols-2 gap-x-3 gap-y-1">
         {checks.map((check) => (
-          <li key={check.text} className={`flex items-center gap-1.5 text-xs ${check.ok ? 'text-emerald-300' : 'text-[#7C8497]'}`}>
+          <li key={check.text} className={`flex items-center gap-1.5 text-xs ${check.ok ? 'text-emerald-300' : 'text-[color:var(--auth-faint,#7C8497)]'}`}>
             <Check size={12} strokeWidth={3} aria-hidden="true" />
             {check.text}
             <span className="sr-only">{check.ok ? '(done)' : '(not yet)'}</span>
@@ -204,14 +204,14 @@ export function AuthBrand({ company, small = false }) {
           className={`${mark} shrink-0 bg-white object-contain ${small ? 'p-0.5' : 'p-1'}`}
         />
       ) : (
-        <span className={`flex ${mark} shrink-0 items-center justify-center bg-primary font-bold ${small ? 'text-sm' : 'text-xl'}`} style={primaryInk} aria-hidden="true">
+        <span className={`flex ${mark} shrink-0 items-center justify-center bg-[color:var(--auth-accent,var(--primary))] font-bold ${small ? 'text-sm' : 'text-xl'}`} style={primaryInk} aria-hidden="true">
           {name.trim().charAt(0).toUpperCase()}
         </span>
       )}
       <div className="min-w-0">
         <p className={`truncate text-[#F3F1EC] ${small ? 'text-[13px] font-semibold leading-tight' : 'text-base font-bold'}`}>{name}</p>
         {company && app_name && app_name !== company.name && (
-          <p className={`truncate text-[#A6ADBD] ${small ? 'text-[10px] leading-tight' : 'text-xs'}`}>Powered by {app_name}</p>
+          <p className={`truncate text-[color:var(--auth-muted,#A6ADBD)] ${small ? 'text-[10px] leading-tight' : 'text-xs'}`}>Powered by {app_name}</p>
         )}
       </div>
     </div>
@@ -256,7 +256,7 @@ export function ShowcasePanel({ properties = [], compact = false }) {
   ].filter(Boolean).join(' · ');
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-[#1C2438]">
+    <div className="relative h-full w-full overflow-hidden bg-[color:var(--auth-panel,#1C2438)]">
       {slides.map((s, i) => (
         <img
           key={s.id}
@@ -274,15 +274,15 @@ export function ShowcasePanel({ properties = [], compact = false }) {
             {[slide.promotion.name, slide.promotion.benefit_label].filter(Boolean).join(' · ')}
           </span>
         )}
-        <div className={`rounded-[22px] bg-[rgba(14,18,32,0.82)] ${compact ? 'p-4' : 'p-6'} text-white`}>
+        <div className={`rounded-[22px] bg-[rgba(var(--auth-bg-rgb,14,18,32),0.82)] ${compact ? 'p-4' : 'p-6'} text-white`}>
           {compact && slide.promotion && (
             <span className="mb-1.5 inline-block rounded-full bg-pink-700 px-2.5 py-0.5 text-xs font-bold text-white">
               {[slide.promotion.name, slide.promotion.benefit_label].filter(Boolean).join(' · ')}
             </span>
           )}
-          {place && !compact && <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#A6ADBD]">Now selling · {place}</p>}
-          <p className={`mt-1 font-bold tracking-tight ${compact ? 'text-xl' : 'text-2xl'}`}>{slide.name}{compact && place ? <span className="text-sm font-semibold text-[#D5D9E2]"> · {place}</span> : null}</p>
-          {facts && <p className="mt-1 text-sm text-[#D5D9E2]">{facts}</p>}
+          {place && !compact && <p className="text-xs font-bold uppercase tracking-[0.14em] text-[color:var(--auth-muted,#A6ADBD)]">Now selling · {place}</p>}
+          <p className={`mt-1 font-bold tracking-tight ${compact ? 'text-xl' : 'text-2xl'}`}>{slide.name}{compact && place ? <span className="text-sm font-semibold text-[color:var(--auth-soft,#D5D9E2)]"> · {place}</span> : null}</p>
+          {facts && <p className="mt-1 text-sm text-[color:var(--auth-soft,#D5D9E2)]">{facts}</p>}
         </div>
         {slides.length > 1 && !compact && (
           <div className="flex gap-2">
@@ -308,9 +308,9 @@ export function ShowcasePanel({ properties = [], compact = false }) {
 /** A placeholder panel for pages whose side has nothing to show but words. */
 export function AsidePanel({ kicker, title, children }) {
   return (
-    <div className="flex h-full flex-col justify-end gap-5 rounded-[28px] bg-[#1C2438] p-12 text-[#F3F1EC]">
-      <Home size={28} className="text-[#56607A]" aria-hidden="true" />
-      {kicker && <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#A6ADBD]">{kicker}</p>}
+    <div className="flex h-full flex-col justify-end gap-5 rounded-[28px] bg-[color:var(--auth-panel,#1C2438)] p-12 text-[#F3F1EC]">
+      <Home size={28} className="text-[color:var(--auth-faint,#56607A)]" aria-hidden="true" />
+      {kicker && <p className="text-xs font-bold uppercase tracking-[0.14em] text-[color:var(--auth-muted,#A6ADBD)]">{kicker}</p>}
       {title && <p className="max-w-lg text-2xl font-bold leading-tight tracking-tight">{title}</p>}
       {children}
     </div>
@@ -327,7 +327,7 @@ export function IconLink({ to, icon: Icon, label }) {
     <Link
       to={to}
       aria-label={label}
-      className="group relative flex h-10 w-10 items-center justify-center rounded-xl text-[#A6ADBD] transition hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--primary-rgb),0.6)]"
+      className="group relative flex h-10 w-10 items-center justify-center rounded-xl text-[color:var(--auth-muted,#A6ADBD)] transition hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--auth-accent-rgb,var(--primary-rgb)),0.6)]"
     >
       <Icon size={20} aria-hidden="true" />
       <span
@@ -359,10 +359,10 @@ export function AuthShell({
   brand, headerAction, aside, mobileTop, footer, children, wide = false,
 }) {
   return (
-    <div className="flex min-h-screen w-full bg-[#0E1220] font-body text-[#F3F1EC] lg:h-app lg:overflow-hidden">
+    <div className="flex min-h-screen w-full bg-[color:var(--auth-bg,#0E1220)] font-body text-[#F3F1EC] lg:h-app lg:overflow-hidden">
       <main className={`flex w-full shrink-0 flex-col lg:overflow-y-auto ${wide ? 'lg:w-[560px]' : 'lg:w-[480px]'}`}>
         {mobileTop && <div className="lg:hidden">{mobileTop}</div>}
-        <div className={`relative flex w-full flex-1 flex-col gap-7 bg-[#0E1220] px-5 pb-8 pt-6 sm:mx-auto sm:max-w-[560px] sm:px-10 lg:mx-0 lg:max-w-none lg:px-14 lg:pt-10 ${mobileTop ? '-mt-4 rounded-t-[20px] lg:mt-0 lg:rounded-none' : ''}`}>
+        <div className={`relative flex w-full flex-1 flex-col gap-7 bg-[color:var(--auth-bg,#0E1220)] px-5 pb-8 pt-6 sm:mx-auto sm:max-w-[560px] sm:px-10 lg:mx-0 lg:max-w-none lg:px-14 lg:pt-10 ${mobileTop ? '-mt-4 rounded-t-[20px] lg:mt-0 lg:rounded-none' : ''}`}>
           {/* The name on the left, an action (Get help) opposite it. With a
               photo strip on a phone the name is on the strip, so the action
               keeps the row to itself, still on the right. */}
@@ -371,7 +371,7 @@ export function AuthShell({
             {headerAction && <div className="ml-auto shrink-0">{headerAction}</div>}
           </div>
           <div className="flex flex-1 flex-col justify-center gap-7">{children}</div>
-          {footer && <div className="flex flex-col gap-3 text-sm text-[#A6ADBD]">{footer}</div>}
+          {footer && <div className="flex flex-col gap-3 text-sm text-[color:var(--auth-muted,#A6ADBD)]">{footer}</div>}
         </div>
       </main>
       <aside className="hidden flex-1 p-4 pl-0 lg:flex">
