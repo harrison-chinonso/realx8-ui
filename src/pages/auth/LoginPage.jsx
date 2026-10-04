@@ -8,6 +8,7 @@ import Modal from '../../components/common/Modal';
 import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
 import { googleAuthUrl, codesFromLocation } from '../../utils/googleAuthUrl';
+import AppleSignInButton from '../../components/auth/AppleSignInButton';
 import FieldMark from '../../components/ui/FieldMark';
 import { PASSWORD_HINT } from '../../constants/password';
 import Select from '../../components/ui/Select';
@@ -619,6 +620,12 @@ export default function LoginPage() {
           <div className="flex items-center gap-3 text-xs text-[#7C8497]" aria-hidden="true">
             <span className="h-px flex-1 bg-[#262D44]" />or<span className="h-px flex-1 bg-[#262D44]" />
           </div>
+
+          {/* Inside the iOS app only — Apple requires it beside Google there. */}
+          <AppleSignInButton
+            companyCode={company?.code || linkCode || codesFromLocation().companyCode}
+            realtorCode={codesFromLocation().realtorCode}
+          />
 
           <div className="grid grid-cols-2 gap-2.5">
             <a href={googleHref} className={ghostButton}>
