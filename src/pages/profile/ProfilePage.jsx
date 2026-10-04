@@ -12,6 +12,7 @@ import DeleteAccountPanel from '../../components/profile/DeleteAccountPanel';
 import PasscodePanel from '../../components/profile/PasscodePanel';
 import ProfileToggle from '../../components/common/ProfileToggle';
 import FieldMark from '../../components/ui/FieldMark';
+import { lockedCompanyCode } from '../../lib/nativeShell';
 
 function PersonalDetailsTab() {
   const user = useAuthStore((state) => state.user);
@@ -166,9 +167,11 @@ export default function ProfilePage() {
     ];
     /*
      * Realtors and clients are the only ones who can hold accounts at more than
-     * one company, so they are the only ones this tab means anything to.
+     * one company, so they are the only ones this tab means anything to — and
+     * not in a company's own branded mobile app, where switching or joining
+     * another company has no place.
      */
-    if (effectiveType === 'realtor' || effectiveType === 'client') {
+    if ((effectiveType === 'realtor' || effectiveType === 'client') && !lockedCompanyCode()) {
       base.push({
         key: 'companies', label: 'Companies', Icon: Building2, render: () => <CompaniesPanel />,
       });

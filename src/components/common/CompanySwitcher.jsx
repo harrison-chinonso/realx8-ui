@@ -7,6 +7,7 @@ import Input from '../ui/Input';
 import useAuthStore from '../../store/authStore';
 import { autoFocusProps } from '../../utils/softKeyboard';
 import { landOnDashboard } from '../../lib/sessionSwitch';
+import { lockedCompanyCode } from '../../lib/nativeShell';
 
 /**
  * Move between the companies one person holds accounts with.
@@ -81,8 +82,11 @@ export default function CompanySwitcher({ className = '' }) {
    *
    * Joining lives on the Companies tab of the profile now, which is where a
    * once-per-company action belongs and costs the header nothing.
+   *
+   * Nor in a company's own branded mobile app: it is that company's app, and a
+   * switch would put another company's data under its name.
    */
-  if (companies.length < 2) return null;
+  if (companies.length < 2 || lockedCompanyCode()) return null;
 
   const current = companies.find((entry) => entry.current);
 
