@@ -308,3 +308,53 @@ export function surfaceTokens(fill) {
     '--sf-warning-soft': stepBack(warning, 0.45, 3),
   };
 }
+
+/**
+ * The sign-in screens' palette, from a company's own colours.
+ *
+ * Those screens are a dark surface for everybody — the showcase photography and
+ * the form read best on one — but that surface was one fixed navy, so a
+ * company in green or burgundy signed its people in on somebody else's colour.
+ * Here the surface takes the HUE of the brand colour at fixed dark lightnesses,
+ * so every company's sign-in is its own colour and always dark enough for the
+ * light text on it, whatever shade the brand colour itself is.
+ *
+ * The accent (buttons, focus rings, links) is the company's dark-surface
+ * colour when it set one — that is what dark_primary_color is for — or its
+ * brand colour brightened for a dark ground, so a deep green button never
+ * sinks into a deep green page.
+ *
+ * Returns CSS custom properties, or null when there is no brand colour (the
+ * screens then keep their built-in navy).
+ */
+/** "r, g, b" — the form the theme's *-rgb variables take, for rgba(var(--x-rgb), a). */
+const rgbTriplet = (hex) => (toRgb(hex) || [0, 0, 0]).slice(0, 3).join(', ');
+
+export function authSurfaceTokens(brand, darkAccent = null) {
+  if (!brand || !/^#[0-9a-f]{6}$/i.test(brand)) return null;
+  const [h, s] = hexToHsl(brand);
+  const sat = Math.min(s, 55);
+  const tone = (lightness, saturation = sat) => hslToHex(h, saturation, lightness);
+  const accent = darkAccent && /^#[0-9a-f]{6}$/i.test(darkAccent) ? darkAccent : brightenForDark(brand);
+  const bg = tone(9);
+  return {
+    '--auth-bg': bg,
+    '--auth-bg-rgb': rgbTriplet(bg),
+    '--auth-field': tone(12),
+    '--auth-panel': tone(15),
+    '--auth-raised': tone(19),
+    '--auth-border': tone(24, Math.min(sat, 35)),
+    '--auth-faint': tone(52, 12),
+    '--auth-muted': tone(70, 12),
+    '--auth-soft': tone(87, 14),
+    '--auth-accent': accent,
+    '--auth-accent-rgb': rgbTriplet(accent),
+    '--auth-accent-ink': readableTextOn(accent),
+  };
+}
+
+/** Every variable authSurfaceTokens can set — for clearing them when a theme has none. */
+export const AUTH_SURFACE_VARS = [
+  '--auth-bg', '--auth-bg-rgb', '--auth-field', '--auth-panel', '--auth-raised', '--auth-border',
+  '--auth-faint', '--auth-muted', '--auth-soft', '--auth-accent', '--auth-accent-rgb', '--auth-accent-ink',
+];

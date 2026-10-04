@@ -524,18 +524,18 @@ export default function LoginPage() {
     <>
       <div className="space-y-2">
         <h1 className="text-xl font-semibold leading-tight">{heading}</h1>
-        <p className="text-sm text-[#A6ADBD]">{subheading}</p>
+        <p className="text-sm text-[color:var(--auth-muted,#A6ADBD)]">{subheading}</p>
       </div>
 
       {/* The remembered account — who, which company, and a way out. */}
       {greeting && (authStep === 'credentials' || authStep === 'passcode') && (
-        <div className="flex items-center gap-3.5 rounded-2xl border border-[#2B3350] bg-[#161B2C] p-4">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#262D44] font-bold" aria-hidden="true">
+        <div className="flex items-center gap-3.5 rounded-2xl border border-[color:var(--auth-border,#2B3350)] bg-[color:var(--auth-field,#161B2C)] p-4">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color:var(--auth-raised,#262D44)] font-bold" aria-hidden="true">
             {initialsOf(greeting.name)}
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{greeting.name || greeting.email}</p>
-            <p className="truncate text-xs text-[#A6ADBD]">
+            <p className="truncate text-xs text-[color:var(--auth-muted,#A6ADBD)]">
               {maskEmail(greeting.email)}{greeting.type ? ` · ${enumLabel(greeting.type)}` : ''}
             </p>
           </div>
@@ -549,14 +549,14 @@ export default function LoginPage() {
         <form onSubmit={submit} className="space-y-4">
           {!greeting && (
             <>
-              <div role="group" aria-label="Sign in with" className="grid grid-cols-2 rounded-xl bg-[#161B2C] p-1">
+              <div role="group" aria-label="Sign in with" className="grid grid-cols-2 rounded-xl bg-[color:var(--auth-field,#161B2C)] p-1">
                 {[['email', 'Email'], ['phone', 'Phone number']].map(([value, label]) => (
                   <button
                     key={value}
                     type="button"
                     aria-pressed={loginMethod === value}
                     onClick={() => { setLoginMethod(value); setForm((f) => ({ ...f, identifier: '' })); }}
-                    className={`h-10 rounded-[9px] text-sm font-semibold transition ${loginMethod === value ? 'bg-[#262D44] text-[#F3F1EC]' : 'text-[#A6ADBD] hover:text-white'}`}
+                    className={`h-10 rounded-[9px] text-sm font-semibold transition ${loginMethod === value ? 'bg-[color:var(--auth-raised,#262D44)] text-[#F3F1EC]' : 'text-[color:var(--auth-muted,#A6ADBD)] hover:text-white'}`}
                   >
                     {label}
                   </button>
@@ -604,12 +604,12 @@ export default function LoginPage() {
             )}
           />
 
-          <label className="flex cursor-pointer select-none items-center gap-2.5 text-sm text-[#D5D9E2]">
+          <label className="flex cursor-pointer select-none items-center gap-2.5 text-sm text-[color:var(--auth-soft,#D5D9E2)]">
             <input
               type="checkbox"
               checked={form.remember}
               onChange={(e) => setForm({ ...form, remember: e.target.checked })}
-              className="h-[18px] w-[18px] accent-[var(--primary)]"
+              className="h-[18px] w-[18px] accent-[var(--auth-accent,var(--primary))]"
             />
             Keep me signed in on this device
           </label>
@@ -620,8 +620,8 @@ export default function LoginPage() {
             {loading ? 'Signing in…' : (greeting && companyName ? `Continue to ${companyName}` : 'Sign in')}
           </button>
 
-          <div className="flex items-center gap-3 text-xs text-[#7C8497]" aria-hidden="true">
-            <span className="h-px flex-1 bg-[#262D44]" />or<span className="h-px flex-1 bg-[#262D44]" />
+          <div className="flex items-center gap-3 text-xs text-[color:var(--auth-faint,#7C8497)]" aria-hidden="true">
+            <span className="h-px flex-1 bg-[color:var(--auth-raised,#262D44)]" />or<span className="h-px flex-1 bg-[color:var(--auth-raised,#262D44)]" />
           </div>
 
           {/* Inside the iOS app only — Apple requires it beside Google there. */}
@@ -694,10 +694,10 @@ export default function LoginPage() {
                 type="button"
                 disabled={loading || Boolean(blocked)}
                 onClick={() => chooseCompany(entry.company_id)}
-                className="w-full rounded-2xl border border-[#2B3350] bg-[#161B2C] px-4 py-3.5 text-left transition hover:border-[color:var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
+                className="w-full rounded-2xl border border-[color:var(--auth-border,#2B3350)] bg-[color:var(--auth-field,#161B2C)] px-4 py-3.5 text-left transition hover:border-[color:var(--auth-accent,var(--primary))] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <span className="block text-sm font-semibold">{entry.company_name}</span>
-                <span className="mt-0.5 block text-xs text-[#A6ADBD]">
+                <span className="mt-0.5 block text-xs text-[color:var(--auth-muted,#A6ADBD)]">
                   {blocked || `Signed in as ${entry.type}`}
                 </span>
               </button>
@@ -735,13 +735,13 @@ export default function LoginPage() {
       {/* Forced 2FA setup — QR code step */}
       {authStep === '2fa-setup' && (
         <div className="space-y-4">
-          {loading && <p className="text-sm text-[#A6ADBD]">Generating QR code…</p>}
+          {loading && <p className="text-sm text-[color:var(--auth-muted,#A6ADBD)]">Generating QR code…</p>}
           {!loading && setupData && (
             <>
               <div className="flex justify-center">
                 <img src={setupData.qrCodeUrl} alt="2FA QR code" className="h-44 w-44 rounded-xl bg-white p-2" />
               </div>
-              <p className="text-center text-xs text-[#A6ADBD]">
+              <p className="text-center text-xs text-[color:var(--auth-muted,#A6ADBD)]">
                 Can’t scan? Use code: <span className="font-mono text-[#F3F1EC]">{setupData.secret}</span>
               </p>
               {errorLine}
@@ -795,7 +795,7 @@ export default function LoginPage() {
             : <>New{companyName ? ` to ${companyName}` : ' here'}? <Link to={registerHref} className="font-bold text-[#E9D8C4] hover:underline">Create an account</Link></>}
         </p>
       )}
-      <p className="text-center text-xs text-[#7C8497]">
+      <p className="text-center text-xs text-[color:var(--auth-faint,#7C8497)]">
         Secure &amp; encrypted · © {new Date().getFullYear()}{app_name ? ` ${app_name}` : ''}
       </p>
     </>
@@ -810,7 +810,7 @@ export default function LoginPage() {
         mobileTop={(
           <div className="relative h-64 sm:h-96">
             <ShowcasePanel properties={properties} compact />
-            <div className="absolute left-3 top-3 z-20 max-w-[60%] rounded-lg bg-[rgba(14,18,32,0.7)] py-1 pl-1 pr-2.5">
+            <div className="absolute left-3 top-3 z-20 max-w-[60%] rounded-lg bg-[rgba(var(--auth-bg-rgb,14,18,32),0.7)] py-1 pl-1 pr-2.5">
               <AuthBrand small company={company || (greeting?.company_name ? { name: greeting.company_name } : null)} />
             </div>
           </div>
@@ -834,7 +834,7 @@ export default function LoginPage() {
               <div key={step} className="flex items-center gap-2 flex-1">
                 <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0
                   ${done ? 'bg-green-500 text-white' : active ? 'text-white' : 'bg-slate-200 text-slate-500'}`}
-                  style={active ? { backgroundColor: 'var(--primary)' } : undefined}>
+                  style={active ? { backgroundColor: 'var(--auth-accent,var(--primary))' } : undefined}>
                   {done ? '✓' : i + 1}
                 </div>
                 <span className={`text-xs ${active ? 'font-semibold text-slate-800' : 'text-slate-400'}`}>
@@ -871,7 +871,7 @@ export default function LoginPage() {
                 type="submit"
                 disabled={forgotLoading}
                 className="flex-1 h-10 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-                style={{ backgroundColor: `var(--primary)` }}
+                style={{ backgroundColor: `var(--auth-accent,var(--primary))` }}
               >
                 {forgotLoading ? 'Sending…' : 'Send OTP'}
               </button>
@@ -902,7 +902,7 @@ export default function LoginPage() {
                 type="submit"
                 disabled={forgotLoading || forgotForm.otp.length !== 6}
                 className="flex-1 h-10 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-                style={{ backgroundColor: `var(--primary)` }}
+                style={{ backgroundColor: `var(--auth-accent,var(--primary))` }}
               >
                 {forgotLoading ? 'Verifying…' : 'Verify code'}
               </button>
@@ -983,7 +983,7 @@ export default function LoginPage() {
                 type="submit"
                 disabled={forgotLoading || forgotStep === 'done'}
                 className="flex-1 h-10 rounded-lg text-sm font-medium text-white disabled:opacity-60"
-                style={{ backgroundColor: `var(--primary)` }}
+                style={{ backgroundColor: `var(--auth-accent,var(--primary))` }}
               >
                 {forgotLoading ? 'Saving…' : 'Set new password'}
               </button>

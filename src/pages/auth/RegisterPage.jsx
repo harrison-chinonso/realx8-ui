@@ -298,7 +298,7 @@ export default function RegisterPage() {
 
   const progress = (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3 text-xs text-[#A6ADBD]">
+      <div className="flex items-center justify-between gap-3 text-xs text-[color:var(--auth-muted,#A6ADBD)]">
         {step === 'details' ? (
           <button type="button" onClick={() => { setStep('company'); setError(''); }} className="-ml-1 flex items-center gap-1.5 py-2 font-semibold text-[#E9D8C4]">
             <ArrowLeft size={16} aria-hidden="true" /> Back
@@ -307,8 +307,8 @@ export default function RegisterPage() {
         <span>Step {step === 'company' ? 1 : 2} of 2{step === 'details' && companyName ? ` · ${form.role === 'realtor' ? 'Selling' : 'Buying'} with ${companyName}` : ''}</span>
       </div>
       <div className="grid grid-cols-2 gap-1.5" aria-hidden="true">
-        <span className="h-1 rounded-full bg-primary" />
-        <span className={`h-1 rounded-full ${step === 'details' ? 'bg-primary' : 'bg-[#262D44]'}`} />
+        <span className="h-1 rounded-full bg-[color:var(--auth-accent,var(--primary))]" />
+        <span className={`h-1 rounded-full ${step === 'details' ? 'bg-[color:var(--auth-accent,var(--primary))]' : 'bg-[color:var(--auth-raised,#262D44)]'}`} />
       </div>
     </div>
   );
@@ -328,7 +328,7 @@ export default function RegisterPage() {
       {isCompanyCodeLocked ? (
         <div className="flex items-start gap-3 rounded-2xl bg-emerald-500/10 px-4 py-3.5 ring-1 ring-emerald-400/40">
           <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-emerald-300" aria-hidden="true" />
-          <p className="text-sm text-[#D5D9E2]">
+          <p className="text-sm text-[color:var(--auth-soft,#D5D9E2)]">
             You&apos;re joining <strong className="text-[#F3F1EC]">{companyName || 'the company that shared this link'}</strong>
             {isRealtorLinked && (
               <>, invited by <strong className="text-[#F3F1EC]">{referralRealtorName || referringRealtorCode || referralRealtorCode}</strong></>
@@ -362,9 +362,9 @@ export default function RegisterPage() {
                 No company uses <strong>{lookupCode}</strong>. Check the code, or ask your realtor for their invite link, which fills this in for you.
               </p>
             )}
-            {lookup.status === 'loading' && <p className="text-xs text-[#A6ADBD]">Checking the code…</p>}
+            {lookup.status === 'loading' && <p className="text-xs text-[color:var(--auth-muted,#A6ADBD)]">Checking the code…</p>}
             {lookup.status === 'idle' && (
-              <p className="text-xs text-[#A6ADBD]">No code? Ask your company or realtor for an invite link — it fills this in for you.</p>
+              <p className="text-xs text-[color:var(--auth-muted,#A6ADBD)]">No code? Ask your company or realtor for an invite link — it fills this in for you.</p>
             )}
           </div>
         </div>
@@ -374,7 +374,7 @@ export default function RegisterPage() {
         <h1 className="text-xl font-semibold leading-tight">
           How will you use {companyName || app_name || 'your account'}?
         </h1>
-        <p className="text-sm text-[#A6ADBD]">You can add the other profile later from your account.</p>
+        <p className="text-sm text-[color:var(--auth-muted,#A6ADBD)]">You can add the other profile later from your account.</p>
       </div>
 
       <div role="radiogroup" aria-label="Account type" className="space-y-3">
@@ -389,17 +389,17 @@ export default function RegisterPage() {
               role="radio"
               aria-checked={selected}
               onClick={() => setForm({ ...form, role: option.value })}
-              className={`flex w-full items-start gap-3.5 rounded-2xl border-2 p-4 text-left transition ${selected ? 'border-[color:var(--primary)] bg-[#161B2C]' : 'border-[#2B3350] hover:border-[#3B4566]'}`}
+              className={`flex w-full items-start gap-3.5 rounded-2xl border-2 p-4 text-left transition ${selected ? 'border-[color:var(--auth-accent,var(--primary))] bg-[color:var(--auth-field,#161B2C)]' : 'border-[color:var(--auth-border,#2B3350)] hover:border-[color:var(--auth-border,#3B4566)]'}`}
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#262D44]">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[color:var(--auth-raised,#262D44)]">
                 <Icon size={20} aria-hidden="true" />
               </span>
               <span className="flex flex-1 flex-col gap-1">
                 <span className="text-base font-bold">{copy.title}</span>
-                {copy.body && <span className="text-sm leading-relaxed text-[#A6ADBD]">{copy.body}</span>}
+                {copy.body && <span className="text-sm leading-relaxed text-[color:var(--auth-muted,#A6ADBD)]">{copy.body}</span>}
                 {selected && copy.note && <span className="mt-1 text-xs text-amber-300">{copy.note}</span>}
               </span>
-              <span className={`mt-1 h-5 w-5 shrink-0 rounded-full ${selected ? 'border-[6px] border-[color:var(--primary)]' : 'border-2 border-[#56607A]'}`} aria-hidden="true" />
+              <span className={`mt-1 h-5 w-5 shrink-0 rounded-full ${selected ? 'border-[6px] border-[color:var(--auth-accent,var(--primary))]' : 'border-2 border-[color:var(--auth-faint,#56607A)]'}`} aria-hidden="true" />
             </button>
           );
         })}
@@ -417,7 +417,7 @@ export default function RegisterPage() {
       <div className="space-y-2">
         <h1 className="text-xl font-semibold leading-tight">Create your account</h1>
         {buyingNow && (
-          <p className="text-sm text-[#A6ADBD]">
+          <p className="text-sm text-[color:var(--auth-muted,#A6ADBD)]">
             You&apos;ll be signed in straight away and taken back to choose your unit
             {companyName ? ` with ${companyName}` : ''}.
           </p>
@@ -479,7 +479,7 @@ export default function RegisterPage() {
       />
 
       {terms && (
-        <div className="rounded-2xl border border-[#2B3350] bg-[#161B2C] p-4">
+        <div className="rounded-2xl border border-[color:var(--auth-border,#2B3350)] bg-[color:var(--auth-field,#161B2C)] p-4">
           <TermsConsent value={consent} onChange={setConsent} onRead={setReading} tone="dark" disabled={loading} />
         </div>
       )}
@@ -541,8 +541,8 @@ export default function RegisterPage() {
     <AsidePanel kicker={roleCopy.aside.kicker} title={roleCopy.aside.title}>
       <ul className="space-y-3">
         {roleCopy.aside.points.map((point) => (
-          <li key={point} className="flex items-center gap-3 rounded-2xl bg-[rgba(14,18,32,0.7)] px-4 py-3.5 text-sm text-[#D5D9E2]">
-            <CheckCircle2 size={18} className="shrink-0 text-[color:var(--primary)]" aria-hidden="true" /> {point}
+          <li key={point} className="flex items-center gap-3 rounded-2xl bg-[rgba(var(--auth-bg-rgb,14,18,32),0.7)] px-4 py-3.5 text-sm text-[color:var(--auth-soft,#D5D9E2)]">
+            <CheckCircle2 size={18} className="shrink-0 text-[color:var(--auth-accent,var(--primary))]" aria-hidden="true" /> {point}
           </li>
         ))}
       </ul>
@@ -551,11 +551,11 @@ export default function RegisterPage() {
     <AsidePanel kicker="What happens next">
       <ol className="space-y-3">
         {NEXT_STEPS.map(([title, body], index) => (
-          <li key={title} className="flex gap-3.5 rounded-2xl bg-[rgba(14,18,32,0.7)] p-4">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold" style={primaryInk}>{index + 1}</span>
+          <li key={title} className="flex gap-3.5 rounded-2xl bg-[rgba(var(--auth-bg-rgb,14,18,32),0.7)] p-4">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[color:var(--auth-accent,var(--primary))] text-sm font-bold" style={primaryInk}>{index + 1}</span>
             <span className="flex flex-col gap-1">
               <strong className="text-sm">{title}</strong>
-              <span className="text-sm text-[#A6ADBD]">{body}</span>
+              <span className="text-sm text-[color:var(--auth-muted,#A6ADBD)]">{body}</span>
             </span>
           </li>
         ))}
@@ -580,7 +580,7 @@ export default function RegisterPage() {
               Sign in{buyingNow ? ' to buy' : ''}
             </Link>
           </p>
-          <p className="text-center text-xs text-[#7C8497]">
+          <p className="text-center text-xs text-[color:var(--auth-faint,#7C8497)]">
             Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Platform'}
           </p>
         </>

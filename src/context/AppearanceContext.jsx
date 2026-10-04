@@ -3,7 +3,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import client from '../api/client';
 import { fetchPlatformName } from '../api/userApi';
 import { FONT_CATALOGUE, fontStack } from '../config/fonts';
-import { brightenForDark, readableOn, readableTextOn } from '../utils/colorUtils';
+import {
+  AUTH_SURFACE_VARS, authSurfaceTokens, brightenForDark, readableOn, readableTextOn,
+} from '../utils/colorUtils';
 import { AppearanceContext } from './appearanceContextRef';
 import useAuthStore from '../store/authStore';
 import { preferredCompanyId, readTheme, saveTheme } from '../lib/themeCache';
@@ -107,6 +109,17 @@ function applyTheme({ primary_color, secondary_color, dark_primary_color, dark_s
   const pageBg = isDark ? '#0b1220' : '#ffffff';
   setVar('--secondary-ink', readableTextOn(sec));
   setVar('--secondary-read', readableOn(sec, pageBg));
+
+  /*
+   * The sign-in screens' surface, in the company's own hue (authSurfaceTokens).
+   * Derived from the brand colour itself, not the mode's effective one: the
+   * sign-in page is dark in both modes, and its accent is chosen for that.
+   * Cleared when there is no brand colour, so one company's green never
+   * lingers on the next company's page.
+   */
+  const authTokens = authSurfaceTokens(primary_color, dark_primary_color);
+  if (authTokens) Object.entries(authTokens).forEach(([name, value]) => setVar(name, value));
+  else AUTH_SURFACE_VARS.forEach((name) => root.style.removeProperty(name));
 
   const heading = font_heading || font_family || 'Tomato Grotesk';
   const body    = font_body    || font_family || 'Inter';
