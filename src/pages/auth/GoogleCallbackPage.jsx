@@ -9,6 +9,13 @@ export default function GoogleCallbackPage() {
   const [message, setMessage] = useState('Signing you in with Google...');
 
   useEffect(() => {
+    /*
+     * Inside the mobile app, back to the company's own sign-in page — its logo
+     * and colours — rather than the platform's. This page serves Google and
+     * Sign in with Apple alike.
+     */
+    const appCompany = typeof window !== 'undefined' ? window.Realx8Native?.tenant : null;
+    const loginPath = appCompany ? `/login/${encodeURIComponent(appCompany)}` : '/login';
     const token = params.get('token');
     const refreshToken = params.get('refreshToken');
     const userParam = params.get('user');
@@ -26,7 +33,7 @@ export default function GoogleCallbackPage() {
        */
       const detail = params.get('message');
       navigate(
-        `/login?error=${encodeURIComponent(error)}${detail ? `&message=${encodeURIComponent(detail)}` : ''}`,
+        `${loginPath}?error=${encodeURIComponent(error)}${detail ? `&message=${encodeURIComponent(detail)}` : ''}`,
         { replace: true },
       );
       return;
@@ -46,7 +53,7 @@ export default function GoogleCallbackPage() {
       const companies = params.get('companies') || '[]';
       setMessage('Choose a company to continue…');
       navigate(
-        `/login?company_token=${encodeURIComponent(companyToken)}&companies=${encodeURIComponent(companies)}`,
+        `${loginPath}?company_token=${encodeURIComponent(companyToken)}&companies=${encodeURIComponent(companies)}`,
         { replace: true },
       );
       return;
@@ -62,7 +69,7 @@ export default function GoogleCallbackPage() {
     const pendingToken = params.get('temp_token');
     if (pendingToken && (params.get('requires_2fa') || params.get('requires_2fa_setup'))) {
       setMessage('One more step — your authentication code…');
-      navigate('/login', {
+      navigate(loginPath, {
         replace: true,
         state: {
           pendingTwoFactor: {
@@ -75,8 +82,8 @@ export default function GoogleCallbackPage() {
     }
 
     if (!token || !refreshToken || !userParam) {
-      setMessage('Google sign-in response is incomplete. Redirecting…');
-      navigate('/login?error=google_auth_failed', { replace: true });
+      setMessage('The sign-in response is incomplete. Redirecting…');
+      navigate(`${loginPath}?error=google_auth_failed`, { replace: true });
       return;
     }
 
@@ -89,10 +96,11 @@ export default function GoogleCallbackPage() {
        * that property, not on a dashboard they then have to navigate out of.
        */
       const redirect = params.get('redirect');
-      navigate(redirect && redirect.startsWith('/') ? redirect : '/', { replace: true });
+      // A path on this site only: '//host' is another site, not a path.
+      navigate(redirect && /^\/(?![/\\])/.test(redirect) ? redirect : '/', { replace: true });
     } catch (err) {
-      setMessage(`Google sign-in failed: ${err.message}`);
-      navigate('/login?error=google_auth_failed', { replace: true });
+      setMessage(`Sign-in failed: ${err.message}`);
+      navigate(`${loginPath}?error=google_auth_failed`, { replace: true });
     }
   }, [navigate, params, setSession]);
 

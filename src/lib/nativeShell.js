@@ -29,13 +29,25 @@ export const canSignInWithApple = () => {
  * the same page Google's sign-in ends on, so every outcome is handled there.
  * The codes decide which company a NEW account joins, as for Google.
  */
-export const startAppleSignIn = ({ companyCode = null, realtorCode = null } = {}) => {
+export const startAppleSignIn = ({ companyCode = null, realtorCode = null, redirect = null } = {}) => {
   const native = typeof window !== 'undefined' ? window.Realx8Native : null;
   native?.postMessage({
     type: 'auth.appleSignIn',
     payload: {
       ...(companyCode ? { company_code: String(companyCode).toUpperCase() } : {}),
       ...(realtorCode ? { realtor_code: String(realtorCode).toUpperCase() } : {}),
+      // Where to land afterwards — the server keeps it only if it is a path on this site.
+      ...(redirect ? { redirect } : {}),
     },
   });
+};
+
+/**
+ * Whether a company has switched an app feature off (Settings → Mobile app).
+ * The shell passes the company's `mobile.features`; anything not listed is on.
+ * Always false in a browser — these switches only shape the app.
+ */
+export const appFeatureOff = (name) => {
+  const native = typeof window !== 'undefined' ? window.Realx8Native : null;
+  return native?.features?.[name] === false;
 };

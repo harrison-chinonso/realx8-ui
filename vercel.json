@@ -1,7 +1,15 @@
 {
   "rewrites": [
     {
-      "source": "/((?!assets/|sw\\.js|manifest\\.webmanifest|robots\\.txt|favicon\\.ico|favicon\\.svg|favicon-32\\.png|apple-touch-icon\\.png).*)",
+      "source": "/.well-known/apple-app-site-association",
+      "destination": "https://realx8-core.onrender.com/api/public/app-links/apple-app-site-association"
+    },
+    {
+      "source": "/.well-known/assetlinks.json",
+      "destination": "https://realx8-core.onrender.com/api/public/app-links/assetlinks.json"
+    },
+    {
+      "source": "/((?!assets/|\\.well-known/|sw\\.js|manifest\\.webmanifest|robots\\.txt|favicon\\.ico|favicon\\.svg|favicon-32\\.png|apple-touch-icon\\.png).*)",
       "destination": "/index.html"
     }
   ],

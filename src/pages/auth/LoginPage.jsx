@@ -9,6 +9,7 @@ import useAuthStore from '../../store/authStore';
 import { useAppearance } from '../../context/useAppearance';
 import { googleAuthUrl, codesFromLocation } from '../../utils/googleAuthUrl';
 import AppleSignInButton from '../../components/auth/AppleSignInButton';
+import { appFeatureOff } from '../../lib/nativeShell';
 import FieldMark from '../../components/ui/FieldMark';
 import { PASSWORD_HINT } from '../../constants/password';
 import Select from '../../components/ui/Select';
@@ -511,6 +512,8 @@ export default function LoginPage() {
     : companyName ? `Sign in to your ${companyName} account.`
     : 'Sign in to your account to continue.';
 
+  // A company can switch Google off inside its mobile app (Settings → Mobile app); browsers always offer it.
+  const showGoogle = !appFeatureOff('googleLogin');
   const googleHref = googleAuthUrl({
     ...codesFromLocation(),
     ...(company?.code || linkCode ? { companyCode: company?.code || linkCode } : {}),
@@ -625,13 +628,16 @@ export default function LoginPage() {
           <AppleSignInButton
             companyCode={company?.code || linkCode || codesFromLocation().companyCode}
             realtorCode={codesFromLocation().realtorCode}
+            redirect={searchParams.get('redirect')}
           />
 
-          <div className="grid grid-cols-2 gap-2.5">
-            <a href={googleHref} className={ghostButton}>
-              <GoogleIcon />
-              Google
-            </a>
+          <div className={`grid gap-2.5 ${showGoogle ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {showGoogle && (
+              <a href={googleHref} className={ghostButton}>
+                <GoogleIcon />
+                Google
+              </a>
+            )}
             <button type="button" onClick={() => { setError(''); setAuthStep('passcode'); }} className={ghostButton}>
               <Lock size={16} aria-hidden="true" />
               Passcode

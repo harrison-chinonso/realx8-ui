@@ -11,13 +11,13 @@ import { canSignInWithApple, startAppleSignIn } from '../../lib/nativeShell';
  * on the Terms first, exactly as it does for Google).
  */
 export default function AppleSignInButton({
-  companyCode = null, realtorCode = null, label = 'Sign in with Apple', beforeStart, disabled = false,
+  companyCode = null, realtorCode = null, redirect = null, label = 'Sign in with Apple', beforeStart, disabled = false,
 }) {
   if (!canSignInWithApple()) return null;
 
   const start = () => {
     if (beforeStart && beforeStart() === false) return;
-    startAppleSignIn({ companyCode, realtorCode });
+    startAppleSignIn({ companyCode, realtorCode, redirect });
   };
 
   return (
