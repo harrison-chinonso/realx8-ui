@@ -1,3 +1,5 @@
+import { getDeviceId } from './deviceId';
+
 /**
  * The company a white-label Realx8-Mobile app is locked to, or null.
  *
@@ -38,6 +40,9 @@ export const startAppleSignIn = ({ companyCode = null, realtorCode = null, redir
       ...(realtorCode ? { realtor_code: String(realtorCode).toUpperCase() } : {}),
       // Where to land afterwards — the server keeps it only if it is a path on this site.
       ...(redirect ? { redirect } : {}),
+      // This device, for the one-device sign-in rule; the shell forwards it to
+      // /auth/apple/native as `device_id`.
+      device_id: getDeviceId(),
     },
   });
 };

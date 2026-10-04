@@ -1,4 +1,5 @@
 import { apiUrl } from '../api/apiBase';
+import { getDeviceId } from '../lib/deviceId';
 
 /**
  * Where "Continue with Google" should send somebody.
@@ -20,6 +21,8 @@ export const googleAuthUrl = ({ companyCode, realtorCode, redirect } = {}) => {
   if (companyCode) params.set('company_code', String(companyCode).toUpperCase());
   if (realtorCode) params.set('realtor_code', String(realtorCode).toUpperCase());
   if (redirect) params.set('redirect', redirect);
+  // Signed into the OAuth state, so the one-device rule knows this device.
+  params.set('device_id', getDeviceId());
 
   const query = params.toString();
   return query ? `${apiUrl('/auth/google')}?${query}` : apiUrl('/auth/google');
