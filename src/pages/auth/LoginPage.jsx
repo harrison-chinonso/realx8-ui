@@ -790,7 +790,7 @@ export default function LoginPage() {
         </p>
       )}
       <p className="text-center text-xs text-[#7C8497]">
-        Secure &amp; encrypted · © {new Date().getFullYear()} {app_name || 'Realx8'}
+        Secure &amp; encrypted · © {new Date().getFullYear()}{app_name ? ` ${app_name}` : ''}
       </p>
     </>
   );

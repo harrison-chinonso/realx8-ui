@@ -190,7 +190,7 @@ export function AuthBrand({ company, small = false }) {
   const mark = small ? 'h-7 w-7 rounded-md' : 'h-11 w-11 rounded-xl';
   const [logoFailed, setLogoFailed] = useState(false);
   const logo = company?.logo || app_logo;
-  const name = company?.name || app_name || 'RealX8';
+  const name = company?.name || app_name || '';
   if (!nameLoaded && !company) {
     return <span className={`inline-block animate-pulse rounded-xl bg-white/10 ${small ? 'h-7 w-24' : 'h-11 w-40'}`} aria-hidden="true" />;
   }
