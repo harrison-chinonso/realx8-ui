@@ -367,11 +367,13 @@ export function AuthShell({
     <div className="flex min-h-screen w-full bg-[color:var(--auth-bg,#0E1220)] font-body text-[#F3F1EC] lg:h-app lg:overflow-hidden">
       <main className={`flex w-full shrink-0 flex-col lg:overflow-y-auto ${wide ? 'lg:w-[560px]' : 'lg:w-[480px]'}`}>
         {mobileTop && <div className="flex min-h-64 flex-1 flex-col sm:min-h-96 lg:hidden">{mobileTop}</div>}
-        <div className={`relative flex w-full ${mobileTop ? 'lg:flex-1' : 'flex-1'} flex-col gap-7 bg-[color:var(--auth-bg,#0E1220)] px-5 pb-8 pt-6 sm:mx-auto sm:max-w-[560px] sm:px-10 lg:mx-0 lg:max-w-none lg:px-14 lg:pt-10 ${mobileTop ? '-mt-4 rounded-t-[20px] lg:mt-0 lg:rounded-none' : ''}`}>
+        <div className={`relative flex w-full ${mobileTop ? 'lg:flex-1' : 'flex-1'} flex-col gap-7 bg-[color:var(--auth-bg,#0E1220)] px-5 pb-8 ${mobileTop ? 'pt-3' : 'pt-6'} sm:mx-auto sm:max-w-[560px] sm:px-10 lg:mx-0 lg:max-w-none lg:px-14 lg:pt-10 ${mobileTop ? '-mt-4 rounded-t-[20px] lg:mt-0 lg:rounded-none' : ''}`}>
           {/* The name on the left, an action (Get help) opposite it. With a
               photo strip on a phone the name is on the strip, so the action
               keeps the row to itself, still on the right. */}
-          <div className="flex items-center justify-between gap-3">
+          {/* Under a photo strip the row holds only the icons, so it sits close to the
+              heading (the -mb pulls the section gap in) instead of a band of its own. */}
+          <div className={`flex items-center justify-between gap-3 ${mobileTop ? '-mb-4 lg:mb-0' : ''}`}>
             <div className={`min-w-0 ${mobileTop ? 'hidden lg:block' : ''}`}>{brand}</div>
             {headerAction && <div className="ml-auto shrink-0">{headerAction}</div>}
           </div>
