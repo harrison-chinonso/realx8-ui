@@ -6,10 +6,13 @@ import { FEATURES } from '../content/features.js';
 
 const ICONS = { BookOpen, Building2, CreditCard, LifeBuoy, Megaphone, PiggyBank, ShieldCheck, TrendingUp, UserRound, Users };
 
-/** A screenshot from the app (public/screens), framed. */
-const Shot = ({ src, alt, light = false }) => (
-  <figure className={`shot${light ? ' shot-light' : ''}`} style={{ margin: 0 }}>
-    <img src={src} alt={alt} loading="lazy" width="1440" height="900" />
+/**
+ * A screenshot from the app (public/screens), framed. Taken from a demo
+ * company with fictional people and properties (Realx8-Core scripts/seed-demo.js).
+ */
+const Shot = ({ src, alt, light = false, phone = false, eager = false }) => (
+  <figure className={`shot${light ? ' shot-light' : ''}${phone ? ' shot-phone' : ''}`} style={{ margin: 0 }}>
+    <img src={src} alt={alt} loading={eager ? 'eager' : 'lazy'} width={phone ? 560 : 1600} height={phone ? 1212 : 1000} />
   </figure>
 );
 
@@ -27,7 +30,7 @@ export default function Home({ onAsk }) {
               <button type="button" className="btn btn-ghost" onClick={onAsk}>Ask a question</button>
             </div>
           </div>
-          <Shot src="/screens/dashboard.png" alt="The Realx8 dashboard: sales, invoices due and payments to approve" />
+          <Shot eager src="/screens/dashboard.webp" alt="The Realx8 dashboard: invoiced, collected and outstanding amounts, overdue invoices and counts of clients, properties and realtors" />
         </div>
       </section>
 
@@ -55,6 +58,19 @@ export default function Home({ onAsk }) {
       <section className="section section-sand">
         <div className="wrap">
           <div className="showcase">
+            <Shot light src="/screens/properties.webp" alt="Property listings with photos, unit availability and starting prices" />
+            <div className="stack" style={{ gap: 14 }}>
+              <span className="eyebrow">Properties</span>
+              <h2 className="h2">Every estate, unit and price in one place</h2>
+              <p className="lead">List estates with their unit configurations, photos and documents, see what is available and what is held by payments, and share any property with a link that lets a buyer sign up and purchase.</p>
+              <ul className="ticks">
+                <li>Units, configurations and live availability</li>
+                <li>Inspections, promotions and offers</li>
+                <li>Share links in your company's colours</li>
+              </ul>
+            </div>
+          </div>
+          <div className="showcase">
             <div className="stack" style={{ gap: 14 }}>
               <span className="eyebrow">Realtor network</span>
               <h2 className="h2">Commission your realtors can see</h2>
@@ -65,10 +81,10 @@ export default function Home({ onAsk }) {
                 <li>A leaderboard and performance reports</li>
               </ul>
             </div>
-            <Shot light src="/screens/commissions.png" alt="Realtor commission records with pending and payable amounts" />
+            <Shot light src="/screens/commissions.webp" alt="A realtor's commission: accruing, available and paid amounts, and earnings by deal" />
           </div>
           <div className="showcase">
-            <Shot light src="/screens/payments.png" alt="An invoice with its instalment schedule and payments" />
+            <Shot light src="/screens/payments.webp" alt="An invoice on a 24-month instalment plan, with paid and upcoming instalments" />
             <div className="stack" style={{ gap: 14 }}>
               <span className="eyebrow">Payments</span>
               <h2 className="h2">Instalments without the spreadsheets</h2>
@@ -97,7 +113,7 @@ export default function Home({ onAsk }) {
               <li>Your help centre and contacts</li>
             </ul>
           </div>
-          <Shot src="/screens/client-portal.png" alt="A company's branded client portal on a phone" />
+          <Shot phone src="/screens/client-portal.webp" alt="The client portal on a phone: next payment due with a Pay now button, invoices and properties purchased" />
         </div>
       </section>
 
