@@ -18,7 +18,6 @@ function ScrollManager() {
 }
 
 export default function App() {
-  // The chat can be opened from anywhere on the page ("Ask a question").
   const [chatOpen, setChatOpen] = useState(false);
   const openChat = () => setChatOpen(true);
 
