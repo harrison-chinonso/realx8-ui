@@ -23,7 +23,7 @@ import {
   GraduationCap, Trophy, Megaphone, Award,
   UserRound, MessageSquare, Calendar, ThumbsUp,
   HelpCircle, Bell,
-  Globe, Building, ScrollText, Settings,
+  Globe, Building, ScrollText, Settings, Inbox,
 } from 'lucide-react';
 
 export const SUPERIOR_ADMIN_NAV = [
@@ -35,6 +35,7 @@ export const SUPERIOR_ADMIN_NAV = [
       { to: '/superior/users',     label: 'All Users',          icon: Users,    permission: null, superiorAdminOnly: true },
       { to: '/superior/legal',     label: 'Terms & Privacy',    icon: ScrollText, permission: null, superiorAdminOnly: true },
       { to: '/superior/legal/acceptances', label: 'Terms Acceptances', icon: FileEdit, permission: null, superiorAdminOnly: true },
+      { to: '/superior/website-requests', label: 'Website Requests', icon: Inbox, permission: null, superiorAdminOnly: true },
     ],
   },
 ];
