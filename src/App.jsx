@@ -14,6 +14,7 @@ import TermsPage from './pages/legal/TermsPage';
 import TermsGate from './components/legal/TermsGate';
 import LegalDocumentPage from './pages/superior/LegalDocumentPage';
 import TermsAcceptancesPage from './pages/superior/TermsAcceptancesPage';
+import WebsiteRequestsPage from './pages/superior/WebsiteRequestsPage';
 import GoogleCallbackPage from './pages/auth/GoogleCallbackPage';
 import PublicPropertyPage from './pages/public/PublicPropertyPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -303,6 +304,7 @@ export default function App() {
           <Route path="/superior/users" element={<UsersPage />} />
           <Route path="/superior/legal" element={<LegalDocumentPage />} />
           <Route path="/superior/legal/acceptances" element={<TermsAcceptancesPage />} />
+          <Route path="/superior/website-requests" element={<WebsiteRequestsPage />} />
           {/*
             The same Settings page every administrator gets, with a company
             picker on top.
