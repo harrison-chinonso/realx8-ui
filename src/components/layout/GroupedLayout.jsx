@@ -12,6 +12,7 @@ import { Menu, Bell, LogOut, User, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, isNavItemVisible, filterNavItems } from './navConfig';
 import CollapsibleSection from './CollapsibleSection';
 import useAuthStore from '../../store/authStore';
+import { useBillingEnabled } from '../../store/billingStore';
 import useNavBadgeStore from '../../store/navBadgeStore';
 import { useAppearance } from '../../context/useAppearance';
 import ProfileToggle from '../common/ProfileToggle';
@@ -22,6 +23,7 @@ import NavBadge from './NavBadge';
 function SidebarContent({ onNavigate }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const userType = useAuthStore((s) => s.effectiveType());
+  const billingEnabled = useBillingEnabled();
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -35,14 +37,14 @@ function SidebarContent({ onNavigate }) {
   // Dashboard (section: null)
   const topItems = allNav
     .filter((s) => !s.section)
-    .flatMap((s) => s.items.filter((i) => isNavItemVisible(i, { hasPermission, isSuperiorAdmin, userType })));
+    .flatMap((s) => s.items.filter((i) => isNavItemVisible(i, { hasPermission, isSuperiorAdmin, userType, billingEnabled })));
 
   // All sections in natural navConfig order — first 3 open, rest collapsed
   const allSections = allNav
     .filter((s) => s.section && s.section !== 'Account')
     .map((s) => ({
       ...s,
-      items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType }),
+      items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType, billingEnabled }),
     }))
     .filter((s) => s.items.length > 0)
     .map((s, idx) => ({ ...s, defaultOpen: idx < 3 }));
@@ -50,7 +52,7 @@ function SidebarContent({ onNavigate }) {
   // Account items
   const accountItems = allNav
     .filter((s) => s.section === 'Account')
-    .flatMap((s) => s.items.filter((i) => isNavItemVisible(i, { hasPermission, isSuperiorAdmin, userType })));
+    .flatMap((s) => s.items.filter((i) => isNavItemVisible(i, { hasPermission, isSuperiorAdmin, userType, billingEnabled })));
 
   const avatarBg = `hsl(${((user?.name || 'U').charCodeAt(0) * 37) % 360}, 55%, 45%)`;
 

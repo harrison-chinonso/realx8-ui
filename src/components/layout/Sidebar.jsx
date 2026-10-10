@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
+import { useBillingEnabled } from '../../store/billingStore';
 import { useAppearance } from '../../context/useAppearance';
 import { NAV, isNavItemVisible, filterNavItems } from './navConfig';
 import CollapsibleSection from './CollapsibleSection';
@@ -9,15 +10,16 @@ export default function Sidebar() {
   const hasPermission = useAuthStore((state) => state.hasPermission);
   const isSuperiorAdmin = useAuthStore((state) => state.isSuperiorAdmin);
   const userType = useAuthStore((state) => state.effectiveType());
+  const billingEnabled = useBillingEnabled();
   const { app_name, app_logo } = useAppearance();
 
   const topItems = NAV
     .filter((s) => !s.section)
-    .flatMap((s) => s.items.filter((i) => isNavItemVisible(i, { hasPermission, isSuperiorAdmin, userType })));
+    .flatMap((s) => s.items.filter((i) => isNavItemVisible(i, { hasPermission, isSuperiorAdmin, userType, billingEnabled })));
 
   const sections = NAV
     .filter((s) => s.section)
-    .map((s) => ({ ...s, items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType }) }))
+    .map((s) => ({ ...s, items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType, billingEnabled }) }))
     .filter((s) => s.items.length > 0)
     .map((s, idx) => ({ ...s, defaultOpen: idx < 3 }));
 

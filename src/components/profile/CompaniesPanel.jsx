@@ -128,7 +128,17 @@ export default function CompaniesPanel() {
             </p>
           </div>
 
-          {joined ? (
+          {joined?.held ? (
+            /* Queued behind the company's subscription: no Switch to offer yet. */
+            <div className="space-y-3">
+              <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-200" role="status">
+                {joined.message || 'Your account has been created and is waiting for that company to complete its setup. We’ll email you as soon as you can use it.'}
+              </p>
+              <Button type="button" variant="secondary" onClick={() => setJoined(null)}>
+                Join another
+              </Button>
+            </div>
+          ) : joined ? (
             <div className="space-y-3">
               <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 ring-1 ring-emerald-200">
                 Your account with <strong>{joined.company?.name}</strong> is open.

@@ -15,6 +15,9 @@ import TermsGate from './components/legal/TermsGate';
 import LegalDocumentPage from './pages/superior/LegalDocumentPage';
 import TermsAcceptancesPage from './pages/superior/TermsAcceptancesPage';
 import WebsiteRequestsPage from './pages/superior/WebsiteRequestsPage';
+import BillingSubscriptionsPage from './pages/superior/BillingSubscriptionsPage';
+import BillingPlansPage from './pages/superior/BillingPlansPage';
+import BillingPage from './pages/billing/BillingPage';
 import GoogleCallbackPage from './pages/auth/GoogleCallbackPage';
 import PublicPropertyPage from './pages/public/PublicPropertyPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -305,6 +308,8 @@ export default function App() {
           <Route path="/superior/legal" element={<LegalDocumentPage />} />
           <Route path="/superior/legal/acceptances" element={<TermsAcceptancesPage />} />
           <Route path="/superior/website-requests" element={<WebsiteRequestsPage />} />
+          <Route path="/superior/billing" element={<BillingSubscriptionsPage />} />
+          <Route path="/superior/billing/plans" element={<BillingPlansPage />} />
           {/*
             The same Settings page every administrator gets, with a company
             picker on top.
@@ -450,6 +455,13 @@ export default function App() {
           <Route path="/realtor/verification" element={<VerificationPage />} />
           <Route path="/users/verifications" element={<RealtorVerificationsPage />} />
 
+          {/*
+            Ungated here because the page gates itself: it needs the billing
+            status to decide, and sends anybody it is not for back to the
+            dashboard — including everyone, while billing is switched off.
+            Paystack returns the browser to this path with ?reference=.
+          */}
+          <Route path="/billing" element={<BillingPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsRouter />} />
         </Route>

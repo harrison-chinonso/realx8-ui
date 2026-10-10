@@ -159,6 +159,14 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   /*
+   * Set when the account was created but queued: the company's subscription
+   * is inactive or full. There is no session to start — the account cannot
+   * sign in until the company renews or upgrades — so this replaces the form
+   * with a confirmation rather than sending them to a dashboard they would be
+   * refused from.
+   */
+  const [held, setHeld] = useState(false);
+  /*
    * The Terms of Use and Privacy Policy, agreed to before the account exists.
    * null when nothing is published yet — then there is nothing to agree to and
    * the form works as before. `reading` is the part open in the reading pane.
@@ -268,6 +276,16 @@ export default function RegisterPage() {
           },
         } : {}),
       });
+      /*
+       * 202 { held: true }: created and waiting, with no tokens in the body.
+       * Checked before setSession, which would otherwise store an empty
+       * session and bounce them to the sign-in page with no explanation.
+       */
+      if (response?.held) {
+        clearReferralAttribution();
+        setHeld(true);
+        return;
+      }
       setSession(response);
       // The referral has done its job — an account now exists carrying it
       // server-side. Clearing storage stops it from being replayed onto a
@@ -563,6 +581,27 @@ export default function RegisterPage() {
     </AsidePanel>
   );
 
+  const signInPath = form.company_code && companyConfirmed ? `/login/${encodeURIComponent(form.company_code)}` : '/login';
+
+  if (held) {
+    return (
+      <AuthShell
+        brand={<AuthBrand company={lookup.company || (companyName ? { name: companyName } : null)} />}
+        headerAction={<AuthHeaderLinks helpTo="/help" />}
+      >
+        <div className="space-y-5" role="status">
+          <CheckCircle2 size={36} className="text-emerald-300" aria-hidden="true" />
+          <h1 className="text-xl font-bold">Your account has been created</h1>
+          <p className="text-sm text-[color:var(--auth-soft,#D5D9E2)]">
+            It is waiting for {companyName || 'the company'} to complete its setup. We&apos;ll email
+            you as soon as you can sign in.
+          </p>
+          <Link to={signInPath} className={primaryButton} style={primaryInk}>Back to sign in</Link>
+        </div>
+      </AuthShell>
+    );
+  }
+
   return (
     <AuthShell
       wide
@@ -574,7 +613,7 @@ export default function RegisterPage() {
           <p>
             Already have an account?{' '}
             <Link
-              to={`${form.company_code && companyConfirmed ? `/login/${encodeURIComponent(form.company_code)}` : '/login'}${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+              to={`${signInPath}${redirectTo ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
               className={linkClass}
             >
               Sign in{buyingNow ? ' to buy' : ''}

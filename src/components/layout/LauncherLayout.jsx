@@ -3,6 +3,7 @@ import { Link, NavLink } from 'react-router-dom';
 import { Bell, ChevronDown, Grid3x3, HelpCircle, LogOut, User } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
+import { useBillingEnabled } from '../../store/billingStore';
 import useNavBadgeStore from '../../store/navBadgeStore';
 import { useAppearance, useOnPrimary } from '../../context/useAppearance';
 import ProfileToggle from '../common/ProfileToggle';
@@ -40,6 +41,7 @@ export default function LauncherLayout({ children }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const userType = useAuthStore((s) => s.effectiveType());
+  const billingEnabled = useBillingEnabled();
   const { app_name, app_logo } = useAppearance();
   // The logo square and the avatar are filled with the PRIMARY colour, so
   // their ink comes from primary rather than from the bar underneath.
@@ -80,7 +82,7 @@ export default function LauncherLayout({ children }) {
     : NAV;
   const accountItems = activeNAV
     .filter((section) => section.section === 'Account')
-    .flatMap((section) => filterNavItems(section.items, { hasPermission, isSuperiorAdmin, userType }));
+    .flatMap((section) => filterNavItems(section.items, { hasPermission, isSuperiorAdmin, userType, billingEnabled }));
 
   const firstName = user?.name?.split(' ')[0];
 
