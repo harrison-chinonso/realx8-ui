@@ -123,6 +123,7 @@ const SETTING_GROUPS = [
     label: 'Help & support',
     fields: [
       { key: 'support_email', label: 'Support email', type: 'email', placeholder: 'support@yourcompany.com — blank uses the platform’s' },
+      { key: 'support_fraud_email', label: 'Fraud report email', type: 'email', placeholder: 'fraud@yourcompany.com — blank uses the support email' },
       { key: 'support_phone', label: 'Support phone (for calls)', type: 'text', placeholder: '+234 800 000 0000 — blank uses the platform’s' },
       { key: 'support_whatsapp', label: 'WhatsApp number', type: 'text', placeholder: '+234 800 000 0000 — blank uses the platform’s' },
       { key: 'support_hours', label: 'Support hours', type: 'text', placeholder: 'Mon–Fri, 9am–5pm WAT' },

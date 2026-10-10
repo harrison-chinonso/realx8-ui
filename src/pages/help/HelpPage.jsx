@@ -99,7 +99,9 @@ function Answer({ blocks, contacts, brandName }) {
           return (
             <div key={i} className="pt-1">
               <ContactOptions
-                contacts={contacts}
+                // Fraud reports go to their own address when one is set (Settings →
+                // Help & support → Fraud report email), else the support email.
+                contacts={block.contact === 'fraud' && contacts.fraud_email ? { ...contacts, email: contacts.fraud_email } : contacts}
                 compact
                 subject={block.contact === 'fraud' ? 'Report: fraud or suspicious activity' : `Help with ${brandName || 'my account'}`}
               />
