@@ -9,6 +9,7 @@ import { Menu, LogOut, User } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, isNavItemVisible, filterNavItems } from './navConfig';
 import CollapsibleSection from './CollapsibleSection';
 import useAuthStore from '../../store/authStore';
+import { useBillingEnabled } from '../../store/billingStore';
 import { useAppearance } from '../../context/useAppearance';
 import ProfileToggle from '../common/ProfileToggle';
 import CompanySwitcher from '../common/CompanySwitcher';
@@ -26,6 +27,7 @@ function usePageTitle() {
 function BoldSidebar({ open, onClose }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const userType = useAuthStore((s) => s.effectiveType());
+  const billingEnabled = useBillingEnabled();
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -74,13 +76,13 @@ function BoldSidebar({ open, onClose }) {
             // Dashboard (no section label) — always flat
             const topItems = allNav
               .filter((s) => !s.section)
-              .flatMap((s) => s.items.filter((i) => isNavItemVisible(i, { hasPermission, isSuperiorAdmin, userType })));
+              .flatMap((s) => s.items.filter((i) => isNavItemVisible(i, { hasPermission, isSuperiorAdmin, userType, billingEnabled })));
 
             const sections = allNav
               .filter((s) => s.section)
               .map((s) => ({
                 ...s,
-                items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType }),
+                items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType, billingEnabled }),
               }))
               .filter((s) => s.items.length > 0)
               .map((s, idx) => ({ ...s, defaultOpen: idx < 3 }));

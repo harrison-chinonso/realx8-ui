@@ -210,6 +210,10 @@ export default function LoginPage() {
       return 'That company code was not recognised. Check it with whoever sent you the link.';
     }
     if (code === 'company_suspended') return 'That company account is currently suspended.';
+    if (code === 'account_waiting') {
+      return 'Your account has been created and is waiting for your company to complete its setup. '
+        + 'We’ll email you as soon as you can sign in.';
+    }
     return 'Google sign-in failed. Please try again.';
   }, [location.search]);
 

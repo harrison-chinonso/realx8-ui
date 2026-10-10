@@ -7,6 +7,7 @@ import GroupedLayout from './GroupedLayout';
 import LauncherLayout from './LauncherLayout';
 import AssistantWidget from '../common/AssistantWidget';
 import { NavBadges } from './NavBadge';
+import BillingBanner from '../billing/BillingBanner';
 import usePinnedPage from '../../hooks/usePinnedPage';
 
 const TEMPLATES = {
@@ -31,7 +32,15 @@ export default function AppLayout({ children }) {
         Appearance settings cannot change whether badges work.
       */}
       <NavBadges />
-      <Layout>{children}</Layout>
+      {/*
+        Inside the template's content area rather than above it, so it sits
+        where the page starts on all six templates without each of them having
+        to know about it. It draws nothing while billing is switched off.
+      */}
+      <Layout>
+        <BillingBanner />
+        {children}
+      </Layout>
       <AssistantWidget />
     </>
   );

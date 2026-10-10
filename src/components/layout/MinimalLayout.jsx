@@ -8,6 +8,7 @@ import { NavLink } from 'react-router-dom';
 import { Menu, Bell, ChevronDown, ChevronLeft, User, LogOut, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
+import { useBillingEnabled } from '../../store/billingStore';
 import useNavBadgeStore from '../../store/navBadgeStore';
 import { useAppearance } from '../../context/useAppearance';
 import Button from '../ui/Button';
@@ -19,6 +20,7 @@ function MinimalSidebar({ expanded, onToggle, mobileOpen, onClose }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const userType = useAuthStore((s) => s.effectiveType());
+  const billingEnabled = useBillingEnabled();
   const { app_logo, app_name } = useAppearance();
   const allNav = isSuperiorAdmin
     ? [...SUPERIOR_ADMIN_NAV, ...NAV.map((s) => ({ ...s, items: s.items.filter((i) => !i.hideForSuperior) }))]
@@ -27,7 +29,7 @@ function MinimalSidebar({ expanded, onToggle, mobileOpen, onClose }) {
   // Sub-menus are flattened into the rail — an icon-only column has nowhere to
   // put a third level, so Invoicing's and Payments' children sit inline.
   const allItems = allNav.flatMap((s) =>
-    flattenNavItems(filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType })).map((item) => ({
+    flattenNavItems(filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType, billingEnabled })).map((item) => ({
       ...item,
       sectionLabel: s.section,
     }))
