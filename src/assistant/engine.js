@@ -1,5 +1,5 @@
-import { TOPICS, GREETING, GREETING_CHIPS, OFF_TOPIC } from './knowledge.js';
-import { PLANS, TRIAL_DAYS, planInterest } from '../content/plans.js';
+import { TOPICS, GREETING, GREETING_CHIPS, OFF_TOPIC, currentPlans } from './knowledge.js';
+import { TRIAL_DAYS, planInterest } from '../content/plans.js';
 
 /**
  * The website assistant's conversation, as a pure function:
@@ -75,7 +75,7 @@ const CANCEL_RE = /^\s*(cancel|stop|never ?mind|forget it|quit)\s*$/;
 const askStep = (flow, step) => FLOWS[flow][step].ask;
 
 /** "Start a trial on Professional" — the plan travels with the request, as on the form. */
-const mentionedPlan = (norm) => PLANS.find((p) => norm.includes(` ${p.name.toLowerCase()} `) || norm.includes(` ${p.code} `));
+const mentionedPlan = (norm) => currentPlans().find((p) => norm.includes(` ${p.name.toLowerCase()} `) || norm.includes(` ${p.code} `));
 
 const startFlow = (state, flow, { kind = null, said = '' } = {}) => {
   const data = {};
@@ -155,8 +155,11 @@ export const respond = (state, text) => {
   if (WANTS_ONBOARDING.test(lower)) return startFlow(state, 'onboarding', { said });
   if (WANTS_ENQUIRY.test(lower)) return startFlow(state, 'enquiry');
 
-  if (topic) {
-    return { state: { ...state, lastQuestion: null, offer: topic.offer || null }, replies: [topic.answer], chips: topic.chips || [] };
+  // A plan named on its own ("tell me about Growth") — including one added in the app — is a pricing question.
+  const answered = topic || (mentionedPlan(norm) ? TOPICS.find((t) => t.id === 'pricing') : null);
+  if (answered) {
+    const reply = typeof answered.answer === 'function' ? answered.answer() : answered.answer;
+    return { state: { ...state, lastQuestion: null, offer: answered.offer || null }, replies: [reply], chips: answered.chips || [] };
   }
 
   if (GREETING_RE.test(lower)) return { state, ...greet() };

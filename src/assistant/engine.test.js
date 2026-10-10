@@ -140,3 +140,19 @@ test('confirms with the reference, or explains a failure', () => {
   assert.match(afterSubmit({}, null, 'network error').replies[0], /could not send/);
   assert.match(afterSubmit({ kind: 'trial', company_name: 'X', email: 'a@b.co' }, 'RX-2026-0008').replies[0], /RX-2026-0008.*trial starts when your company is created/s);
 });
+
+test('a plan added in the app shows up in the answers once the site has fetched it', async () => {
+  const { setPlans } = await import('./knowledge.js');
+  const { PLANS } = await import('../content/plans.js');
+  setPlans([...PLANS, { code: 'growth-plus', name: 'Growth Plus', description: '', monthly_price: 60000, annual_price: 600000, currency: 'NGN', user_limit: 150, sort_order: 4, active: true }]);
+  try {
+    const pricing = respond(initialState(), 'How much does it cost?');
+    assert.match(pricing.replies[0], /Growth Plus — ₦60,000\/month or ₦600,000\/year · up to 150 users/);
+    const named = respond(initialState(), 'Tell me about Growth Plus');
+    assert.match(named.replies[0], /Growth Plus/);
+    const trial = talk(['start free trial on Growth Plus', 'Explorer Homes', 'Ada Obi', 'ada@explorer.test', '+234 801 234 5678', 'skip']);
+    assert.deepEqual(trial.submit.interests, ['Interested in the Growth Plus plan']);
+  } finally {
+    setPlans(PLANS);
+  }
+});
