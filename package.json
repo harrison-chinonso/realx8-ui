@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test src/assistant/"
+    "test": "node --test src/assistant/ src/content/"
   },
   "dependencies": {
     "lucide-react": "^1.24.0",
