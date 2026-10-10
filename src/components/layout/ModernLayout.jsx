@@ -11,6 +11,7 @@ import { NavLink } from 'react-router-dom';
 import { Menu, Bell, ChevronDown, User, LogOut, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
+import { useBillingEnabled } from '../../store/billingStore';
 import useNavBadgeStore from '../../store/navBadgeStore';
 import { useAppearance } from '../../context/useAppearance';
 import Button from '../ui/Button';
@@ -75,6 +76,7 @@ function TopNav({ onMobileMenuOpen }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const userType = useAuthStore((s) => s.effectiveType());
+  const billingEnabled = useBillingEnabled();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { app_name, app_logo } = useAppearance();
@@ -97,13 +99,13 @@ function TopNav({ onMobileMenuOpen }) {
   // Primary sections shown in nav bar
   const primarySections = activeNAV
     .filter((s) => s.section && isPrimarySection(s))
-    .map((s) => ({ ...s, items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType }) }))
+    .map((s) => ({ ...s, items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType, billingEnabled }) }))
     .filter((s) => s.items.length > 0);
 
   // Secondary sections collapsed into "More"
   const secondarySections = activeNAV
     .filter((s) => s.section && !isPrimarySection(s) && s.section !== 'Account')
-    .map((s) => ({ ...s, items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType }) }))
+    .map((s) => ({ ...s, items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType, billingEnabled }) }))
     .filter((s) => s.items.length > 0);
 
   /**
@@ -173,7 +175,7 @@ function TopNav({ onMobileMenuOpen }) {
   // Account section items for user dropdown (Profile always shown, Settings permission-gated)
   const accountItems = activeNAV
     .filter((s) => s.section === 'Account')
-    .flatMap((s) => filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType }));
+    .flatMap((s) => filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType, billingEnabled }));
 
   return (
     <header className="relative z-50 flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-4 shadow-sm" ref={menuRef}>
@@ -381,13 +383,14 @@ export default function ModernLayout({ children }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const userType = useAuthStore((s) => s.effectiveType());
+  const billingEnabled = useBillingEnabled();
   const allNav = isSuperiorAdmin
     ? [...SUPERIOR_ADMIN_NAV, ...NAV.map((s) => ({ ...s, items: s.items.filter((i) => !i.hideForSuperior) }))]
     : NAV;
 
   // All nav items for the mobile drawer
   const allSections = allNav
-    .map((s) => ({ ...s, items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType }) }))
+    .map((s) => ({ ...s, items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType, billingEnabled }) }))
     .filter((s) => s.items.length > 0);
 
   return (

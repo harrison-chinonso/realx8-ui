@@ -162,6 +162,22 @@ client.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    /**
+     * The company's subscription has lapsed: the write was refused, the
+     * session is fine.
+     *
+     * Answered before anything to do with tokens so nothing downstream mistakes
+     * it for an auth failure — signing somebody out because their company has
+     * not paid would take them away from the one screen that fixes it. The
+     * server's sentence says what is blocked and what to do, so it is passed
+     * through as-is.
+     */
+    if (error.response?.status === 402 && error.response?.data?.reason === 'billing_inactive') {
+      error.userMessage = error.response.data.message
+        || 'Your company’s subscription is inactive, so this action is unavailable.';
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && refreshToken && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {

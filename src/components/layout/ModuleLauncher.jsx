@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, filterNavItems, flattenNavItems } from './navConfig';
 import useAuthStore from '../../store/authStore';
+import { useBillingEnabled } from '../../store/billingStore';
 import { LAUNCHER_CSS } from './launcherStyles';
 import { DESCRIPTIONS, orderTiles } from './launcherGroups';
 import { rememberVisit, recentVisits } from './recentScreens';
@@ -58,12 +59,13 @@ const useSections = () => {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const userType = useAuthStore((s) => s.effectiveType());
+  const billingEnabled = useBillingEnabled();
 
   return useMemo(() => {
     const source = isSuperiorAdmin
       ? [...SUPERIOR_ADMIN_NAV, ...NAV.map((s) => ({ ...s, items: s.items.filter((i) => !i.hideForSuperior) }))]
       : NAV;
-    const ctx = { hasPermission, isSuperiorAdmin, userType };
+    const ctx = { hasPermission, isSuperiorAdmin, userType, billingEnabled };
 
     const sections = source
       .filter((section) => section.section !== 'Account')
@@ -84,7 +86,7 @@ const useSections = () => {
      * rather than a user-type test copied from the other templates.
      */
     return sections;
-  }, [hasPermission, isSuperiorAdmin, userType]);
+  }, [hasPermission, isSuperiorAdmin, userType, billingEnabled]);
 };
 
 /**

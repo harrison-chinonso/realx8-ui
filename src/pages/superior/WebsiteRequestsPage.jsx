@@ -25,6 +25,13 @@ const STATUS_STYLE = {
   onboarded: 'bg-emerald-100 text-emerald-800',
   closed: 'bg-slate-100 text-slate-600',
 };
+/*
+ * What the visitor asked for. 'trial' is the website's free-trial sign-up,
+ * which arrives here like the others so somebody can follow it up.
+ */
+const KIND_LABEL = { enquiry: 'Enquiry', onboarding: 'Onboarding', trial: 'Free trial' };
+const KIND_DETAIL = { enquiry: 'Enquiry', onboarding: 'Onboarding request', trial: 'Free trial' };
+const kindLabel = (kind) => KIND_LABEL[kind] || KIND_LABEL.onboarding;
 const label = (status) => STATUSES.find((s) => s.value === status)?.label || status;
 const formatStamp = (value) => (value ? new Date(value).toLocaleString('en-GB', {
   day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -142,7 +149,7 @@ export default function WebsiteRequestsPage() {
                   <span className="block text-xs text-slate-500">{r.contact_name} · {r.email}</span>
                 </td>
                 <td className="px-4 py-2.5">
-                  {r.kind === 'enquiry' ? 'Enquiry' : 'Onboarding'}
+                  {kindLabel(r.kind)}
                   <span className="block text-xs text-slate-500">{r.source === 'assistant' ? 'via assistant' : 'via form'}</span>
                 </td>
                 <td className="px-4 py-2.5">
@@ -170,7 +177,7 @@ export default function WebsiteRequestsPage() {
         {open && (
           <div className="space-y-4 text-sm">
             <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
-              <div><dt className="text-xs text-slate-500">Type</dt><dd>{open.kind === 'enquiry' ? 'Enquiry' : 'Onboarding request'} ({open.source === 'assistant' ? 'website assistant' : 'website form'})</dd></div>
+              <div><dt className="text-xs text-slate-500">Type</dt><dd>{KIND_DETAIL[open.kind] || KIND_DETAIL.onboarding} ({open.source === 'assistant' ? 'website assistant' : 'website form'})</dd></div>
               <div><dt className="text-xs text-slate-500">Received</dt><dd>{formatStamp(open.createdAt || open.created_at)}</dd></div>
               <div><dt className="text-xs text-slate-500">Company</dt><dd>{open.company_name || '—'}</dd></div>
               <div><dt className="text-xs text-slate-500">Contact</dt><dd>{open.contact_name}</dd></div>

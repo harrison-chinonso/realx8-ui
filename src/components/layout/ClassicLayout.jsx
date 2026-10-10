@@ -9,6 +9,7 @@ import { Menu, Bell, X } from 'lucide-react';
 import { NAV, SUPERIOR_ADMIN_NAV, isNavItemVisible, filterNavItems } from './navConfig';
 import CollapsibleSection from './CollapsibleSection';
 import useAuthStore from '../../store/authStore';
+import { useBillingEnabled } from '../../store/billingStore';
 import useNavBadgeStore from '../../store/navBadgeStore';
 import { readableOn } from '../../utils/colorUtils';
 import { useAppearance } from '../../context/useAppearance';
@@ -20,6 +21,7 @@ import NavBadge from './NavBadge';
 function ClassicSidebar({ open, onClose }) {
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const userType = useAuthStore((s) => s.effectiveType());
+  const billingEnabled = useBillingEnabled();
   const isSuperiorAdmin = useAuthStore((s) => s.isSuperiorAdmin);
   const { app_name, app_logo, secondary_color } = useAppearance();
   const allNav = isSuperiorAdmin
@@ -78,13 +80,13 @@ function ClassicSidebar({ open, onClose }) {
           {(() => {
             const topItems = allNav
               .filter((s) => !s.section)
-              .flatMap((s) => s.items.filter((i) => isNavItemVisible(i, { hasPermission, isSuperiorAdmin, userType })));
+              .flatMap((s) => s.items.filter((i) => isNavItemVisible(i, { hasPermission, isSuperiorAdmin, userType, billingEnabled })));
 
             const sections = allNav
               .filter((s) => s.section)
               .map((s) => ({
                 ...s,
-                items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType }),
+                items: filterNavItems(s.items, { hasPermission, isSuperiorAdmin, userType, billingEnabled }),
               }))
               .filter((s) => s.items.length > 0)
               .map((s, idx) => ({ ...s, defaultOpen: idx < 3 }));

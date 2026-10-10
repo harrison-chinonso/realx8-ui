@@ -235,6 +235,14 @@ const useAuthStore = create(
         const res = await joinCompanyApi({
           company_code: companyCode, role, realtor_code: realtorCode, password,
         });
+        /*
+         * 202 { held: true }: the account was opened but is queued behind
+         * that company's subscription, so there is nothing to add to the
+         * switcher yet. Returned as-is for the caller to say so.
+         */
+        if (res?.held || res?.data?.held) {
+          return { held: true, message: res.message || res.data?.message || null };
+        }
         const companies = res?.data?.companies;
         if (Array.isArray(companies)) set({ companies });
         return res?.data;

@@ -4,6 +4,8 @@
  * Items with `superiorAdminOnly: true` are only shown to superior_admin users.
  * Items with `hideForTypes: [...]` are hidden from those user types (e.g. realtors).
  * Items with `showForTypes: [...]` are shown ONLY to those user types.
+ * Items with `requiresBilling: true` are shown only while subscription billing is
+ * switched on for this session (store/billingStore — `billingEnabled` in ctx).
  * An item with `children: [...]` and no `to` is a sub-menu — a third level under
  * its section (Finance → Invoicing → All Invoices). Only one level of nesting is
  * supported; the visibility fields above apply to the child items.
@@ -23,7 +25,7 @@ import {
   GraduationCap, Trophy, Megaphone, Award,
   UserRound, MessageSquare, Calendar, ThumbsUp,
   HelpCircle, Bell,
-  Globe, Building, ScrollText, Settings, Inbox,
+  Globe, Building, ScrollText, Settings, Inbox, Wallet, Package,
 } from 'lucide-react';
 
 export const SUPERIOR_ADMIN_NAV = [
@@ -36,6 +38,13 @@ export const SUPERIOR_ADMIN_NAV = [
       { to: '/superior/legal',     label: 'Terms & Privacy',    icon: ScrollText, permission: null, superiorAdminOnly: true },
       { to: '/superior/legal/acceptances', label: 'Terms Acceptances', icon: FileEdit, permission: null, superiorAdminOnly: true },
       { to: '/superior/website-requests', label: 'Website Requests', icon: Inbox, permission: null, superiorAdminOnly: true },
+      /*
+       * Not gated on the billing flag, unlike the company admin's entry: plans
+       * are prepared before billing is switched on, and the subscriptions page
+       * says so itself when it is off.
+       */
+      { to: '/superior/billing',       label: 'Subscriptions', icon: Wallet,  permission: null, superiorAdminOnly: true },
+      { to: '/superior/billing/plans', label: 'Plans',         icon: Package, permission: null, superiorAdminOnly: true },
     ],
   },
 ];
@@ -472,6 +481,16 @@ export const NAV = [
        * ClassicLayout carried, which was the strictest of the six.
        */
       { to: '/settings', label: 'Settings', icon: Settings, permission: 'settings.appearance.manage', hideForTypes: ['realtor', 'client'] },
+      /*
+       * The company's own subscription. By account type rather than a
+       * permission: paying for the company is the owner's job, not something a
+       * role can be granted, and the server's checkout guard reads the same
+       * two types. Absent entirely while billing is switched off.
+       */
+      {
+        to: '/billing', label: 'Billing & Plan', icon: Wallet, permission: null,
+        showForTypes: ['super_admin', 'admin'], hideForSuperior: true, requiresBilling: true,
+      },
     ],
   },
 
@@ -534,8 +553,9 @@ export const NAV = [
  * templates cannot drift apart.
  */
 export const isNavItemVisible = (item, ctx) => {
-  const { hasPermission, isSuperiorAdmin = false, userType = null } = ctx;
+  const { hasPermission, isSuperiorAdmin = false, userType = null, billingEnabled = false } = ctx;
   if (item.superiorAdminOnly && !isSuperiorAdmin) return false;
+  if (item.requiresBilling && !billingEnabled) return false;
   if (item.hideForSuperior && isSuperiorAdmin) return false;
   if (userType && item.hideForTypes?.includes(userType)) return false;
   if (item.showForTypes && !item.showForTypes.includes(userType)) return false;
