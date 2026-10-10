@@ -3,6 +3,7 @@ import {
   BookOpen, Building2, CreditCard, LifeBuoy, Megaphone, PiggyBank, ShieldCheck, TrendingUp, UserRound, Users,
 } from 'lucide-react';
 import { FEATURES } from '../content/features.js';
+import { TRIAL_DAYS } from '../content/plans.js';
 
 const ICONS = { BookOpen, Building2, CreditCard, LifeBuoy, Megaphone, PiggyBank, ShieldCheck, TrendingUp, UserRound, Users };
 
@@ -22,12 +23,13 @@ export default function Home({ onAsk }) {
       <section className="section-ink hero">
         <div className="wrap hero-grid">
           <div className="stack">
+            <span className="badge">{TRIAL_DAYS}-day free trial · no card needed</span>
             <span className="eyebrow">Real-estate operations platform</span>
             <h1>Run your property business on your own platform.</h1>
             <p className="lead">Listings, sales, realtor commissions, payments and your clients' portal — in one place, under your company's name, colours and app.</p>
             <div className="actions">
-              <Link to="/request" className="btn btn-gold">Request onboarding</Link>
-              <button type="button" className="btn btn-ghost" onClick={onAsk}>Ask a question</button>
+              <Link to="/request?trial=1" className="btn btn-gold">Start your {TRIAL_DAYS}-day free trial</Link>
+              <Link to="/pricing" className="btn btn-ghost">See pricing</Link>
             </div>
           </div>
           <Shot eager src="/screens/dashboard.webp" alt="The Realx8 dashboard: invoiced, collected and outstanding amounts, overdue invoices and counts of clients, properties and realtors" />
@@ -121,8 +123,8 @@ export default function Home({ onAsk }) {
         <div className="wrap stack" style={{ gap: 36 }}>
           <h2 className="h2">How onboarding works</h2>
           <ol className="steps">
-            <li><span className="n">01</span><strong>Tell us about your business</strong><span>Fill in the request form, or ask our assistant to raise it for you.</span></li>
-            <li><span className="n">02</span><strong>We set up your company</strong><span>Your company code, brand, admin account and the modules you need.</span></li>
+            <li><span className="n">01</span><strong>Tell us about your business</strong><span>Start a {TRIAL_DAYS}-day free trial or request onboarding on the form, or ask our assistant to do it for you.</span></li>
+            <li><span className="n">02</span><strong>We set up your company</strong><span>Your company code, brand, admin account and the modules you need. A free trial starts the day your company is created.</span></li>
             <li><span className="n">03</span><strong>Bring your team and records</strong><span>Invite staff and realtors, add properties, and import your existing books.</span></li>
             <li><span className="n">04</span><strong>Go live</strong><span>Share your sign-up link; clients and realtors join under your company.</span></li>
           </ol>
@@ -145,9 +147,10 @@ export default function Home({ onAsk }) {
         <div className="wrap">
           <div className="cta">
             <h2>Ready to put your business on Realx8?</h2>
-            <p>Send a request and our team will contact you to set up your company.</p>
+            <p>Start with a {TRIAL_DAYS}-day free trial — all features, no user limit, no card needed. Our team sets up your company and helps you get live.</p>
             <div className="actions" style={{ justifyContent: 'center' }}>
-              <Link to="/request" className="btn btn-gold">Request onboarding</Link>
+              <Link to="/request?trial=1" className="btn btn-gold">Start your free trial</Link>
+              <Link to="/pricing" className="btn btn-ghost">See pricing</Link>
               <button type="button" className="btn btn-ghost" onClick={onAsk}>Ask a question</button>
             </div>
           </div>

@@ -66,12 +66,16 @@ p { margin: 0; }
   .nav .btn { min-height: 40px; padding: 0 12px; font-size: 14px; }
   .nav .hide-xs { display: none; }
 }
+/* Below this the brand, Pricing and the trial button no longer fit on one line; Pricing is still in the footer. */
+@media (max-width: 340px) { .nav .hide-xxs { display: none; } }
 
 /* Hero */
 .hero { padding: 72px 0 96px; }
 .hero-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 56px; align-items: center; }
 .hero h1 { font-weight: 800; font-size: clamp(40px, 5vw, 64px); line-height: 1.04; letter-spacing: -.02em; }
 .hero .lead { font-size: 19px; max-width: 560px; }
+/* The trial offer, above the eyebrow: a pill so it reads as an offer, not a section label. */
+.badge { align-self: flex-start; display: inline-flex; align-items: center; background: rgba(201, 150, 91, .16); color: var(--gold-soft); border: 1px solid rgba(201, 150, 91, .5); border-radius: 999px; padding: 6px 14px; font-size: 14px; font-weight: 600; }
 .stack { display: flex; flex-direction: column; gap: 22px; }
 .actions { display: flex; gap: 12px; flex-wrap: wrap; }
 .shot { border-radius: 18px; border: 1px solid var(--ink-line); background: var(--ink-2); overflow: hidden; box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .6); }
@@ -143,6 +147,44 @@ p { margin: 0; }
 .error { background: #FDECEC; color: #9B1C1C; border-radius: 10px; padding: 12px 14px; font-size: 14px; }
 .done { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 24px 0; }
 .done .tick { width: 52px; height: 52px; border-radius: 50%; background: var(--ink); color: var(--gold-soft); display: flex; align-items: center; justify-content: center; }
+
+/* Pricing */
+.pricing-head { padding: 72px 0 40px; }
+.pricing-head h1 { font-weight: 800; font-size: clamp(36px, 4.6vw, 58px); line-height: 1.05; letter-spacing: -.02em; }
+.billing-toggle { display: inline-flex; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 4px; gap: 4px; }
+.billing-toggle button { border: 0; background: transparent; border-radius: 999px; min-height: 44px; padding: 0 20px; font: 600 15px var(--body); color: var(--muted); cursor: pointer; }
+.billing-toggle button[aria-pressed='true'] { background: var(--ink); color: var(--on-ink); }
+.billing-toggle .save { color: var(--gold-ink); }
+.billing-toggle button[aria-pressed='true'] .save { color: var(--gold-soft); }
+.pricing-plans { padding-bottom: 72px; }
+.plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 18px; }
+.plan { background: #fff; border: 1px solid var(--line); border-radius: 22px; padding: 28px; display: flex; flex-direction: column; gap: 12px; }
+.plan h2 { font-size: 26px; }
+.plan-desc { color: var(--muted); min-height: 3.1em; }
+.plan-price { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+.plan-price strong { font: 800 40px/1.1 var(--display); letter-spacing: -.02em; }
+.plan-price span { color: var(--muted); }
+/* Both lines take the same space, so the cards do not jump when the period changes. */
+.plan-saving, .plan-alt { align-self: flex-start; font-size: 14px; min-height: 28px; display: inline-flex; align-items: center; }
+.plan-saving { background: var(--sand); color: var(--gold-ink); font-weight: 600; border-radius: 999px; padding: 0 12px; }
+.plan-alt { color: var(--muted); }
+.plan-limit { font-weight: 600; padding-top: 12px; border-top: 1px solid var(--line); }
+.plan .ticks { font-size: 15px; margin-bottom: 8px; }
+/* Pinned to the bottom, so the three buttons line up whatever the descriptions' length. */
+.plan .btn { margin-top: auto; }
+.trial-band { background: var(--ink); color: var(--on-ink); border-radius: 22px; padding: 28px 32px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; }
+.trial-band strong { font: 700 22px/1.25 var(--display); }
+.trial-band span { color: var(--on-ink-muted); max-width: 640px; }
+@media (max-width: 520px) { .trial-band { padding: 24px 22px; } .plan { padding: 22px; } }
+.faq-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px 56px; align-items: start; }
+.faq { grid-column: span 2; border-top: 1px solid var(--line); }
+@media (max-width: 720px) { .faq { grid-column: auto; } }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 64px; padding: 14px 0; font-weight: 600; font-size: 18px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: '+'; flex: none; font: 500 26px/1 var(--body); color: var(--gold-ink); }
+.faq details[open] summary::after { content: '−'; }
+.faq details p { color: var(--muted); padding: 0 0 20px; max-width: 720px; }
 
 /* Chat */
 .chat-launcher { position: fixed; right: 20px; bottom: 20px; z-index: 40; display: inline-flex; align-items: center; gap: 10px; background: var(--ink); color: var(--on-ink); border: 0; padding: 12px 18px 12px 14px; border-radius: 999px; box-shadow: 0 12px 28px -12px rgba(14, 18, 32, .6); font: 600 15px var(--body); cursor: pointer; min-height: 48px; }

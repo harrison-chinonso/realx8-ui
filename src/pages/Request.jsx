@@ -1,16 +1,28 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Check } from 'lucide-react';
 import { INTERESTS } from '../content/features.js';
+import { findPlan, planInterest } from '../content/plans.js';
 import { APP_URL, sendRequest } from '../api.js';
+import usePlans from '../usePlans.js';
 
 const EMPTY = {
   company_name: '', contact_name: '', email: '', phone: '',
   business_type: 'Property developer', realtor_count: 'None yet', message: '', website: '',
 };
 
-/** The onboarding request form. Stored by Realx8-Core and followed up by the team. */
+/**
+ * The onboarding request form. Stored by Realx8-Core and followed up by the team.
+ * With ?trial=1 (every "Start free trial" link) the same form asks for a free
+ * trial and is sent as kind 'trial'; ?plan=<code> preselects a plan.
+ */
 export default function Request({ onAsk }) {
+  const [params] = useSearchParams();
+  const trial = params.get('trial') === '1';
+  const { plans, trialDays } = usePlans();
   const [form, setForm] = useState(EMPTY);
+  // Kept as the code from the link: the fetched plans may arrive after this, and an unknown code is simply not sent.
+  const [plan, setPlan] = useState(() => String(params.get('plan') || '').toLowerCase());
   const [interests, setInterests] = useState([]);
   const [consent, setConsent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -26,7 +38,13 @@ export default function Request({ onAsk }) {
     setSending(true);
     setError('');
     try {
-      const data = await sendRequest({ ...form, interests, kind: 'onboarding', source: 'form' });
+      const chosen = findPlan(plans, plan);
+      const data = await sendRequest({
+        ...form,
+        interests: chosen ? [...interests, planInterest(chosen)] : interests,
+        kind: trial ? 'trial' : 'onboarding',
+        source: 'form',
+      });
       setReference(data.reference || '—');
       window.scrollTo(0, 0);
     } catch (err) {
@@ -40,14 +58,29 @@ export default function Request({ onAsk }) {
     <div className="request">
       <div className="wrap">
         <aside>
-          <span className="eyebrow">Request onboarding</span>
-          <h1>Let's set up your company</h1>
-          <p className="lead">Tell us a little about your business. Our team will contact you to agree the setup and get you live.</p>
-          <ul className="ticks">
-            <li>Your own company code, brand and admin account</li>
-            <li>Help moving your properties, clients and books</li>
-            <li>Training for your staff and realtors</li>
-          </ul>
+          {trial ? (
+            <>
+              <span className="eyebrow">Free trial</span>
+              <h1>Start your {trialDays}-day free trial</h1>
+              <p className="lead">Tell us a little about your business. Our team sets up your company, and your {trialDays}-day trial starts the day it is created.</p>
+              <ul className="ticks">
+                <li>Every Realx8 feature, with no user limit</li>
+                <li>No card needed to start</li>
+                <li>Your own company code, brand and admin account</li>
+              </ul>
+            </>
+          ) : (
+            <>
+              <span className="eyebrow">Request onboarding</span>
+              <h1>Let's set up your company</h1>
+              <p className="lead">Tell us a little about your business. Our team will contact you to agree the setup and get you live.</p>
+              <ul className="ticks">
+                <li>Your own company code, brand and admin account</li>
+                <li>Help moving your properties, clients and books</li>
+                <li>Training for your staff and realtors</li>
+              </ul>
+            </>
+          )}
           <div className="note-box">
             <strong>Just have a question?</strong>
             <span>Ask our assistant about any feature — it can also raise this request for you.</span>
@@ -61,7 +94,10 @@ export default function Request({ onAsk }) {
               <span className="tick"><Check size={26} aria-hidden="true" /></span>
               <h2 style={{ fontSize: 30 }}>Request received</h2>
               <p style={{ color: 'var(--muted)' }}>
-                Thank you. Your reference is <strong>{reference}</strong>. We have emailed a copy to {form.email} and our team will be in touch soon.
+                Thank you. Your reference is <strong>{reference}</strong>. We have emailed a copy to {form.email}.{' '}
+                {trial
+                  ? `Our team will set up your company and be in touch — your ${trialDays}-day free trial starts when your company is created.`
+                  : 'Our team will be in touch soon.'}
               </p>
               <a className="btn btn-ink" href={`${APP_URL}/login`}>Already a customer? Sign in</a>
             </div>
@@ -91,6 +127,12 @@ export default function Request({ onAsk }) {
                     <option>None yet</option><option>1–20</option><option>21–100</option><option>101–500</option><option>More than 500</option>
                   </select>
                 </label>
+                <label className="field">Plan you're interested in
+                  <select value={findPlan(plans, plan)?.code || ''} onChange={(e) => setPlan(e.target.value)}>
+                    <option value="">Not sure yet</option>
+                    {plans.map((p) => <option key={p.code} value={p.code}>{p.name}</option>)}
+                  </select>
+                </label>
               </div>
 
               <fieldset style={{ border: 0, margin: 0, padding: 0 }}>
@@ -117,7 +159,7 @@ export default function Request({ onAsk }) {
               </label>
 
               <div className="actions" style={{ alignItems: 'center' }}>
-                <button type="submit" className="btn btn-ink" disabled={sending}>{sending ? 'Sending…' : 'Send request'}</button>
+                <button type="submit" className="btn btn-ink" disabled={sending}>{sending ? 'Sending…' : trial ? 'Start my free trial' : 'Send request'}</button>
                 <span style={{ fontSize: 13, color: '#5B6275' }}>We reply by email or phone. No spam.</span>
               </div>
             </form>

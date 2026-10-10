@@ -4,6 +4,7 @@ import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import ChatWidget from './components/ChatWidget.jsx';
 import Home from './pages/Home.jsx';
+import Pricing from './pages/Pricing.jsx';
 import Request from './pages/Request.jsx';
 import NotFound from './pages/NotFound.jsx';
 
@@ -28,6 +29,7 @@ export default function App() {
       <main id="content">
         <Routes>
           <Route path="/" element={<Home onAsk={openChat} />} />
+          <Route path="/pricing" element={<Pricing onAsk={openChat} />} />
           <Route path="/request" element={<Request onAsk={openChat} />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
