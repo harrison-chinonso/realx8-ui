@@ -9,18 +9,25 @@
  * engine.js). `chips` are the follow-up suggestions shown after the answer.
  * `offer` names the request a plain "yes" to the answer starts.
  *
- * Prices are written from content/plans.js — the same built-in copy the
- * pricing page starts from — so the two can never disagree. (The page also
- * picks up price changes from the API; these answers change on redeploy.)
+ * Prices come from the same list as the pricing page: the built-in copy in
+ * content/plans.js until the site has fetched the app's own plans
+ * (GET /public/plans), then those — set here by the chat window through
+ * setPlans. A plan added or re-priced in the app is in these answers on the
+ * next visit, with no redeploy.
  */
 import {
   GRACE_DAYS, PLANS, TRIAL_DAYS, annualSavingPercent, formatNaira, formatPercent, userLimitLabel,
 } from '../content/plans.js';
 
-const PLAN_LINES = PLANS
+let livePlans = PLANS;
+/** The plans the assistant quotes; the chat window passes the fetched list. */
+export const setPlans = (plans) => { if (Array.isArray(plans) && plans.length) livePlans = plans; };
+export const currentPlans = () => livePlans;
+
+const planLines = () => livePlans
   .map((p) => `• ${p.name} — ${formatNaira(p.monthly_price)}/month or ${formatNaira(p.annual_price)}/year · ${userLimitLabel(p).toLowerCase()}`)
   .join('\n');
-const BEST_SAVING = formatPercent(Math.max(0, ...PLANS.map(annualSavingPercent)));
+const bestSaving = () => formatPercent(Math.max(0, ...livePlans.map(annualSavingPercent)));
 
 export const TOPICS = [
   {
@@ -125,7 +132,7 @@ export const TOPICS = [
     id: 'pricing',
     match: ['price', 'prices', 'pricing', 'cost', 'costs', 'how much', 'fee', 'fees', 'subscription', 'plans', 'plan', 'charge',
       'starter', 'professional', 'enterprise', 'per month', 'per year', 'annual', 'monthly', 'yearly', 'naira'],
-    answer: `Every plan includes all Realx8 features; they differ only by how many users your company has:\n\n${PLAN_LINES}\n\nPaying annually saves ${BEST_SAVING}. Every new company also starts with a ${TRIAL_DAYS}-day free trial — all features, no user limit, no card needed. The Pricing page has the details.`,
+    answer: () => `Every plan includes all Realx8 features; they differ only by how many users your company has:\n\n${planLines()}\n\nPaying annually saves up to ${bestSaving()}. Every new company also starts with a ${TRIAL_DAYS}-day free trial — all features, no user limit, no card needed. The Pricing page has the details.`,
     chips: ['Start free trial', 'What counts as a user?', 'Request onboarding'],
   },
   {
@@ -140,7 +147,7 @@ export const TOPICS = [
     id: 'users',
     match: ['users', 'user', 'user limit', 'how many users', 'number of users', 'what counts as a user', 'count as a user',
       'counts as a user', 'count as users', 'seats', 'user accounts', 'do clients count', 'do realtors count', 'unlimited users'],
-    answer: `A user is any user account in your company — staff, realtors and clients alike — counted together, per company.\n\n${PLANS.map((p) => `• ${p.name}: ${userLimitLabel(p).toLowerCase()}`).join('\n')}\n\nThe free trial has no user limit.`,
+    answer: () => `A user is any user account in your company — staff, realtors and clients alike — counted together, per company.\n\n${livePlans.map((p) => `• ${p.name}: ${userLimitLabel(p).toLowerCase()}`).join('\n')}\n\nThe free trial has no user limit.`,
     chips: ['How much does it cost?', 'Can I switch plans?', 'Start free trial'],
   },
   {

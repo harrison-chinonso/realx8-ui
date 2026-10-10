@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { MessageCircle, SendHorizontal, X } from 'lucide-react';
 import { afterSubmit, greet, initialState, respond } from '../assistant/engine.js';
 import { sendRequest } from '../api.js';
+import { setPlans } from '../assistant/knowledge.js';
+import usePlans from '../usePlans.js';
 
 /**
  * "Ask Realx8": answers questions about Realx8 only (assistant/knowledge.js)
@@ -9,6 +11,10 @@ import { sendRequest } from '../api.js';
  * the form, marked as coming from the assistant.
  */
 export default function ChatWidget({ open, onOpenChange }) {
+  // The same plans as the pricing page (fetched from the app), so the assistant
+  // quotes a newly added or re-priced plan without a redeploy.
+  const { plans } = usePlans();
+  useEffect(() => { setPlans(plans); }, [plans]);
   const [state, setState] = useState(initialState);
   const [messages, setMessages] = useState(() => greet().replies.map((text) => ({ from: 'bot', text })));
   const [chips, setChips] = useState(() => greet().chips);
