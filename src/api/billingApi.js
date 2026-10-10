@@ -27,6 +27,8 @@ export const listHeldAccounts = () => client.get('/billing/held').then((r) => r.
 
 // ── Platform administrators ─────────────────────────────────────────────────
 export const adminListPlans = () => client.get('/billing/admin/plans').then((r) => r.data?.data || []);
+// A new plan; active ones show at once on the website's pricing page (GET /public/plans).
+export const adminCreatePlan = (payload) => client.post('/billing/admin/plans', payload).then((r) => r.data?.data);
 export const adminUpdatePlan = (code, payload) =>
   client.put(`/billing/admin/plans/${encodeURIComponent(code)}`, payload).then((r) => r.data?.data);
 /** Returns the whole body, because `enabled` sits beside the rows. */
